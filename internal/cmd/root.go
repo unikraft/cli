@@ -258,6 +258,11 @@ func NewParser(cli *UnikraftCLI) (*kong.Kong, error) {
 	return kong.New(cli,
 		kong.Name("unikraft"),
 		kong.UsageOnError(),
+		kong.Description(""+
+			"    _          The command-line interface for managing\n"+
+			"  c'3'o  .-.   all things Unikraft.\n"+
+			"  (| |)_/   '\n"+
+			"               https://unikraft.com/docs/cli"),
 		kong.ConfigureHelp(helpOptions),
 		kong.Help(kingkong.HelpPrinter(version.Version)),
 		kong.WithBeforeReset(func(value *kong.Path) error {
