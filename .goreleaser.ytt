@@ -113,6 +113,8 @@ builds:
   - -X unikraft.com/cli/internal/version.Version={{ .Version }}
   - -X unikraft.com/cli/internal/version.Commit={{ .Commit }}
   - -X unikraft.com/cli/internal/version.BuildTime={{ .Date }}
+  - -X unikraft.com/cli/internal/telemetry.PostHogAPIKey={{ .Env.UNIKRAFT_POSTHOG_API_KEY }}
+  - -X unikraft.com/cli/internal/telemetry.PostHogHost={{ .Env.UNIKRAFT_POSTHOG_HOST }}
 #@ end
 #@ end
 
