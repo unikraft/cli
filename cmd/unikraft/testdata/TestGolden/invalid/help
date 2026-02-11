@@ -57,6 +57,9 @@ stdout:
 	          [default: text, choice: text,json]
 	      --profile ($UNIKRAFT_PROFILE)
 	          Set the current profile.
+	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+	          Toggle anonymous usage analytics.
+	          [default: true]
 	      --version
 	          Print version information.
 
@@ -130,6 +133,9 @@ stdout:
 	          [default: text, choice: text,json]
 	      --profile ($UNIKRAFT_PROFILE)
 	          Set the current profile.
+	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+	          Toggle anonymous usage analytics.
+	          [default: true]
 	      --version
 	          Print version information.
 
