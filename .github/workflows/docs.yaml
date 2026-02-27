@@ -29,8 +29,7 @@ concurrency:
 
 jobs:
   docs:
-    # runs-on: ubuntu-latest
-    runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || 'arc-unikraft-cli-ubuntu24.04-standard' }}
+    runs-on: ubuntu-latest
     steps:
     - name: Checkout
       uses: actions/checkout@v6

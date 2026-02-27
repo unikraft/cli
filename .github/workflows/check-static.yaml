@@ -22,8 +22,7 @@ permissions:
 
 jobs:
   go:
-    # runs-on: ubuntu-latest
-    runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || 'arc-unikraft-cli-ubuntu24.04-standard' }}
+    runs-on: ubuntu-latest
     env:
       TASK_X_REMOTE_TASKFILES: 1
     steps:

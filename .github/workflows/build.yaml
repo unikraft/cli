@@ -21,8 +21,7 @@ concurrency:
 
 jobs:
   cli:
-    # runs-on: ubuntu-latest
-    runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || 'arc-unikraft-cli-ubuntu24.04-standard' }}
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
