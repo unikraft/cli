@@ -8,7 +8,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"unikraft.com/cloud/sdk/platform"
 	"unikraft.com/cloud/sdk/platform/group"
@@ -51,9 +50,9 @@ type Certificate struct {
 	State types.CertificateState `mirror:"certificate.state" field:",short"`
 
 	Timestamps struct {
-		CreatedAt time.Time `mirror:"certificate.created_at"`
-		NotBefore time.Time `mirror:"certificate.not_before" field:",long"`
-		NotAfter  time.Time `mirror:"certificate.not_after" field:",short"`
+		CreatedAt types.RelativeTime `mirror:"certificate.created_at"`
+		NotBefore types.RelativeTime `mirror:"certificate.not_before" field:",long"`
+		NotAfter  types.RelativeTime `mirror:"certificate.not_after" field:",short"`
 	}
 
 	Certificate platform.Certificate `field:"-" json:"certificate"`

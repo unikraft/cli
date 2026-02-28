@@ -13,7 +13,6 @@ import (
 	"io"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/google/uuid"
 	"unikraft.com/cloud/sdk/platform"
@@ -88,9 +87,9 @@ type Instance struct {
 	} `mirror:"instance.network_interfaces"`
 
 	Timestamps struct {
-		CreatedAt time.Time `mirror:"instance.created_at"`
-		StartedAt time.Time `mirror:"instance.started_at"`
-		StoppedAt time.Time `mirror:"instance.stopped_at"`
+		CreatedAt types.RelativeTime `mirror:"instance.created_at" field:",short"`
+		StartedAt types.RelativeTime `mirror:"instance.started_at"`
+		StoppedAt types.RelativeTime `mirror:"instance.stopped_at"`
 	}
 
 	ScaleToZero InstanceScaleToZero `field:",embed" mirror:"instance.scale_to_zero"`

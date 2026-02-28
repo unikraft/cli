@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
 
 	"unikraft.com/cloud/sdk/platform"
 	"unikraft.com/cloud/sdk/platform/group"
@@ -23,6 +22,7 @@ import (
 	"unikraft.com/cli/internal/multimetro"
 	"unikraft.com/cli/internal/resource"
 	"unikraft.com/cli/internal/resource/cmd"
+	"unikraft.com/cli/internal/types"
 )
 
 type ServicesCmd struct {
@@ -49,7 +49,7 @@ type ServiceGroup struct {
 	}
 
 	Timestamps struct {
-		CreatedAt time.Time `mirror:"service_group.created_at"`
+		CreatedAt types.RelativeTime `mirror:"service_group.created_at" field:",short"`
 	}
 
 	Domains []Domain `mirror:"service_group.domains" field:",embed" create:"set" edit:"set,add,del"`
