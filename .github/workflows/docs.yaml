@@ -68,7 +68,7 @@ jobs:
         make docs
 
     - name: Upload docs artifacts to GitHub
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       if: github.event_name == 'push'
       with:
         name: unikraft-docs-${{ github.event.pull_request.number || github.sha }}
@@ -78,7 +78,7 @@ jobs:
         overwrite: true
 
     - name: Upload man artifacts to GitHub
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       if: github.event_name == 'push'
       with:
         name: unikraft-man-${{ github.sha }}
