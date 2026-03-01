@@ -11,6 +11,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"slices"
 	"strings"
 	"time"
 
@@ -115,9 +116,11 @@ type FormatOpts struct {
 }
 
 type ResourceListCmd[R resource.GettableListableResource] struct {
-	Name   []string       `arg:"" optional:"" completion-predictor:"resource-key-${name}" help:"Names of the ${names} to list."`
-	Filter []string       `help:"Filter output based on a field value (e.g. --filter state==running)." sep:"none"`
-	Watch  *time.Duration `short:"w" help:"Watch for changes and refresh output." type:"optional"`
+	Name     []string       `arg:"" optional:"" completion-predictor:"resource-key-${name}" help:"Names of the ${names} to list."`
+	Filter   []string       `help:"Filter output based on a field value (e.g. --filter state==running)." sep:"none"`
+	Watch    *time.Duration `short:"w" help:"Watch for changes and refresh output." type:"optional"`
+	SortAsc  string         `help:"Sort output by field value in ascending order (e.g. --sort-asc name)."`
+	SortDesc string         `help:"Sort output by field value in descending order (e.g. --sort-desc timestamps.created-at)."`
 
 	FormatOpts
 }
@@ -141,6 +144,19 @@ func (cmd *ResourceListCmd[R]) Run(ctx context.Context, stdio config.Stdio, sand
 	}
 	ctx = resource.WithFilter(ctx, filter)
 
+	// Determine sort configuration
+	var sortPath resource.FieldPath
+	var sortDesc bool
+	if cmd.SortAsc != "" && cmd.SortDesc != "" {
+		return fmt.Errorf("cannot use both --sort-asc and --sort-desc at the same time")
+	}
+	if cmd.SortAsc != "" {
+		sortPath = resource.ParseFieldPath(cmd.SortAsc)
+	} else if cmd.SortDesc != "" {
+		sortPath = resource.ParseFieldPath(cmd.SortDesc)
+		sortDesc = true
+	}
+
 	var empty R
 
 	render := func(out io.Writer) error {
@@ -159,6 +175,12 @@ func (cmd *ResourceListCmd[R]) Run(ctx context.Context, stdio config.Stdio, sand
 		resources, err = filterResources(ctx, resources, filter)
 		if err != nil {
 			return err
+		}
+		if len(sortPath) > 0 {
+			resources, err = sortResources(ctx, resources, sortPath, sortDesc)
+			if err != nil {
+				return err
+			}
 		}
 		return cmd.Output.
 			WithDefault(PrinterTypeTable).
@@ -350,6 +372,57 @@ func filterResources(ctx context.Context, resources []resource.Resource, filter 
 		}
 	}
 	return filtered, rerr
+}
+
+// sortResources sorts resources by the value of a field specified by the path.
+// If descending is true, the sort order is reversed.
+func sortResources(ctx context.Context, resources []resource.Resource, path resource.FieldPath, descending bool) ([]resource.Resource, error) {
+	if len(path) == 0 {
+		return resources, nil
+	}
+
+	// Pre-resolve field values for sorting
+	type resourceWithValue struct {
+		res   resource.Resource
+		value any
+	}
+
+	items := make([]resourceWithValue, 0, len(resources))
+	for _, res := range resources {
+		fields, err := res.Fields()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get fields for resource %s: %w", res.Key(), err)
+		}
+
+		// Resolve callbacks for the sort field
+		fields, err = resolveFields(ctx, fields, []resource.FieldPath{path})
+		if err != nil {
+			return nil, err
+		}
+
+		matched := resource.GetFieldByPath(fields, path)
+		var val any
+		if len(matched) == 1 {
+			val = matched[0].Value
+		}
+		items = append(items, resourceWithValue{res: res, value: val})
+	}
+
+	// Sort by the extracted field value using type-aware comparison
+	slices.SortStableFunc(items, func(a, b resourceWithValue) int {
+		result := resource.CompareFieldValues(a.value, b.value)
+		if descending {
+			result = -result
+		}
+		return result
+	})
+
+	// Extract sorted resources
+	sorted := make([]resource.Resource, len(items))
+	for i, item := range items {
+		sorted[i] = item.res
+	}
+	return sorted, nil
 }
 
 type ResourceRemoveCmd[R resource.DeletableResource] struct {

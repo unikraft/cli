@@ -132,6 +132,81 @@ func TestList(t *testing.T) {
 		assert.Contains(t, output, "test1")
 		assert.NotContains(t, output, "test2")
 	})
+
+	t.Run("sort-asc", func(t *testing.T) {
+		var out bytes.Buffer
+		cmd := &ResourceListCmd[resourcet.TestResource]{
+			SortAsc: "name",
+			FormatOpts: FormatOpts{
+				Output: Printer{Type: PrinterTypeQuiet},
+			},
+		}
+		err := cmd.Run(ctx, testStdio(&out), sandbox)
+		require.NoError(t, err)
+
+		output := out.String()
+		assert.Equal(t, "test1\ntest2\n", output)
+	})
+
+	t.Run("sort-desc", func(t *testing.T) {
+		var out bytes.Buffer
+		cmd := &ResourceListCmd[resourcet.TestResource]{
+			SortDesc: "name",
+			FormatOpts: FormatOpts{
+				Output: Printer{Type: PrinterTypeQuiet},
+			},
+		}
+		err := cmd.Run(ctx, testStdio(&out), sandbox)
+		require.NoError(t, err)
+
+		output := out.String()
+		assert.Equal(t, "test2\ntest1\n", output)
+	})
+
+	t.Run("sort-asc-nested", func(t *testing.T) {
+		var out bytes.Buffer
+		cmd := &ResourceListCmd[resourcet.TestResource]{
+			SortAsc: "settings.y",
+			FormatOpts: FormatOpts{
+				Output: Printer{Type: PrinterTypeQuiet},
+			},
+		}
+		err := cmd.Run(ctx, testStdio(&out), sandbox)
+		require.NoError(t, err)
+
+		// test1 has settings.y="hello", test2 has settings.y="world"
+		// ascending: "hello" < "world", so test1 comes first
+		output := out.String()
+		assert.Equal(t, "test1\ntest2\n", output)
+	})
+
+	t.Run("sort-desc-nested", func(t *testing.T) {
+		var out bytes.Buffer
+		cmd := &ResourceListCmd[resourcet.TestResource]{
+			SortDesc: "settings.y",
+			FormatOpts: FormatOpts{
+				Output: Printer{Type: PrinterTypeQuiet},
+			},
+		}
+		err := cmd.Run(ctx, testStdio(&out), sandbox)
+		require.NoError(t, err)
+
+		// test1 has settings.y="hello", test2 has settings.y="world"
+		// descending: "world" > "hello", so test2 comes first
+		output := out.String()
+		assert.Equal(t, "test2\ntest1\n", output)
+	})
+
+	t.Run("sort-both-error", func(t *testing.T) {
+		var out bytes.Buffer
+		cmd := &ResourceListCmd[resourcet.TestResource]{
+			SortAsc:  "name",
+			SortDesc: "name",
+		}
+		err := cmd.Run(ctx, testStdio(&out), sandbox)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "cannot use both")
+	})
 }
 
 func TestListOutput(t *testing.T) {
