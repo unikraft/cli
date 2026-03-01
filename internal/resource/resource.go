@@ -173,3 +173,9 @@ func (v FieldVerbosity) String() string {
 func (v FieldVerbosity) MarshalJSON() ([]byte, error) {
 	return fmt.Appendf(nil, `%q`, v.String()), nil
 }
+
+// CompareFieldValues compares two field values in a type-aware manner.
+// It returns -1 if a < b, 0 if a == b, and 1 if a > b.
+func CompareFieldValues(a, b any) int {
+	return value.Compare(a, b)
+}
