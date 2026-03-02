@@ -8,6 +8,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"maps"
 
 	"unikraft.com/cli/internal/resource"
 )
@@ -62,6 +63,19 @@ func patchRequests[P ~string](fields []resource.Field, specFor func(path string,
 		prop, converted := specFor(path, op, value)
 		if converted == nil {
 			return
+		}
+		// If the converted value is a map, try to merge it with an existing
+		// patch for the same prop/op. This allows multiple fields to be
+		// aggregated into a single patch request.
+		if m, ok := converted.(map[string]any); ok {
+			for i := range reqs {
+				if reqs[i].Prop == prop && reqs[i].Op == op {
+					if existing, ok := reqs[i].Value.(map[string]any); ok {
+						maps.Copy(existing, m)
+						return
+					}
+				}
+			}
 		}
 		reqs = append(reqs, patchReq[P]{Op: op, Prop: prop, Value: converted})
 	}

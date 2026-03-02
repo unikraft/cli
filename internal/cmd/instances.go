@@ -201,9 +201,9 @@ func (v *InstanceVolume) UnmarshalText(data []byte) error {
 
 type InstanceScaleToZero struct {
 	Enabled      bool   `mirror:"enabled" field:",long"`
-	Policy       string `mirror:"policy" field:",long" create:"set"`
-	Stateful     bool   `mirror:"stateful" field:",long" create:"set"`
-	CooldownTime int64  `mirror:"cooldown_time_ms" field:",long" create:"set"`
+	Policy       string `mirror:"policy" field:",long" create:"set" edit:"set"`
+	Stateful     bool   `mirror:"stateful" field:",long" create:"set" edit:"set"`
+	CooldownTime int64  `mirror:"cooldown_time_ms" field:",long" create:"set" edit:"set"`
 }
 
 func (Instance) Type() resource.Type {
@@ -458,6 +458,12 @@ func instancePatchSpec(path string, op patchOp, value any) (platform.UpdateInsta
 		return platform.UpdateInstancesRequestItemPropMemory_mb, int64(value.(types.SizeMebibytes))
 	case "resources.vcpus":
 		return platform.UpdateInstancesRequestItemPropVcpus, value.(int)
+	case "scale-to-zero.policy":
+		return platform.UpdateInstancesRequestItemPropScale_to_zero, map[string]any{"policy": value.(string)}
+	case "scale-to-zero.stateful":
+		return platform.UpdateInstancesRequestItemPropScale_to_zero, map[string]any{"stateful": value.(bool)}
+	case "scale-to-zero.cooldown-time":
+		return platform.UpdateInstancesRequestItemPropScale_to_zero, map[string]any{"cooldown_time_ms": int32(value.(int64))}
 	default:
 		return zero, nil
 	}
