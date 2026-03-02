@@ -55,6 +55,7 @@ type UnikraftCLI struct {
 	Upgrade      UpgradeCmd      `cmd:"" help:"Upgrade the Unikraft CLI to the latest version."`
 
 	SendAnalytics SendAnalyticsCmd `cmd:"" help:"Send analytics payload (used internally for detached analytics)." name:"_send_analytics" hidden:""`
+	CheckUpdates  CheckUpdatesCmd  `cmd:"" help:"Check for updates to the Unikraft CLI (used internally for detached update checks)." name:"_check_updates" hidden:""`
 }
 
 func (cli UnikraftCLI) Examples() []kingkong.Example {
