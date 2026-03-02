@@ -22,6 +22,7 @@ import (
 	"unikraft.com/cli/internal/config"
 	"unikraft.com/cli/internal/logfmt"
 	"unikraft.com/cli/internal/telemetry"
+	"unikraft.com/cli/internal/update"
 	"unikraft.com/x/colors"
 	"unikraft.com/x/log"
 )
@@ -55,6 +56,23 @@ func main() {
 	cmdPath, ok := telemetry.CommandFromContext(ctx)
 	if ok && (err == nil || errors.Is(err, context.Canceled)) {
 		telemetry.TrackCommandSuccess(cmdPath)
+	}
+
+	// Check for available updates after successful command execution.
+	// Skip for hidden internal commands.
+	if err == nil && !strings.HasPrefix(cmdPath, "_") {
+		if update := update.HasUpdate(); update != nil {
+			log.G(ctx).
+				Info().
+				Msgf(
+					"A new version of Unikraft CLI is available: %s → %s",
+					update.CurrentVersion,
+					update.LatestVersion,
+				)
+			log.G(ctx).
+				Info().
+				Msg("Run `unikraft upgrade` to update.")
+		}
 	}
 
 	if err != nil && !errors.Is(err, context.Canceled) {
@@ -134,10 +152,16 @@ func run(ctx context.Context, args []string, stdio config.Stdio) (context.Contex
 	// Build command path early for telemetry decisions (e.g., "instances list")
 	cmdPath := buildCommandPath(cli)
 
-	// Prevent recursive analytics: when the "send analytics" subcommand runs, it
-	// should not trigger another analytics event, which would spawn another
-	// "send analytics" subprocess, creating infinite recursion.
-	isSendAnalytics := cmdPath == "_send_analytics"
+	// Prevent recursive behavior: when internal subcommands run (like
+	// _send_analytics or _check_updates), they should not trigger another
+	// subprocess, which would create infinite recursion.
+	isInternalCmd := strings.HasPrefix(cmdPath, "_")
+
+	// Spawn a detached process to check for updates in the background.
+	// This is non-blocking and the result is cached for later notification.
+	if !isInternalCmd {
+		update.SpawnCheck()
+	}
 
 	// Initialize analytics if telemetry is enabled.
 	//
@@ -159,7 +183,7 @@ func run(ctx context.Context, args []string, stdio config.Stdio) (context.Contex
 	// of telemetry without needing to understand specific environment variables
 	// for our CLI.
 	_, doNotTrack := os.LookupEnv("DO_NOT_TRACK")
-	if !doNotTrack && opts.Telemetry && !isSendAnalytics {
+	if !doNotTrack && opts.Telemetry && !isInternalCmd {
 		if err := telemetry.Init(); err != nil {
 			log.G(ctx).
 				Debug().
@@ -191,7 +215,7 @@ func run(ctx context.Context, args []string, stdio config.Stdio) (context.Contex
 		}
 	}
 
-	if !doNotTrack && opts.Telemetry && !isSendAnalytics {
+	if !doNotTrack && opts.Telemetry && !isInternalCmd {
 		telemetry.TrackCommandStart(cmdPath)
 		ctx = telemetry.WithCommand(ctx, cmdPath)
 	}

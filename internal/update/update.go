@@ -24,6 +24,7 @@ import (
 	jujuerrors "github.com/juju/errors"
 
 	"unikraft.com/cli/internal/httpclient"
+	"unikraft.com/cli/internal/spawndetach"
 	"unikraft.com/cli/internal/version"
 )
 
@@ -221,4 +222,19 @@ func fetchLatestVersion(ctx context.Context, baseURL, channel string) (string, e
 	}
 
 	return strings.TrimSpace(string(body)), nil
+}
+
+// SpawnCheck spawns a detached subprocess to check for updates.
+// This is non-blocking and returns immediately.
+func SpawnCheck() {
+	if !ShouldCheck() {
+		return
+	}
+
+	executable, err := os.Executable()
+	if err != nil {
+		return
+	}
+
+	spawndetach.SpawnDetached(executable, "_check_updates")
 }
