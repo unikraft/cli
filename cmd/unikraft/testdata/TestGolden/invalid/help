@@ -30,6 +30,8 @@ stdout:
 	          Manage Unikraft Cloud certificates.
 	  images, image, img, imgs
 	          Manage Unikraft Cloud images.
+	  upgrade
+	          Upgrade the Unikraft CLI to the latest version.
 
 	Examples:
 	  # Login to Unikraft Cloud
@@ -106,6 +108,8 @@ stdout:
 	          Manage Unikraft Cloud certificates.
 	  images, image, img, imgs
 	          Manage Unikraft Cloud images.
+	  upgrade
+	          Upgrade the Unikraft CLI to the latest version.
 
 	Examples:
 	  # Login to Unikraft Cloud

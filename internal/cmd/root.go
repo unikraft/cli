@@ -52,6 +52,7 @@ type UnikraftCLI struct {
 	Services     ServicesCmd     `cmd:"" help:"Manage Unikraft Cloud services." aliases:"service,services,svc,svcs"`
 	Certificates CertificatesCmd `cmd:"" help:"Manage Unikraft Cloud certificates." aliases:"certificate,certificates,crt,crts,cert,certs"`
 	Images       ImagesCmd       `cmd:"" help:"Manage Unikraft Cloud images." aliases:"image,images,img,imgs"`
+	Upgrade      UpgradeCmd      `cmd:"" help:"Upgrade the Unikraft CLI to the latest version."`
 
 	SendAnalytics SendAnalyticsCmd `cmd:"" help:"Send analytics payload (used internally for detached analytics)." name:"_send_analytics" hidden:""`
 }
