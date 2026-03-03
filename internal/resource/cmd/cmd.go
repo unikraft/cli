@@ -25,6 +25,7 @@ import (
 	"unikraft.com/cli/internal/resource/patch"
 	"unikraft.com/cli/internal/tui/watcher"
 	xfilters "unikraft.com/cli/internal/x/filters"
+	xkong "unikraft.com/cli/internal/x/kong"
 )
 
 type ResourceCmdInterface interface {
@@ -120,9 +121,7 @@ func (cmd ResourceCmd[R]) Examples() []kingkong.Example {
 }
 
 type FormatOpts struct {
-	// FIXME: not able to pass values beginning with -
-	// https://github.com/alecthomas/kong/issues/290
-	Field []string `short:"f" help:"Specify which fields to include in the output."`
+	Field xkong.HyphenStrings `short:"f" help:"Specify which fields to include in the output."`
 
 	Output Printer `short:"o" help:"Output format. One of: kv, table, json, yaml, raw, quiet, template."`
 }
@@ -183,7 +182,7 @@ func (cmd *ResourceListCmd[R]) Run(ctx context.Context, stdio config.Stdio, sand
 		}
 		return cmd.Output.
 			WithDefault(PrinterTypeTable).
-			Print(ctx, out, cmd.Field, empty, resources...)
+			Print(ctx, out, []string(cmd.Field), empty, resources...)
 	}
 
 	if cmd.Watch != nil {
@@ -223,7 +222,7 @@ func (cmd *ResourceGetCmd[R]) Run(ctx context.Context, stdio config.Stdio, sandb
 		}
 		return cmd.Output.
 			WithDefault(PrinterTypeKeyValue).
-			Print(ctx, out, cmd.Field, empty, resources...)
+			Print(ctx, out, []string(cmd.Field), empty, resources...)
 	}
 
 	if cmd.Watch != nil {
@@ -295,7 +294,7 @@ func (cmd *ResourceWaitCmd[R]) Run(ctx context.Context, stdio config.Stdio, sand
 
 			return cmd.Output.
 				WithDefault(PrinterTypeKeyValue).
-				Print(ctx, stdio.Stdout, cmd.Field, empty, filtered...)
+				Print(ctx, stdio.Stdout, []string(cmd.Field), empty, filtered...)
 		}
 		log.G(ctx).Debug().
 			Strs("resources", cmd.Name).
@@ -406,7 +405,7 @@ func (cmd *ResourceRemoveCmd[R]) Run(ctx context.Context, stdio config.Stdio, sa
 
 	return cmd.Output.
 		WithDefault(PrinterTypeQuiet).
-		Print(ctx, stdio.Stdout, cmd.Field, empty, resources...)
+		Print(ctx, stdio.Stdout, []string(cmd.Field), empty, resources...)
 }
 
 type ResourceBulkRemoveCmd[R interface {
@@ -468,7 +467,7 @@ func (cmd *ResourceBulkRemoveCmd[R]) Run(ctx context.Context, stdio config.Stdio
 
 			err = cmd.Output.
 				WithDefault(PrinterTypeTable).
-				Print(ctx, stdio.Stdout, cmd.Field, empty, resources...)
+				Print(ctx, stdio.Stdout, []string(cmd.Field), empty, resources...)
 			if err != nil {
 				return err
 			}
@@ -521,7 +520,7 @@ func (cmd *ResourceBulkRemoveCmd[R]) Run(ctx context.Context, stdio config.Stdio
 		}
 		return cmd.Output.
 			WithDefault(PrinterTypeQuiet).
-			Print(ctx, stdio.Stdout, cmd.Field, empty, resources...)
+			Print(ctx, stdio.Stdout, []string(cmd.Field), empty, resources...)
 	} else {
 		return fmt.Errorf("no resources specified for deletion")
 	}
@@ -722,5 +721,5 @@ func (cmd *ResourceCreateCmd[R]) Run(ctx context.Context, stdio config.Stdio, sa
 	}
 	return cmd.Output.
 		WithDefault(PrinterTypeKeyValue).
-		Print(ctx, stdio.Stdout, cmd.Field, empty, resources...)
+		Print(ctx, stdio.Stdout, []string(cmd.Field), empty, resources...)
 }

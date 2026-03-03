@@ -27,11 +27,11 @@ func Diff(ctx context.Context, out io.Writer, format FormatOpts, empty resource.
 	switch format.Output.Type {
 	case "", PrinterTypeKeyValue:
 		start := &bytes.Buffer{}
-		if err := printKV(ctx, start, format.Field, before...); err != nil {
+		if err := printKV(ctx, start, []string(format.Field), before...); err != nil {
 			return err
 		}
 		end := &bytes.Buffer{}
-		if err := printKV(ctx, end, format.Field, after...); err != nil {
+		if err := printKV(ctx, end, []string(format.Field), after...); err != nil {
 			return err
 		}
 
@@ -57,11 +57,11 @@ func Diff(ctx context.Context, out io.Writer, format FormatOpts, empty resource.
 
 	case PrinterTypeTable:
 		start := &bytes.Buffer{}
-		if err := printTable(ctx, start, format.Field, empty, before...); err != nil {
+		if err := printTable(ctx, start, []string(format.Field), empty, before...); err != nil {
 			return err
 		}
 		end := &bytes.Buffer{}
-		if err := printTable(ctx, end, format.Field, empty, after...); err != nil {
+		if err := printTable(ctx, end, []string(format.Field), empty, after...); err != nil {
 			return err
 		}
 
@@ -83,7 +83,7 @@ func Diff(ctx context.Context, out io.Writer, format FormatOpts, empty resource.
 		return nil
 
 	default:
-		return format.Output.Print(ctx, out, format.Field, nil, after...)
+		return format.Output.Print(ctx, out, []string(format.Field), nil, after...)
 	}
 }
 

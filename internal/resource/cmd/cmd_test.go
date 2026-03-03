@@ -24,6 +24,7 @@ import (
 	"unikraft.com/cli/internal/config"
 	"unikraft.com/cli/internal/resource"
 	resourcet "unikraft.com/cli/internal/resource/testing"
+	xkong "unikraft.com/cli/internal/x/kong"
 )
 
 var baseTestStore = map[string]resourcet.TestResource{
@@ -89,7 +90,7 @@ func TestList(t *testing.T) {
 		var out bytes.Buffer
 		cmd := &ResourceListCmd[resourcet.TestResource]{
 			FormatOpts: FormatOpts{
-				Field: []string{"name", "id"},
+				Field: xkong.HyphenStrings{"name", "id"},
 			},
 		}
 		err := cmd.Run(ctx, testStdio(&out), sandbox)
@@ -109,6 +110,23 @@ func TestList(t *testing.T) {
 		assert.Contains(t, output, "test1")
 		assert.Contains(t, output, "id-test1")
 		assert.NotContains(t, output, "test2")
+	})
+
+	t.Run("field exclude", func(t *testing.T) {
+		var out bytes.Buffer
+		cmd := &ResourceListCmd[resourcet.TestResource]{
+			FormatOpts: FormatOpts{
+				Field:  xkong.HyphenStrings{"-url"},
+				Output: Printer{Type: PrinterTypeKeyValue},
+			},
+		}
+		err := cmd.Run(ctx, testStdio(&out), sandbox)
+		require.NoError(t, err)
+
+		output := out.String()
+		assert.Contains(t, output, "name:")
+		assert.Contains(t, output, "id:")
+		assert.NotContains(t, output, "url:")
 	})
 
 	t.Run("filter", func(t *testing.T) {
@@ -225,7 +243,7 @@ func TestListOutput(t *testing.T) {
 	})
 
 	t.Run("quiet field", func(t *testing.T) {
-		output := runList(t, FormatOpts{Output: Printer{Type: PrinterTypeQuiet}, Field: []string{"id", "url"}})
+		output := runList(t, FormatOpts{Output: Printer{Type: PrinterTypeQuiet}, Field: xkong.HyphenStrings{"id", "url"}})
 		assert.Equal(t, "id-test1 https://example.com\nid-test2 https://example.org\n", output)
 	})
 
@@ -248,7 +266,7 @@ func TestTableNestedFieldSelection(t *testing.T) {
 		Name: []string{"test1"},
 		FormatOpts: FormatOpts{
 			Output: Printer{Type: PrinterTypeTable},
-			Field:  []string{"name", "authors"},
+			Field:  xkong.HyphenStrings{"name", "authors"},
 		},
 	}
 	err = cmd.Run(ctx, testStdio(&out), sandbox)
@@ -323,7 +341,7 @@ func TestGet(t *testing.T) {
 		cmd := &ResourceGetCmd[resourcet.TestResource]{
 			Name: []string{"test1"},
 			FormatOpts: FormatOpts{
-				Field: []string{"id", "url"},
+				Field: xkong.HyphenStrings{"id", "url"},
 			},
 		}
 		err := cmd.Run(ctx, testStdio(&out), sandbox)
@@ -1006,7 +1024,7 @@ func TestValueCallback(t *testing.T) {
 		var out bytes.Buffer
 		cmd := &ResourceListCmd[resourcet.TestResource]{
 			FormatOpts: FormatOpts{
-				Field: []string{"+lazy"},
+				Field: xkong.HyphenStrings{"+lazy"},
 			},
 		}
 		err := cmd.Run(ctx, testStdio(&out), sandbox)
@@ -1028,7 +1046,7 @@ func TestValueCallback(t *testing.T) {
 		cmd := &ResourceGetCmd[resourcet.TestResource]{
 			Name: []string{"res1"},
 			FormatOpts: FormatOpts{
-				Field: []string{"+lazy"},
+				Field: xkong.HyphenStrings{"+lazy"},
 			},
 		}
 		err := cmd.Run(ctx, testStdio(&out), sandbox)
@@ -1047,7 +1065,7 @@ func TestValueCallback(t *testing.T) {
 		cmd := &ResourceListCmd[resourcet.TestResource]{
 			FormatOpts: FormatOpts{
 				Output: Printer{Type: PrinterTypeQuiet},
-				Field:  []string{"name", "lazy"},
+				Field:  xkong.HyphenStrings{"name", "lazy"},
 			},
 		}
 		err := cmd.Run(ctx, testStdio(&out), sandbox)
