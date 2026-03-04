@@ -30,7 +30,12 @@ func ParseKey(s string) Key {
 	}
 
 	name, id := parseKeyValue(key)
-	return Key{Metro: metro, Name: name, UUID: id}
+	return Key{
+		Metro:   metro,
+		Name:    name,
+		UUID:    id,
+		Display: s,
+	}
 }
 
 func parseKeyValue(key string) (name string, id string) {
@@ -71,12 +76,17 @@ func (k Key) Ref() group.Ref {
 }
 
 func (k Key) String() string {
+	if k.Display != "" {
+		return k.Display
+	}
+	return k.Canonical()
+}
+
+func (k Key) Canonical() string {
 	s := ""
 	if k.Metro != "" {
 		s += k.Metro + MetroKeySeparator
 	}
-	// FIXME: ideally format using the same as we parsed, even if we have both
-	// this is a bit tricky, since we construct keys in a few places
 	if k.Name != "" {
 		if requiresNamePrefix(k.Name) {
 			s += KeyNamePrefix

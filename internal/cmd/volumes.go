@@ -6,6 +6,7 @@
 package cmd
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"slices"
@@ -188,6 +189,8 @@ type Volume struct {
 
 	Volume platform.Volume `field:"-" json:"volume"`
 	Metro  *config.Metro   `field:"-" json:"metro"`
+
+	key multimetro.Key
 }
 
 func (Volume) Type() resource.Type {
@@ -197,16 +200,8 @@ func (Volume) Type() resource.Type {
 	}
 }
 
-func (i Volume) key() multimetro.Key {
-	return multimetro.Key{
-		Metro: i.MetroName,
-		Name:  i.Name,
-		UUID:  i.UUID,
-	}
-}
-
 func (i Volume) Key() resource.Key {
-	return i.key()
+	return i.key
 }
 
 func (i Volume) Raw() any {
@@ -230,7 +225,7 @@ func (Volume) List(ctx context.Context) ([]resource.Resource, error) {
 		}
 		var results []resource.Resource
 		for _, volume := range resp.Data.Volumes {
-			result, err := Volume{}.load(volume, &c.Metro)
+			result, err := Volume{}.load(nil, volume, &c.Metro)
 			if err != nil {
 				return nil, err
 			}
@@ -254,11 +249,11 @@ func (Volume) Get(ctx context.Context, keys []string) ([]resource.Resource, erro
 		}
 		var found []group.Ref
 		var results []resource.Resource
-		for _, volume := range resp.Data.Volumes {
+		for i, volume := range resp.Data.Volumes {
 			if volume.Status == nil || *volume.Status != platform.ResponseStatusSUCCESS {
 				continue
 			}
-			result, err := Volume{}.load(volume, &c.Metro)
+			result, err := Volume{}.load(&refs[i], volume, &c.Metro)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -273,10 +268,23 @@ func (Volume) Get(ctx context.Context, keys []string) ([]resource.Resource, erro
 	})
 }
 
-func (Volume) load(volume platform.Volume, metro *config.Metro) (Volume, error) {
+func (Volume) load(ref *group.Ref, volume platform.Volume, metro *config.Metro) (Volume, error) {
+	if ref == nil {
+		ref = &group.Ref{
+			Metro: metro.Name,
+			Name:  ptr.ZeroIfNil(volume.Name),
+			UUID:  ptr.ZeroIfNil(volume.Uuid),
+		}
+	} else {
+		ref.Metro = cmp.Or(ref.Metro, metro.Name)
+		ref.Name = cmp.Or(ref.Name, ptr.ZeroIfNil(volume.Name))
+		ref.UUID = cmp.Or(ref.UUID, ptr.ZeroIfNil(volume.Uuid))
+	}
+
 	result := Volume{
 		Volume: volume,
 		Metro:  metro,
+		key:    multimetro.Key(*ref),
 	}
 	err := mirror.Mirror(result, &result)
 	if err != nil {
@@ -289,7 +297,7 @@ func (Volume) Delete(ctx context.Context, targets []resource.Resource) error {
 	keys := make(multimetro.Keys, 0, len(targets))
 	for _, target := range targets {
 		volume := target.(Volume)
-		keys = append(keys, volume.key())
+		keys = append(keys, volume.key)
 	}
 
 	g, err := multimetro.NewClient(ctx)
@@ -377,7 +385,7 @@ func (Volume) Edit(ctx context.Context, target resource.Resource, fields []resou
 	if err != nil {
 		return nil, err
 	}
-	err = group.DoMetro(ctx, g, volume.key().Metro, func(ctx context.Context, c multimetro.MetroClient) error {
+	err = group.DoMetro(ctx, g, volume.key.Metro, func(ctx context.Context, c multimetro.MetroClient) error {
 		log.G(ctx).Trace().Msg("updating volume")
 		_, err := c.UpdateVolumes(ctx, reqs)
 		return err

@@ -192,7 +192,7 @@ func (c *RunCmd) Run(ctx context.Context, stdio config.Stdio, sandbox *resource.
 			if !ok {
 				return fmt.Errorf("unexpected resource type %T", res)
 			}
-			keys = append(keys, instance.key())
+			keys = append(keys, instance.key)
 		}
 
 		ctx, cancel := context.WithCancel(ctx)

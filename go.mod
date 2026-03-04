@@ -1,6 +1,6 @@
 module unikraft.com/cli
 
-go 1.25.5
+go 1.25.7
 
 require (
 	github.com/MakeNowJust/heredoc v1.0.0
@@ -40,7 +40,7 @@ require (
 	gotest.tools/v3 v3.5.2
 	mvdan.cc/sh/v3 v3.12.0
 	sigs.k8s.io/yaml v1.6.0
-	unikraft.com/cloud/sdk v0.0.0-20260213101218-8c7266d6d782
+	unikraft.com/cloud/sdk v0.0.0-20260304174346-95a9a57f1328
 	unikraft.com/x/colors v0.0.0-20260116231133-1da0081544af
 	unikraft.com/x/fingerprint v0.0.0-20260126094137-ab6e717e5679
 	unikraft.com/x/guesstermwidth v0.0.0-20260205230841-e14b7e4a7c4c
@@ -137,6 +137,7 @@ require (
 	google.golang.org/grpc v1.78.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	tailscale.com v1.94.1 // indirect
+	unikraft.com/x/joinerrgroup v0.0.0-20260220150535-dbc51abe4158 // indirect
 )
 
 // Includes a fix for stripping hyperlinks

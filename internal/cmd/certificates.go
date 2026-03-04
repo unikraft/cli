@@ -6,6 +6,7 @@
 package cmd
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 
@@ -57,6 +58,8 @@ type Certificate struct {
 
 	Certificate platform.Certificate `field:"-" json:"certificate"`
 	Metro       *config.Metro        `field:"-" json:"metro"`
+
+	key multimetro.Key
 }
 
 func (Certificate) Type() resource.Type {
@@ -66,16 +69,8 @@ func (Certificate) Type() resource.Type {
 	}
 }
 
-func (c Certificate) key() multimetro.Key {
-	return multimetro.Key{
-		Metro: c.MetroName,
-		Name:  c.Name,
-		UUID:  c.UUID,
-	}
-}
-
 func (c Certificate) Key() resource.Key {
-	return c.key()
+	return c.key
 }
 
 func (c Certificate) Raw() any {
@@ -99,7 +94,7 @@ func (Certificate) List(ctx context.Context) ([]resource.Resource, error) {
 		}
 		var results []resource.Resource
 		for _, certificate := range resp.Data.Certificates {
-			result, err := Certificate{}.load(certificate, &c.Metro)
+			result, err := Certificate{}.load(nil, certificate, &c.Metro)
 			if err != nil {
 				return nil, err
 			}
@@ -122,11 +117,11 @@ func (Certificate) Get(ctx context.Context, keys []string) ([]resource.Resource,
 		}
 		var found []group.Ref
 		var results []resource.Resource
-		for _, certificate := range resp.Data.Certificates {
+		for i, certificate := range resp.Data.Certificates {
 			if certificate.Status == nil || *certificate.Status != "success" {
 				continue
 			}
-			result, err := Certificate{}.load(certificate, &c.Metro)
+			result, err := Certificate{}.load(&refs[i], certificate, &c.Metro)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -141,10 +136,23 @@ func (Certificate) Get(ctx context.Context, keys []string) ([]resource.Resource,
 	})
 }
 
-func (Certificate) load(certificate platform.Certificate, metro *config.Metro) (Certificate, error) {
+func (Certificate) load(ref *group.Ref, certificate platform.Certificate, metro *config.Metro) (Certificate, error) {
+	if ref == nil {
+		ref = &group.Ref{
+			Metro: metro.Name,
+			Name:  ptr.ZeroIfNil(certificate.Name),
+			UUID:  ptr.ZeroIfNil(certificate.Uuid),
+		}
+	} else {
+		ref.Metro = cmp.Or(ref.Metro, metro.Name)
+		ref.Name = cmp.Or(ref.Name, ptr.ZeroIfNil(certificate.Name))
+		ref.UUID = cmp.Or(ref.UUID, ptr.ZeroIfNil(certificate.Uuid))
+	}
+
 	result := Certificate{
 		Certificate: certificate,
 		Metro:       metro,
+		key:         multimetro.Key(*ref),
 	}
 	err := mirror.Mirror(result, &result)
 	if err != nil {
@@ -157,7 +165,7 @@ func (Certificate) Delete(ctx context.Context, targets []resource.Resource) erro
 	keys := make(multimetro.Keys, 0, len(targets))
 	for _, target := range targets {
 		certificate := target.(Certificate)
-		keys = append(keys, certificate.key())
+		keys = append(keys, certificate.key)
 	}
 
 	g, err := multimetro.NewClient(ctx)

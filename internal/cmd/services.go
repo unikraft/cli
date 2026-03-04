@@ -6,6 +6,7 @@
 package cmd
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"strconv"
@@ -63,6 +64,8 @@ type ServiceGroup struct {
 
 	ServiceGroup platform.ServiceGroup `field:"-" json:"service_group"`
 	Metro        *config.Metro         `field:"-" json:"metro"`
+
+	key multimetro.Key
 }
 
 type Service struct {
@@ -129,16 +132,8 @@ func (ServiceGroup) Type() resource.Type {
 	}
 }
 
-func (s ServiceGroup) key() multimetro.Key {
-	return multimetro.Key{
-		Metro: s.MetroName,
-		Name:  s.Name,
-		UUID:  s.UUID,
-	}
-}
-
 func (s ServiceGroup) Key() resource.Key {
-	return s.key()
+	return s.key
 }
 
 func (s ServiceGroup) Raw() any {
@@ -186,7 +181,7 @@ func (ServiceGroup) List(ctx context.Context) ([]resource.Resource, error) {
 		}
 		var results []resource.Resource
 		for _, serviceGroup := range resp.Data.ServiceGroups {
-			result, err := ServiceGroup{}.load(serviceGroup, &c.Metro)
+			result, err := ServiceGroup{}.load(nil, serviceGroup, &c.Metro)
 			if err != nil {
 				return nil, err
 			}
@@ -209,11 +204,11 @@ func (ServiceGroup) Get(ctx context.Context, keys []string) ([]resource.Resource
 		}
 		var found []group.Ref
 		var results []resource.Resource
-		for _, serviceGroup := range resp.Data.ServiceGroups {
+		for i, serviceGroup := range resp.Data.ServiceGroups {
 			if serviceGroup.Status == nil || *serviceGroup.Status != platform.ResponseStatusSUCCESS {
 				continue
 			}
-			result, err := ServiceGroup{}.load(serviceGroup, &c.Metro)
+			result, err := ServiceGroup{}.load(&refs[i], serviceGroup, &c.Metro)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -228,10 +223,23 @@ func (ServiceGroup) Get(ctx context.Context, keys []string) ([]resource.Resource
 	})
 }
 
-func (ServiceGroup) load(serviceGroup platform.ServiceGroup, metro *config.Metro) (ServiceGroup, error) {
+func (ServiceGroup) load(ref *group.Ref, serviceGroup platform.ServiceGroup, metro *config.Metro) (ServiceGroup, error) {
+	if ref == nil {
+		ref = &group.Ref{
+			Metro: metro.Name,
+			Name:  ptr.ZeroIfNil(serviceGroup.Name),
+			UUID:  ptr.ZeroIfNil(serviceGroup.Uuid),
+		}
+	} else {
+		ref.Metro = cmp.Or(ref.Metro, metro.Name)
+		ref.Name = cmp.Or(ref.Name, ptr.ZeroIfNil(serviceGroup.Name))
+		ref.UUID = cmp.Or(ref.UUID, ptr.ZeroIfNil(serviceGroup.Uuid))
+	}
+
 	result := ServiceGroup{
 		ServiceGroup: serviceGroup,
 		Metro:        metro,
+		key:          multimetro.Key(*ref),
 	}
 	err := mirror.Mirror(result, &result)
 	if err != nil {
@@ -244,7 +252,7 @@ func (ServiceGroup) Delete(ctx context.Context, targets []resource.Resource) err
 	keys := make(multimetro.Keys, len(targets))
 	for i, target := range targets {
 		sg := target.(ServiceGroup)
-		keys[i] = sg.key()
+		keys[i] = sg.key
 	}
 
 	g, err := multimetro.NewClient(ctx)
@@ -348,7 +356,7 @@ func (ServiceGroup) Edit(ctx context.Context, target resource.Resource, fields [
 	if err != nil {
 		return nil, err
 	}
-	err = group.DoMetro(ctx, g, sg.key().Metro, func(ctx context.Context, metroClient multimetro.MetroClient) error {
+	err = group.DoMetro(ctx, g, sg.key.Metro, func(ctx context.Context, metroClient multimetro.MetroClient) error {
 		log.G(ctx).Trace().Msg("updating service group")
 		_, err := metroClient.UpdateServiceGroups(ctx, reqs)
 		return err
