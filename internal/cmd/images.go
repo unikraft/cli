@@ -201,7 +201,7 @@ func (ImageEntry) List(ctx context.Context) ([]resource.Resource, error) {
 	}
 	return group.CollectAllSlices(ctx, g, func(ctx context.Context, c multimetro.MetroClient) ([]resource.Resource, error) {
 		log.G(ctx).Trace().Msg("listing images")
-		resp, err := c.GetImages(ctx, platform.TagOrDigest{}, "")
+		resp, err := c.GetImages(ctx, platform.TagOrDigest{}, new(""))
 		if err != nil {
 			return nil, err
 		}
@@ -241,7 +241,7 @@ func (ImageEntry) Get(ctx context.Context, keys []string) ([]resource.Resource, 
 
 	return group.CollectRefsSlices(ctx, g, multimetroKeys.Refs(), func(ctx context.Context, c multimetro.MetroClient, refs group.Refs) ([]resource.Resource, group.Refs, error) {
 		log.G(ctx).Trace().Msg("getting images")
-		resp, err := c.GetImages(ctx, platform.TagOrDigest{}, "")
+		resp, err := c.GetImages(ctx, platform.TagOrDigest{}, new(""))
 		if err != nil && !platform.ErrorContainsOnly(err, platform.APIHTTPErrorNotFound) {
 			return nil, nil, err
 		}

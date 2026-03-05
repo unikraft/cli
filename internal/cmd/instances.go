@@ -286,7 +286,7 @@ func (Instance) List(ctx context.Context) ([]resource.Resource, error) {
 	}
 	return group.CollectAllSlices(ctx, g, func(ctx context.Context, c multimetro.MetroClient) ([]resource.Resource, error) {
 		log.G(ctx).Trace().Msg("listing instances")
-		resp, err := c.GetInstances(ctx, nil, true)
+		resp, err := c.GetInstances(ctx, nil, new(true))
 		if err != nil {
 			return nil, err
 		}
@@ -313,7 +313,7 @@ func (Instance) Get(ctx context.Context, keys []string) ([]resource.Resource, er
 	}
 	return group.CollectRefsSlices(ctx, g, multimetro.ParseKeys(keys).Refs(), func(ctx context.Context, c multimetro.MetroClient, refs group.Refs) ([]resource.Resource, group.Refs, error) {
 		log.G(ctx).Trace().Msg("getting instances")
-		resp, err := c.GetInstances(ctx, refs.NameOrUUIDs(), true)
+		resp, err := c.GetInstances(ctx, refs.NameOrUUIDs(), new(true))
 		if err != nil && !platform.ErrorContainsOnly(err, platform.APIHTTPErrorNotFound) {
 			return nil, nil, err
 		}
@@ -483,7 +483,7 @@ func (Instance) Create(ctx context.Context, fields []resource.Field) ([]resource
 		case "metro":
 			metro = field.Create.Set.(string)
 		case "image":
-			req.Image = field.Create.Set.(string)
+			req.Image = new(field.Create.Set.(string))
 		case "runtime.args":
 			req.Args = field.Create.Set.([]string)
 		case "runtime.env":

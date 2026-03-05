@@ -180,7 +180,7 @@ func (ServiceGroup) List(ctx context.Context) ([]resource.Resource, error) {
 	}
 	return group.CollectAllSlices(ctx, g, func(ctx context.Context, c multimetro.MetroClient) ([]resource.Resource, error) {
 		log.G(ctx).Trace().Msg("listing service groups")
-		resp, err := c.GetServiceGroups(ctx, nil, true)
+		resp, err := c.GetServiceGroups(ctx, nil, new(true))
 		if err != nil {
 			return nil, err
 		}
@@ -203,7 +203,7 @@ func (ServiceGroup) Get(ctx context.Context, keys []string) ([]resource.Resource
 	}
 	return group.CollectRefsSlices(ctx, g, multimetro.ParseKeys(keys).Refs(), func(ctx context.Context, c multimetro.MetroClient, refs group.Refs) ([]resource.Resource, group.Refs, error) {
 		log.G(ctx).Trace().Msg("getting service groups")
-		resp, err := c.GetServiceGroups(ctx, refs.NameOrUUIDs(), true)
+		resp, err := c.GetServiceGroups(ctx, refs.NameOrUUIDs(), new(true))
 		if err != nil && !platform.ErrorContainsOnly(err, platform.APIHTTPErrorNotFound) {
 			return nil, nil, err
 		}
