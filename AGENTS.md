@@ -37,3 +37,4 @@ This repo contains the Go-based Unikraft CLI. Use this file for contributor-faci
   - Use the `slices`/`maps`/`cmp`/`iter` packages for common operations on slices/maps/comparisons/iteration.
   - Use `for i := range <n>` for iterating a fixed number of times.
   - No need to use `i := i` in loops to capture loop variables for closures; Go 1.21+ captures them by default.
+  - Prefer `new(value)` to get pointers to literals now that Go 1.26 allows expressions in `new`.
