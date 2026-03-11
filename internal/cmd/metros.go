@@ -18,7 +18,9 @@ import (
 	"unikraft.com/cli/internal/resource/cmd"
 	"unikraft.com/cli/internal/types"
 	"unikraft.com/cli/internal/xsync"
+	"unikraft.com/cloud/sdk/platform"
 	"unikraft.com/x/kingkong"
+	"unikraft.com/x/ptr"
 )
 
 type MetrosCmd struct {
@@ -56,6 +58,20 @@ func (i Metro) Fields() ([]resource.Field, error) {
 	}
 
 	baseClient := httpclient.GetClient(i.Insecure)
+
+	quotas := &metroQuotas{
+		httpClient: baseClient,
+		endpoint:   i.Endpoint,
+	}
+	quotaFields, err := resource.FieldsFromStruct(quotas)
+	if err != nil {
+		return nil, err
+	}
+	fields = append(fields, resource.Field{
+		Name:      "quotas",
+		Verbosity: resource.FieldVerbosityLong,
+		Subfields: quotaFields,
+	})
 
 	u, _ := url.Parse(i.Endpoint)
 	host := ""
@@ -228,6 +244,116 @@ func (Metro) Examples() map[cmd.CmdType][]kingkong.Example {
 				Description: "List metros with connection status",
 				Commands:    []string{"unikraft metro list -f +status"},
 			},
+			{
+				Description: "List metros with quota usage",
+				Commands:    []string{"unikraft metro list -f +quotas"},
+			},
 		},
 	}
+}
+
+type metroQuotas struct {
+	Instances struct {
+		Active types.Usage[int64] `field:",long"`
+		Total  types.Usage[int64] `field:",long"`
+	}
+	Vcpus struct {
+		Active types.Usage[int64] `field:",long"`
+	}
+	Memory struct {
+		Active types.Usage[types.SizeMebibytes] `field:",long"`
+	}
+	Services struct {
+		Groups  types.Usage[int64] `field:",long"`
+		Exposed types.Usage[int64] `field:",long"`
+	}
+	Volumes struct {
+		Count types.Usage[int64]               `field:",long"`
+		Total types.Usage[types.SizeMebibytes] `field:",long"`
+	}
+	Limits struct {
+		Vcpus     types.Range[int64]               `field:",long"`
+		Memory    types.Range[types.SizeMebibytes] `field:",long"`
+		Volume    types.Range[types.SizeMebibytes] `field:",long"`
+		Autoscale types.Range[int64]               `field:",long"`
+	}
+
+	httpClient *http.Client
+	endpoint   string
+}
+
+func (q *metroQuotas) Lazy(ctx context.Context) (any, error) {
+	profile, err := config.G(ctx).CurrentProfile()
+	if err != nil {
+		return nil, err
+	}
+
+	client := platform.NewClient(
+		platform.WithHTTPClient(q.httpClient),
+		platform.WithToken(profile.Token),
+		platform.WithDefaultMetro(q.endpoint),
+	)
+
+	resp, err := client.GetUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if resp.Data == nil || len(resp.Data.Quotas) == 0 {
+		return new(metroQuotas), nil
+	}
+
+	quotas := &resp.Data.Quotas[0]
+
+	result := new(metroQuotas)
+	result.Instances.Active = types.Usage[int64]{
+		Used:  ptr.ZeroIfNil(quotas.Used.LiveInstances),
+		Limit: ptr.ZeroIfNil(quotas.Hard.LiveInstances),
+	}
+	result.Instances.Total = types.Usage[int64]{
+		Used:  ptr.ZeroIfNil(quotas.Used.Instances),
+		Limit: ptr.ZeroIfNil(quotas.Hard.Instances),
+	}
+	result.Vcpus.Active = types.Usage[int64]{
+		Used:  ptr.ZeroIfNil(quotas.Used.LiveVcpus),
+		Limit: ptr.ZeroIfNil(quotas.Hard.LiveVcpus),
+	}
+	result.Memory.Active = types.Usage[types.SizeMebibytes]{
+		Used:  types.SizeMebibytes(ptr.ZeroIfNil(quotas.Used.LiveMemoryMb)),
+		Limit: types.SizeMebibytes(ptr.ZeroIfNil(quotas.Hard.LiveMemoryMb)),
+	}
+	result.Services.Groups = types.Usage[int64]{
+		Used:  ptr.ZeroIfNil(quotas.Used.ServiceGroups),
+		Limit: ptr.ZeroIfNil(quotas.Hard.ServiceGroups),
+	}
+	result.Services.Exposed = types.Usage[int64]{
+		Used:  ptr.ZeroIfNil(quotas.Used.Services),
+		Limit: ptr.ZeroIfNil(quotas.Hard.Services),
+	}
+	result.Volumes.Count = types.Usage[int64]{
+		Used:  ptr.ZeroIfNil(quotas.Used.Volumes),
+		Limit: ptr.ZeroIfNil(quotas.Hard.Volumes),
+	}
+	result.Volumes.Total = types.Usage[types.SizeMebibytes]{
+		Used:  types.SizeMebibytes(ptr.ZeroIfNil(quotas.Used.TotalVolumeMb)),
+		Limit: types.SizeMebibytes(ptr.ZeroIfNil(quotas.Hard.TotalVolumeMb)),
+	}
+
+	result.Limits.Vcpus = types.Range[int64]{
+		Min: ptr.ZeroIfNil(quotas.Limits.MinVcpus),
+		Max: ptr.ZeroIfNil(quotas.Limits.MaxVcpus),
+	}
+	result.Limits.Memory = types.Range[types.SizeMebibytes]{
+		Min: types.SizeMebibytes(ptr.ZeroIfNil(quotas.Limits.MinMemoryMb)),
+		Max: types.SizeMebibytes(ptr.ZeroIfNil(quotas.Limits.MaxMemoryMb)),
+	}
+	result.Limits.Volume = types.Range[types.SizeMebibytes]{
+		Min: types.SizeMebibytes(ptr.ZeroIfNil(quotas.Limits.MinVolumeMb)),
+		Max: types.SizeMebibytes(ptr.ZeroIfNil(quotas.Limits.MaxVolumeMb)),
+	}
+	result.Limits.Autoscale = types.Range[int64]{
+		Min: ptr.ZeroIfNil(quotas.Limits.MinAutoscaleSize),
+		Max: ptr.ZeroIfNil(quotas.Limits.MaxAutoscaleSize),
+	}
+
+	return result, nil
 }

@@ -7,6 +7,7 @@ package resource
 
 import (
 	"cmp"
+	"context"
 	"encoding"
 	"fmt"
 	"reflect"
@@ -16,6 +17,7 @@ import (
 
 	"github.com/ettle/strcase"
 	"github.com/mitchellh/mapstructure"
+	"unikraft.com/cli/internal/xsync"
 )
 
 // FieldsFromStruct is a helper that converts a struct into a slice of Fields
@@ -25,7 +27,18 @@ func FieldsFromStruct(s any) (fields []Field, err error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// Check if the struct implements LazyLoader
+	if loader, ok := s.(LazyLoader); ok {
+		wireLazyCallbacks(loader, field.Subfields)
+	}
+
 	return field.Subfields, nil
+}
+
+// LazyLoader is implemented by types whose field values should be loaded lazily.
+type LazyLoader interface {
+	Lazy(ctx context.Context) (any, error)
 }
 
 func fieldFromStruct(pf *ParsedField, v reflect.Value) (field *Field, err error) {
@@ -273,4 +286,62 @@ func DecodeStruct(input any, output any) error {
 		return err
 	}
 	return decoder.Decode(input)
+}
+
+// wireLazyCallbacks sets up ValueCallbacks on all fields for a LazyLoader.
+func wireLazyCallbacks(loader LazyLoader, fields []Field) {
+	loadFields := xsync.OnceCtxValues(func(ctx context.Context) ([]Field, error) {
+		populated, err := loader.Lazy(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		populatedFields, err := fieldFromStruct(nil, reflect.ValueOf(populated))
+		if err != nil {
+			return nil, err
+		}
+		return populatedFields.Subfields, nil
+	})
+
+	wireFieldCallbacks(loadFields, fields)
+}
+
+// wireFieldCallbacks recursively sets ValueCallbacks on fields.
+func wireFieldCallbacks(loadFields func(context.Context) ([]Field, error), fields []Field) {
+	for i := range fields {
+		field := &fields[i]
+		name := field.Name
+
+		// Set the ValueCallback for this field
+		field.ValueCallback = func(ctx context.Context) (any, error) {
+			clonedFields, err := loadFields(ctx)
+			if err != nil {
+				return nil, err
+			}
+			for _, cf := range clonedFields {
+				if cf.Name == name {
+					return cf.Value, nil
+				}
+			}
+			return nil, nil
+		}
+		field.Value = nil // Clear the value so the callback is used
+
+		// Recursively wire up subfields with a nested loader
+		if len(field.Subfields) > 0 {
+			nestedLoader := func(ctx context.Context) ([]Field, error) {
+				clonedFields, err := loadFields(ctx)
+				if err != nil {
+					return nil, err
+				}
+				for _, cf := range clonedFields {
+					if cf.Name == name {
+						return cf.Subfields, nil
+					}
+				}
+				return nil, nil
+			}
+			wireFieldCallbacks(nestedLoader, field.Subfields)
+		}
+	}
 }

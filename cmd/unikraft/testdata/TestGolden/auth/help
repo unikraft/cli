@@ -260,6 +260,12 @@ stdout:
 	  country
 	  endpoint
 	  insecure
+	  quotas, quotas.instances, quotas.instances.active, quotas.instances.total,
+	  quotas.vcpus, quotas.vcpus.active, quotas.memory, quotas.memory.active,
+	  quotas.services, quotas.services.groups, quotas.services.exposed,
+	  quotas.volumes, quotas.volumes.count, quotas.volumes.total, quotas.limits,
+	  quotas.limits.vcpus, quotas.limits.memory, quotas.limits.volume,
+	  quotas.limits.autoscale
 	  status, status.ip, status.ping, status.online
 
 	Global flags:
@@ -302,6 +308,12 @@ stdout:
 	  country
 	  endpoint
 	  insecure
+	  quotas, quotas.instances, quotas.instances.active, quotas.instances.total,
+	  quotas.vcpus, quotas.vcpus.active, quotas.memory, quotas.memory.active,
+	  quotas.services, quotas.services.groups, quotas.services.exposed,
+	  quotas.volumes, quotas.volumes.count, quotas.volumes.total, quotas.limits,
+	  quotas.limits.vcpus, quotas.limits.memory, quotas.limits.volume,
+	  quotas.limits.autoscale
 	  status, status.ip, status.ping, status.online
 
 	Flags:
@@ -350,11 +362,20 @@ stdout:
 	  # List metros with connection status
 	  unikraft metro list -f +status
 
+	  # List metros with quota usage
+	  unikraft metro list -f +quotas
+
 	Fields:
 	  name
 	  country
 	  endpoint
 	  insecure
+	  quotas, quotas.instances, quotas.instances.active, quotas.instances.total,
+	  quotas.vcpus, quotas.vcpus.active, quotas.memory, quotas.memory.active,
+	  quotas.services, quotas.services.groups, quotas.services.exposed,
+	  quotas.volumes, quotas.volumes.count, quotas.volumes.total, quotas.limits,
+	  quotas.limits.vcpus, quotas.limits.memory, quotas.limits.volume,
+	  quotas.limits.autoscale
 	  status, status.ip, status.ping, status.online
 
 	Flags:
