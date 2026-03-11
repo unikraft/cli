@@ -8,6 +8,7 @@ package cmd
 import (
 	"cmp"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -118,6 +119,7 @@ type Instance struct {
 	Replicas    int64           `field:",invisible" create:"set"`
 	WaitTimeout types.DurationS `field:",invisible" create:"set"`
 	Features    []string        `field:",invisible" create:"set"`
+	Vsock       bool            `field:",invisible" create:"set" edit:"set"`
 
 	Instance platform.Instance `field:"-" json:"instance"`
 	Metro    *config.Metro     `field:"-" json:"metro"`
@@ -464,6 +466,8 @@ func instancePatchSpec(path string, op patchOp, value any) (platform.UpdateInsta
 		return platform.UpdateInstancesRequestItemPropScale_to_zero, map[string]any{"stateful": value.(bool)}
 	case "scale-to-zero.cooldown-time":
 		return platform.UpdateInstancesRequestItemPropScale_to_zero, map[string]any{"cooldown_time_ms": int32(value.(int64))}
+	case "vsock":
+		return "vsock", value.(bool)
 	default:
 		return zero, nil
 	}
@@ -610,8 +614,21 @@ func (Instance) Create(ctx context.Context, fields []resource.Field) ([]resource
 			for _, f := range features {
 				req.Features = append(req.Features, platform.CreateInstanceRequestFeatures(f))
 			}
+		case "vsock":
+			vsock := field.Create.Set.(bool)
+			dt, err := json.Marshal(vsock)
+			if err != nil {
+				return nil, err
+			}
+			if req.AdditionalProperties == nil {
+				req.AdditionalProperties = make(map[string]json.RawMessage)
+			}
+			req.AdditionalProperties["vsock"] = dt
 		}
 	}
+
+	dt, _ := json.Marshal(req)
+	log.G(ctx).Debug().RawJSON("request", dt).Msg("creating instance with request")
 
 	g, err := multimetro.NewClient(ctx)
 	if err != nil {
