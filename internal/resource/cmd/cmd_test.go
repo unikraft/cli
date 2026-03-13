@@ -17,7 +17,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lunixbochs/vtclean"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/yaml"
@@ -397,7 +397,7 @@ func TestListOutput(t *testing.T) {
 
 	t.Run("table", func(t *testing.T) {
 		output := runList(t, FormatOpts{Output: Printer{Type: PrinterTypeTable}})
-		cleaned := vtclean.Clean(output, false)
+		cleaned := ansi.Strip(output)
 		assert.Contains(t, cleaned, "test1")
 		assert.Contains(t, cleaned, "test2")
 		assert.Contains(t, cleaned, "id-test1")
@@ -680,7 +680,7 @@ func TestTableNestedFieldSelection(t *testing.T) {
 	err := cmd.Run(ctx, testStdio(&out), sandbox)
 	require.NoError(t, err)
 
-	cleaned := vtclean.Clean(out.String(), false)
+	cleaned := ansi.Strip(out.String())
 	assert.Contains(t, cleaned, "Alice")
 	assert.Contains(t, cleaned, "alice@example.com")
 }
@@ -802,7 +802,7 @@ func TestFieldVerbosity(t *testing.T) {
 	}
 
 	t.Run("list_short_fields", func(t *testing.T) {
-		output := vtclean.Clean(runList(t, nil), false)
+		output := ansi.Strip(runList(t, nil))
 		assert.Contains(t, output, "test1")
 		assert.Contains(t, output, "id-test1")
 		assert.NotContains(t, output, "hello")

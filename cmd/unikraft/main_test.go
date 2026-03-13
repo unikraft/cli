@@ -29,7 +29,7 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/lunixbochs/vtclean"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/mitchellh/copystructure"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -282,12 +282,12 @@ func (report *report) String() string {
 }
 
 func (report *report) cleanOutput(s string) string {
-	// Normalize CRLF so vtclean doesn't collapse log lines.
+	// Normalize CRLF so ANSI stripping doesn't collapse log lines.
 	s = strings.ReplaceAll(s, "\r\n", "\n")
 	s = strings.ReplaceAll(s, "\r", "\n")
 
 	// remove ANSI escape sequences
-	s = vtclean.Clean(s, false)
+	s = ansi.Strip(s)
 	s = strings.TrimRightFunc(s, unicode.IsSpace)
 	if s == "" {
 		return ""

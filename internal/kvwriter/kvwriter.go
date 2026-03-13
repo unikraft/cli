@@ -14,7 +14,6 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
-	"github.com/lunixbochs/vtclean"
 	"github.com/muesli/termenv"
 
 	xio "unikraft.com/cli/internal/x/io"
@@ -39,7 +38,7 @@ type cell struct {
 }
 
 func (entry cell) width() int {
-	return len(entry.cleankey) + len(entry.split)
+	return ansi.StringWidth(string(entry.cleankey)) + ansi.StringWidth(string(entry.split))
 }
 
 type KeyValueOpt func(*keyValueWriter)
@@ -118,7 +117,7 @@ func (b *keyValueWriter) splitLine(line []byte) (cell, bool) {
 			continue
 		}
 		key = bytes.TrimRightFunc(key, unicode.IsSpace)
-		cleankey := []byte(vtclean.Clean(string(key), false))
+		cleankey := []byte(ansi.Strip(string(key)))
 		return cell{
 			key:      key,
 			cleankey: cleankey,
@@ -177,7 +176,7 @@ func (b *keyValueWriter) flush() error {
 				}
 			}
 
-			padding := max(0, maxKeyLen-(len(cleankey)+len(entry.split))+1)
+			padding := max(0, maxKeyLen-(ansi.StringWidth(string(cleankey))+ansi.StringWidth(string(entry.split)))+1)
 			line := []byte{}
 			if styleSeq != nil {
 				line = append(line, []byte(styleSeq.String())...)

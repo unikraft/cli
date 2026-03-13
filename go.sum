@@ -170,8 +170,6 @@ github.com/in-toto/in-toto-golang v0.10.0 h1:+s2eZQSK3WmWfYV85qXVSBfqgawi/5L02Ma
 github.com/in-toto/in-toto-golang v0.10.0/go.mod h1:wjT4RiyFlLWCmLUJjwB8oZcjaq7HA390aMJcD3xXgmg=
 github.com/invopop/jsonschema v0.13.0 h1:KvpoAJWEjR3uD9Kbm2HWJmqsEaHt8lBUpd0qHcIi21E=
 github.com/invopop/jsonschema v0.13.0/go.mod h1:ffZ5Km5SWWRAIN6wbDXItl95euhFz2uON45H2qjYt+0=
-github.com/jedevc/vtclean v0.0.0-20251216110630-4486acca2b5a h1:hAzNCuiABwEt+PKga1qpfU132pXxqeOrrAtP9LLbKHc=
-github.com/jedevc/vtclean v0.0.0-20251216110630-4486acca2b5a/go.mod h1:pHhQNgMf3btfWnGBVipUOjRYhoOsdGqdm/+2c2E2WMI=
 github.com/josharian/intern v1.0.0/go.mod h1:5DoeVV0s6jJacbCEi61lwdGj/aVlrQvzHFFd8Hwg//Y=
 github.com/jotaen/kong-completion v0.0.12 h1:a9jmSaWgkdAUMQT583UxLIJrO9tfdSmYqcIxrBByjPc=
 github.com/jotaen/kong-completion v0.0.12/go.mod h1:dyIG20e3qq128SUBtF8jzI7YtkfzjWMlgbqkAJd6xHQ=

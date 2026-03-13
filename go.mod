@@ -21,7 +21,6 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/jotaen/kong-completion v0.0.12
 	github.com/juju/errors v1.0.0
-	github.com/lunixbochs/vtclean v1.0.0
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/moby/buildkit v0.27.0-rc2.0.20260205052915-0741dca1a4f5
 	github.com/moby/moby/client v0.2.2
@@ -175,10 +174,3 @@ require (
 	google.golang.org/protobuf v1.36.11 // indirect
 	tailscale.com v1.94.1 // indirect
 )
-
-// Includes a fix for stripping hyperlinks
-// https://github.com/lunixbochs/vtclean/pull/15
-replace github.com/lunixbochs/vtclean => github.com/jedevc/vtclean v0.0.0-20251216110630-4486acca2b5a
-
-// Avoid genproto root module overlap with googleapis/api.
-replace github.com/in-toto/in-toto-golang => github.com/in-toto/in-toto-golang v0.10.0

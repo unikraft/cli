@@ -11,7 +11,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/lunixbochs/vtclean"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/sergi/go-diff/diffmatchpatch"
 	"unikraft.com/cli/internal/kvwriter"
 	"unikraft.com/cli/internal/prettydiff"
@@ -41,8 +41,8 @@ func Diff(ctx context.Context, out io.Writer, format FormatOpts, empty resource.
 			// trying to diff them
 			// NOTE: it would be nice to preserve those in the output, but the diffing
 			// would have to be done differently
-			vtclean.Clean(start.String(), false),
-			vtclean.Clean(end.String(), false),
+			ansi.Strip(start.String()),
+			ansi.Strip(end.String()),
 			false,
 		)
 
@@ -68,8 +68,8 @@ func Diff(ctx context.Context, out io.Writer, format FormatOpts, empty resource.
 		dmp := diffmatchpatch.New()
 		diffs := dmp.DiffMain(
 			// same cleaning as above
-			vtclean.Clean(start.String(), false),
-			vtclean.Clean(end.String(), false),
+			ansi.Strip(start.String()),
+			ansi.Strip(end.String()),
 			false,
 		)
 

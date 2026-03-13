@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/lunixbochs/vtclean"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/sergi/go-diff/diffmatchpatch"
 	"github.com/stretchr/testify/require"
 )
@@ -19,7 +19,7 @@ func TestDiffPrettyText_SingleLineUnchanged(t *testing.T) {
 	diffs := dmp.DiffMain("hello world", "hello world", false)
 
 	result := Render(diffs)
-	clean := vtclean.Clean(result, false)
+	clean := ansi.Strip(result)
 	require.Equal(t, "  hello world\n", clean)
 }
 
@@ -28,7 +28,7 @@ func TestDiffPrettyText_MultiLineUnchanged(t *testing.T) {
 	diffs := dmp.DiffMain("line1\nline2\nline3", "line1\nline2\nline3", false)
 
 	result := Render(diffs)
-	clean := vtclean.Clean(result, false)
+	clean := ansi.Strip(result)
 	require.Equal(t, []string{
 		"  line1",
 		"  line2",
@@ -42,7 +42,7 @@ func TestDiffPrettyText_SingleLineAddition(t *testing.T) {
 	diffs := dmp.DiffMain("foo\n", "foo\nbar\n", false)
 
 	result := Render(diffs)
-	clean := vtclean.Clean(result, false)
+	clean := ansi.Strip(result)
 	require.Equal(t, []string{
 		"  foo",
 		"+ bar",
@@ -54,7 +54,7 @@ func TestDiffPrettyText_SingleLineDeletion(t *testing.T) {
 	diffs := dmp.DiffMain("foo\nbar\n", "foo\n", false)
 
 	result := Render(diffs)
-	clean := vtclean.Clean(result, false)
+	clean := ansi.Strip(result)
 	require.Equal(t, []string{
 		"  foo",
 		"- bar",
@@ -66,7 +66,7 @@ func TestDiffPrettyText_MultiLineChanges(t *testing.T) {
 	diffs := dmp.DiffMain("line1\nline2\nline3\n", "line1\nline2 modified\nline4\n", false)
 
 	result := Render(diffs)
-	clean := vtclean.Clean(result, false)
+	clean := ansi.Strip(result)
 	require.Equal(t, []string{
 		"  line1",
 		"- line2",
@@ -82,7 +82,7 @@ func TestDiffPrettyText_NoTrailingNewline(t *testing.T) {
 	diffs := dmp.DiffMain("line1\nline2", "line1\nline3", false)
 
 	result := Render(diffs)
-	clean := vtclean.Clean(result, false)
+	clean := ansi.Strip(result)
 	require.Equal(t, []string{
 		"  line1",
 		"- line2",
@@ -96,19 +96,19 @@ func TestDiffPrettyText_EmptyStrings(t *testing.T) {
 	// Both empty
 	diffs := dmp.DiffMain("", "", false)
 	result := Render(diffs)
-	clean := vtclean.Clean(result, false)
+	clean := ansi.Strip(result)
 	require.Empty(t, clean)
 
 	// Old empty, new has content
 	diffs = dmp.DiffMain("", "new line\n", false)
 	result = Render(diffs)
-	clean = vtclean.Clean(result, false)
+	clean = ansi.Strip(result)
 	require.Equal(t, "+ new line\n", clean)
 
 	// Old has content, new empty
 	diffs = dmp.DiffMain("old line\n", "", false)
 	result = Render(diffs)
-	clean = vtclean.Clean(result, false)
+	clean = ansi.Strip(result)
 	require.Equal(t, "- old line\n", clean)
 }
 
@@ -133,7 +133,7 @@ func TestDiffPrettyText_InsertBlockBeforeSimilarPrefix(t *testing.T) {
 
 	diffs := dmp.DiffMain(before, after, false)
 	result := Render(diffs)
-	clean := vtclean.Clean(result, false)
+	clean := ansi.Strip(result)
 	require.Equal(t, []string{
 		"  image:        nginx",
 		"+ runtime:",
@@ -160,7 +160,7 @@ func TestDiffPrettyText_EmptyLinesHandling(t *testing.T) {
 
 	diffs := dmp.DiffMain(before, after, false)
 	result := Render(diffs)
-	clean := vtclean.Clean(result, false)
+	clean := ansi.Strip(result)
 	require.Equal(t, []string{
 		"  line1",
 		"+ line2",

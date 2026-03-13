@@ -12,7 +12,6 @@ import (
 	"testing"
 
 	"github.com/charmbracelet/x/ansi"
-	"github.com/lunixbochs/vtclean"
 	"github.com/stretchr/testify/require"
 )
 
@@ -55,7 +54,7 @@ Longer	123
 Name    Value
 Longer  123
 `
-	clean := vtclean.Clean(buf.String(), false)
+	clean := ansi.Strip(buf.String())
 	require.Equal(t, expected, clean)
 }
 

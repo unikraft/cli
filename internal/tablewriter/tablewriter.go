@@ -10,7 +10,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/lunixbochs/vtclean"
+	"github.com/charmbracelet/x/ansi"
 
 	xio "unikraft.com/cli/internal/x/io"
 )
@@ -63,7 +63,7 @@ func (t *tableWriter) Write(p []byte) (n int, err error) {
 		for part := range bytes.SplitSeq(line, []byte("|")) {
 			trimmed := bytes.TrimSpace(part)
 			cells = append(cells, trimmed)
-			cleanCells = append(cleanCells, []byte(vtclean.Clean(string(trimmed), false)))
+			cleanCells = append(cleanCells, []byte(ansi.Strip(string(trimmed))))
 		}
 
 		if t.headers == nil {
@@ -127,7 +127,7 @@ func (t *tableWriter) flushTable() error {
 
 	colWidths := make([]int, len(t.headers))
 	for i, header := range t.cleanheaders {
-		colWidths[i] = len(header)
+		colWidths[i] = ansi.StringWidth(string(header))
 	}
 
 	// Ensure minimum width for separator syntax
@@ -145,7 +145,7 @@ func (t *tableWriter) flushTable() error {
 	for _, row := range t.cleanrows {
 		for i, cell := range row {
 			if i < len(colWidths) {
-				colWidths[i] = max(colWidths[i], len(cell))
+				colWidths[i] = max(colWidths[i], ansi.StringWidth(string(cell)))
 			}
 		}
 	}
@@ -183,7 +183,7 @@ func (t *tableWriter) writeRow(cells [][]byte, colWidths []int, cleanCells [][]b
 	if cleanCells == nil {
 		cleanCells = make([][]byte, len(cells))
 		for i, cell := range cells {
-			cleanCells[i] = []byte(vtclean.Clean(string(cell), false))
+			cleanCells[i] = []byte(ansi.Strip(string(cell)))
 		}
 	}
 
@@ -204,7 +204,7 @@ func (t *tableWriter) writeRow(cells [][]byte, colWidths []int, cleanCells [][]b
 			align = t.alignments[i]
 		}
 
-		cleanLen := len(cleanCell)
+		cleanLen := ansi.StringWidth(string(cleanCell))
 		width := colWidths[i]
 		padding := width - cleanLen
 

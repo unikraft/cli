@@ -29,19 +29,20 @@ stdout:
 $ unikraft instance logs test-$UNIQ_INST
 
 stdout:
-	test/test-<INST> ┏ == BEGIN /etc/unikraft-e2e ==
-	test/test-<INST> │ unikraft-e2e
-	test/test-<INST> │ == END /etc/unikraft-e2e ==
-	test/test-<INST> │ == BEGIN ls /etc/unikraft-e2e ==
-	test/test-<INST> │ /etc/unikraft-e2e
-	test/test-<INST> │ == END ls /etc/unikraft-e2e ==
-	test/test-<INST> │ == BEGIN status ==
-	test/test-<INST> │ UNIKRAFT_E2E_OK
-	test/test-<INST> │ == END status ==
-	test/test-<INST> │ Application exit with 0x0
-	test/test-<INST> │ [    0.000000] reboot: Restarting system
+	test-<INST> ┏ [    0.000000] RDSEED32 is broken. Disabling the corresponding CPUID bit.
+	test-<INST> │ == BEGIN /etc/unikraft-e2e ==
+	test-<INST> │ unikraft-e2e
+	test-<INST> │ == END /etc/unikraft-e2e ==
+	test-<INST> │ == BEGIN ls /etc/unikraft-e2e ==
+	test-<INST> │ /etc/unikraft-e2e
+	test-<INST> │ == END ls /etc/unikraft-e2e ==
+	test-<INST> │ == BEGIN status ==
+	test-<INST> │ UNIKRAFT_E2E_OK
+	test-<INST> │ == END status ==
+	test-<INST> │ Application exit with 0x0
+	test-<INST> │ [    0.000000] reboot: Restarting system
 
 $ unikraft instance delete test-$UNIQ_INST
 
 stdout:
-	test/test-<INST>
+	test-<INST>

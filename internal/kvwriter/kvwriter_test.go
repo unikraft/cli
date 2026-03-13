@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/lunixbochs/vtclean"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/stretchr/testify/require"
 )
 
@@ -33,7 +33,7 @@ Name:        ExampleApp
 Version:     1.0.0
 Description: This is an example application.
 	`
-	clean := vtclean.Clean(buf.String(), false)
+	clean := ansi.Strip(buf.String())
 	require.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(clean))
 }
 
@@ -56,7 +56,7 @@ func TestIndentedKeys(t *testing.T) {
 > Version:     1.0.0
 > Description: This is an example application.
 	`
-	clean := vtclean.Clean(buf.String(), false)
+	clean := ansi.Strip(buf.String())
 	require.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(clean))
 }
 
@@ -83,7 +83,7 @@ Version:     1.0.0
 Another plain line.
 Description: This is an example application.
 	`
-	clean := vtclean.Clean(buf.String(), false)
+	clean := ansi.Strip(buf.String())
 	require.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(clean))
 }
 
@@ -106,7 +106,7 @@ Version: 1.0.0
 Version:          1.0.0
 >>>> Description: This is an example application.
 	`
-	clean := vtclean.Clean(buf.String(), false)
+	clean := ansi.Strip(buf.String())
 	require.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(clean))
 }
 
@@ -129,7 +129,7 @@ Name:
 Version:     1.0.0
 Description:
 	`
-	clean := vtclean.Clean(buf.String(), false)
+	clean := ansi.Strip(buf.String())
 	require.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(clean))
 }
 
@@ -150,7 +150,7 @@ Name:ExampleApp
 Name:ExampleApp
   Version:1.0.0
 	`
-	clean := vtclean.Clean(buf.String(), false)
+	clean := ansi.Strip(buf.String())
 	require.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(clean))
 }
 
@@ -175,7 +175,7 @@ Version=> 1.0.0
 Owner:    Example Org
 Type=>    Service
 	`
-	clean := vtclean.Clean(buf.String(), false)
+	clean := ansi.Strip(buf.String())
 	require.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(clean))
 }
 
@@ -200,7 +200,7 @@ Version => 1.0.0
 Owner    : Example Org
 Type    => Service
 	`
-	clean := vtclean.Clean(buf.String(), false)
+	clean := ansi.Strip(buf.String())
 	require.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(clean))
 }
 
@@ -219,6 +219,6 @@ size := 30MiB
 	expected := `
 size := 30MiB
 	`
-	clean := vtclean.Clean(buf.String(), false)
+	clean := ansi.Strip(buf.String())
 	require.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(clean))
 }

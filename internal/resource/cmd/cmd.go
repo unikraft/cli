@@ -17,8 +17,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/x/ansi"
 	"github.com/containerd/containerd/v2/pkg/filters"
-	"github.com/lunixbochs/vtclean"
 	"unikraft.com/x/kingkong"
 	"unikraft.com/x/log"
 
@@ -390,9 +390,9 @@ func filterResources(ctx context.Context, resources []resource.Resource, filter 
 				// >1 fields = ambiguous match
 				return "", false
 			}
-			// HACK: vtclean to remove any escape sequences from rendered output
+			// HACK: strip escape sequences from rendered output
 			out, _ := matched[0].Render()
-			return vtclean.Clean(out, false), true
+			return ansi.Strip(out), true
 		})) {
 			filtered = append(filtered, res)
 		}

@@ -11,7 +11,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/lunixbochs/vtclean"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/stretchr/testify/require"
 	"gotest.tools/v3/golden"
 )
@@ -52,6 +52,6 @@ func TestMuxReader(t *testing.T) {
 	require.NoError(t, err)
 	out.Write(result)
 
-	got := vtclean.Clean(out.String(), false)
+	got := ansi.Strip(out.String())
 	golden.Assert(t, got, t.Name())
 }
