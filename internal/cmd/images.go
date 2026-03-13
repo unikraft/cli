@@ -334,6 +334,12 @@ func (ImageEntry) load(image platform.Image, metro *config.Metro) ([]ImageEntry,
 			return nil, fmt.Errorf("could not parse image tag %q", tag)
 		}
 
+		if strings.HasPrefix(tag, "sha256:") {
+			// HACK: skip tags that look like digests, these are malformed
+			// https://linear.app/unikraft/issue/TOOL-618
+			continue
+		}
+
 		ref, err := reference.WithTag(base, tag)
 		if err != nil {
 			return nil, fmt.Errorf("could not parse image tag %q: %w", tag, err)
