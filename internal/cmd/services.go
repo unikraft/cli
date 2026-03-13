@@ -8,6 +8,7 @@ package cmd
 import (
 	"cmp"
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -180,14 +181,15 @@ func (ServiceGroup) List(ctx context.Context) ([]resource.Resource, error) {
 			return nil, err
 		}
 		var results []resource.Resource
+		var errs []error
 		for _, serviceGroup := range resp.Data.ServiceGroups {
 			result, err := ServiceGroup{}.load(nil, serviceGroup, &c.Metro)
 			if err != nil {
-				return nil, err
+				errs = append(errs, err)
 			}
 			results = append(results, result)
 		}
-		return results, nil
+		return results, errors.Join(errs...)
 	})
 }
 
@@ -204,13 +206,15 @@ func (ServiceGroup) Get(ctx context.Context, keys []string) ([]resource.Resource
 		}
 		var found []group.Ref
 		var results []resource.Resource
+		var errs []error
 		for i, serviceGroup := range resp.Data.ServiceGroups {
 			if serviceGroup.Status == nil || *serviceGroup.Status != platform.ResponseStatusSUCCESS {
 				continue
 			}
 			result, err := ServiceGroup{}.load(&refs[i], serviceGroup, &c.Metro)
 			if err != nil {
-				return nil, nil, err
+				errs = append(errs, err)
+				continue
 			}
 			found = append(found, group.Ref{
 				Metro: c.Metro.Name,
@@ -219,7 +223,7 @@ func (ServiceGroup) Get(ctx context.Context, keys []string) ([]resource.Resource
 			})
 			results = append(results, result)
 		}
-		return results, found, nil
+		return results, found, errors.Join(errs...)
 	})
 }
 

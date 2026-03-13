@@ -8,6 +8,7 @@ package cmd
 import (
 	"cmp"
 	"context"
+	"errors"
 	"fmt"
 
 	"unikraft.com/cloud/sdk/platform"
@@ -93,14 +94,15 @@ func (Certificate) List(ctx context.Context) ([]resource.Resource, error) {
 			return nil, err
 		}
 		var results []resource.Resource
+		var errs []error
 		for _, certificate := range resp.Data.Certificates {
 			result, err := Certificate{}.load(nil, certificate, &c.Metro)
 			if err != nil {
-				return nil, err
+				errs = append(errs, err)
 			}
 			results = append(results, result)
 		}
-		return results, nil
+		return results, errors.Join(errs...)
 	})
 }
 
@@ -117,13 +119,15 @@ func (Certificate) Get(ctx context.Context, keys []string) ([]resource.Resource,
 		}
 		var found []group.Ref
 		var results []resource.Resource
+		var errs []error
 		for i, certificate := range resp.Data.Certificates {
 			if certificate.Status == nil || *certificate.Status != "success" {
 				continue
 			}
 			result, err := Certificate{}.load(&refs[i], certificate, &c.Metro)
 			if err != nil {
-				return nil, nil, err
+				errs = append(errs, err)
+				continue
 			}
 			found = append(found, group.Ref{
 				Metro: c.Metro.Name,
@@ -132,7 +136,7 @@ func (Certificate) Get(ctx context.Context, keys []string) ([]resource.Resource,
 			})
 			results = append(results, result)
 		}
-		return results, found, nil
+		return results, found, errors.Join(errs...)
 	})
 }
 

@@ -7,6 +7,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -216,16 +217,17 @@ func (ImageEntry) List(ctx context.Context) ([]resource.Resource, error) {
 			return nil, err
 		}
 		var results []resource.Resource
+		var errs []error
 		for _, image := range resp.Data.Images {
 			result, err := ImageEntry{}.load(image, &c.Metro)
 			if err != nil {
-				return nil, err
+				errs = append(errs, err)
 			}
 			for _, result := range result {
 				results = append(results, result)
 			}
 		}
-		return results, nil
+		return results, errors.Join(errs...)
 	})
 }
 
@@ -257,10 +259,12 @@ func (ImageEntry) Get(ctx context.Context, keys []string) ([]resource.Resource, 
 		}
 		var found []group.Ref
 		var results []resource.Resource
+		var errs []error
 		for _, image := range resp.Data.Images {
 			result, err := ImageEntry{}.load(image, &c.Metro)
 			if err != nil {
-				return nil, nil, err
+				errs = append(errs, err)
+				continue
 			}
 			for _, key := range refs {
 				for _, result := range result {
@@ -272,7 +276,7 @@ func (ImageEntry) Get(ctx context.Context, keys []string) ([]resource.Resource, 
 				}
 			}
 		}
-		return results, found, nil
+		return results, found, errors.Join(errs...)
 	})
 }
 

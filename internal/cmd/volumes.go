@@ -229,14 +229,15 @@ func (Volume) List(ctx context.Context) ([]resource.Resource, error) {
 			return nil, err
 		}
 		var results []resource.Resource
+		var errs []error
 		for _, volume := range resp.Data.Volumes {
 			result, err := Volume{}.load(nil, volume, &c.Metro)
 			if err != nil {
-				return nil, err
+				errs = append(errs, err)
 			}
 			results = append(results, result)
 		}
-		return results, nil
+		return results, errors.Join(errs...)
 	})
 }
 
@@ -254,13 +255,15 @@ func (Volume) Get(ctx context.Context, keys []string) ([]resource.Resource, erro
 		}
 		var found []group.Ref
 		var results []resource.Resource
+		var errs []error
 		for i, volume := range resp.Data.Volumes {
 			if volume.Status == nil || *volume.Status != platform.ResponseStatusSUCCESS {
 				continue
 			}
 			result, err := Volume{}.load(&refs[i], volume, &c.Metro)
 			if err != nil {
-				return nil, nil, err
+				errs = append(errs, err)
+				continue
 			}
 			found = append(found, group.Ref{
 				Metro: c.Metro.Name,
@@ -269,7 +272,7 @@ func (Volume) Get(ctx context.Context, keys []string) ([]resource.Resource, erro
 			})
 			results = append(results, result)
 		}
-		return results, found, nil
+		return results, found, errors.Join(errs...)
 	})
 }
 

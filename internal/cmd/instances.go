@@ -285,14 +285,15 @@ func (Instance) List(ctx context.Context) ([]resource.Resource, error) {
 			return nil, err
 		}
 		var results []resource.Resource
+		var errs []error
 		for _, instance := range resp.Data.Instances {
 			result, err := Instance{}.load(nil, instance, &c.Metro, profile)
 			if err != nil {
-				return nil, err
+				errs = append(errs, err)
 			}
 			results = append(results, result)
 		}
-		return results, nil
+		return results, errors.Join(errs...)
 	})
 }
 
@@ -313,13 +314,15 @@ func (Instance) Get(ctx context.Context, keys []string) ([]resource.Resource, er
 		}
 		var found []group.Ref
 		var results []resource.Resource
+		var errs []error
 		for i, instance := range resp.Data.Instances {
 			if instance.Status == nil || *instance.Status != platform.ResponseStatusSUCCESS {
 				continue
 			}
 			result, err := Instance{}.load(&refs[i], instance, &c.Metro, profile)
 			if err != nil {
-				return nil, nil, err
+				errs = append(errs, err)
+				continue
 			}
 			found = append(found, group.Ref{
 				Metro: c.Metro.Name,
@@ -328,7 +331,7 @@ func (Instance) Get(ctx context.Context, keys []string) ([]resource.Resource, er
 			})
 			results = append(results, result)
 		}
-		return results, found, nil
+		return results, found, errors.Join(errs...)
 	})
 }
 
