@@ -260,12 +260,22 @@ stdout:
 	  country
 	  endpoint
 	  insecure
-	  quotas, quotas.instances, quotas.instances.active, quotas.instances.total,
-	  quotas.vcpus, quotas.vcpus.active, quotas.memory, quotas.memory.active,
-	  quotas.services, quotas.services.groups, quotas.services.exposed,
-	  quotas.volumes, quotas.volumes.count, quotas.volumes.total, quotas.limits,
-	  quotas.limits.vcpus, quotas.limits.memory, quotas.limits.volume,
-	  quotas.limits.autoscale
+	  quotas, quotas.instances, quotas.instances.active,
+	  quotas.instances.active.used, quotas.instances.active.limit,
+	  quotas.instances.total, quotas.instances.total.used,
+	  quotas.instances.total.limit, quotas.vcpus, quotas.vcpus.active,
+	  quotas.vcpus.active.used, quotas.vcpus.active.limit, quotas.memory,
+	  quotas.memory.active, quotas.memory.active.used, quotas.memory.active.limit,
+	  quotas.services, quotas.services.groups, quotas.services.groups.used,
+	  quotas.services.groups.limit, quotas.services.exposed,
+	  quotas.services.exposed.used, quotas.services.exposed.limit, quotas.volumes,
+	  quotas.volumes.count, quotas.volumes.count.used, quotas.volumes.count.limit,
+	  quotas.volumes.total, quotas.volumes.total.used, quotas.volumes.total.limit,
+	  quotas.limits, quotas.limits.vcpus, quotas.limits.vcpus.min,
+	  quotas.limits.vcpus.max, quotas.limits.memory, quotas.limits.memory.min,
+	  quotas.limits.memory.max, quotas.limits.volume, quotas.limits.volume.min,
+	  quotas.limits.volume.max, quotas.limits.autoscale,
+	  quotas.limits.autoscale.min, quotas.limits.autoscale.max
 	  status, status.ip, status.ping, status.online
 
 	Global flags:
@@ -308,12 +318,22 @@ stdout:
 	  country
 	  endpoint
 	  insecure
-	  quotas, quotas.instances, quotas.instances.active, quotas.instances.total,
-	  quotas.vcpus, quotas.vcpus.active, quotas.memory, quotas.memory.active,
-	  quotas.services, quotas.services.groups, quotas.services.exposed,
-	  quotas.volumes, quotas.volumes.count, quotas.volumes.total, quotas.limits,
-	  quotas.limits.vcpus, quotas.limits.memory, quotas.limits.volume,
-	  quotas.limits.autoscale
+	  quotas, quotas.instances, quotas.instances.active,
+	  quotas.instances.active.used, quotas.instances.active.limit,
+	  quotas.instances.total, quotas.instances.total.used,
+	  quotas.instances.total.limit, quotas.vcpus, quotas.vcpus.active,
+	  quotas.vcpus.active.used, quotas.vcpus.active.limit, quotas.memory,
+	  quotas.memory.active, quotas.memory.active.used, quotas.memory.active.limit,
+	  quotas.services, quotas.services.groups, quotas.services.groups.used,
+	  quotas.services.groups.limit, quotas.services.exposed,
+	  quotas.services.exposed.used, quotas.services.exposed.limit, quotas.volumes,
+	  quotas.volumes.count, quotas.volumes.count.used, quotas.volumes.count.limit,
+	  quotas.volumes.total, quotas.volumes.total.used, quotas.volumes.total.limit,
+	  quotas.limits, quotas.limits.vcpus, quotas.limits.vcpus.min,
+	  quotas.limits.vcpus.max, quotas.limits.memory, quotas.limits.memory.min,
+	  quotas.limits.memory.max, quotas.limits.volume, quotas.limits.volume.min,
+	  quotas.limits.volume.max, quotas.limits.autoscale,
+	  quotas.limits.autoscale.min, quotas.limits.autoscale.max
 	  status, status.ip, status.ping, status.online
 
 	Flags:
@@ -370,12 +390,22 @@ stdout:
 	  country
 	  endpoint
 	  insecure
-	  quotas, quotas.instances, quotas.instances.active, quotas.instances.total,
-	  quotas.vcpus, quotas.vcpus.active, quotas.memory, quotas.memory.active,
-	  quotas.services, quotas.services.groups, quotas.services.exposed,
-	  quotas.volumes, quotas.volumes.count, quotas.volumes.total, quotas.limits,
-	  quotas.limits.vcpus, quotas.limits.memory, quotas.limits.volume,
-	  quotas.limits.autoscale
+	  quotas, quotas.instances, quotas.instances.active,
+	  quotas.instances.active.used, quotas.instances.active.limit,
+	  quotas.instances.total, quotas.instances.total.used,
+	  quotas.instances.total.limit, quotas.vcpus, quotas.vcpus.active,
+	  quotas.vcpus.active.used, quotas.vcpus.active.limit, quotas.memory,
+	  quotas.memory.active, quotas.memory.active.used, quotas.memory.active.limit,
+	  quotas.services, quotas.services.groups, quotas.services.groups.used,
+	  quotas.services.groups.limit, quotas.services.exposed,
+	  quotas.services.exposed.used, quotas.services.exposed.limit, quotas.volumes,
+	  quotas.volumes.count, quotas.volumes.count.used, quotas.volumes.count.limit,
+	  quotas.volumes.total, quotas.volumes.total.used, quotas.volumes.total.limit,
+	  quotas.limits, quotas.limits.vcpus, quotas.limits.vcpus.min,
+	  quotas.limits.vcpus.max, quotas.limits.memory, quotas.limits.memory.min,
+	  quotas.limits.memory.max, quotas.limits.volume, quotas.limits.volume.min,
+	  quotas.limits.volume.max, quotas.limits.autoscale,
+	  quotas.limits.autoscale.min, quotas.limits.autoscale.max
 	  status, status.ip, status.ping, status.online
 
 	Flags:

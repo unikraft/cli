@@ -254,28 +254,28 @@ func (Metro) Examples() map[cmd.CmdType][]kingkong.Example {
 
 type metroQuotas struct {
 	Instances struct {
-		Active types.Usage[int64] `field:",long"`
-		Total  types.Usage[int64] `field:",long"`
+		Active types.Usage[int64] `field:",long,embed"`
+		Total  types.Usage[int64] `field:",long,embed"`
 	}
 	Vcpus struct {
-		Active types.Usage[int64] `field:",long"`
+		Active types.Usage[int64] `field:",long,embed"`
 	}
 	Memory struct {
-		Active types.Usage[types.SizeMebibytes] `field:",long"`
+		Active types.Usage[types.SizeMebibytes] `field:",long,embed"`
 	}
 	Services struct {
-		Groups  types.Usage[int64] `field:",long"`
-		Exposed types.Usage[int64] `field:",long"`
+		Groups  types.Usage[int64] `field:",long,embed"`
+		Exposed types.Usage[int64] `field:",long,embed"`
 	}
 	Volumes struct {
-		Count types.Usage[int64]               `field:",long"`
-		Total types.Usage[types.SizeMebibytes] `field:",long"`
+		Count types.Usage[int64]               `field:",long,embed"`
+		Total types.Usage[types.SizeMebibytes] `field:",long,embed"`
 	}
 	Limits struct {
-		Vcpus     types.Range[int64]               `field:",long"`
-		Memory    types.Range[types.SizeMebibytes] `field:",long"`
-		Volume    types.Range[types.SizeMebibytes] `field:",long"`
-		Autoscale types.Range[int64]               `field:",long"`
+		Vcpus     types.Range[int64]               `field:",long,embed"`
+		Memory    types.Range[types.SizeMebibytes] `field:",long,embed"`
+		Volume    types.Range[types.SizeMebibytes] `field:",long,embed"`
+		Autoscale types.Range[int64]               `field:",long,embed"`
 	}
 
 	httpClient *http.Client
