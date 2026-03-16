@@ -20,6 +20,7 @@ import (
 	"unikraft.com/cli/internal/xsync"
 	"unikraft.com/cloud/sdk/platform"
 	"unikraft.com/x/kingkong"
+	"unikraft.com/x/log"
 	"unikraft.com/x/ptr"
 )
 
@@ -62,6 +63,7 @@ func (i Metro) Fields() ([]resource.Field, error) {
 	quotas := &metroQuotas{
 		httpClient: baseClient,
 		endpoint:   i.Endpoint,
+		name:       i.Name,
 	}
 	quotaFields, err := resource.FieldsFromStruct(quotas)
 	if err != nil {
@@ -103,6 +105,7 @@ func (i Metro) Fields() ([]resource.Field, error) {
 			return []string{ip.String()}, nil
 		}
 
+		log.G(ctx).Trace().Str("metro", i.Name).Msg("resolving metro IP")
 		addrs, err := net.DefaultResolver.LookupIPAddr(ctx, host)
 		if err != nil {
 			return nil, err
@@ -141,6 +144,7 @@ func (i Metro) Fields() ([]resource.Field, error) {
 			return "", nil
 		}
 
+		log.G(ctx).Trace().Str("metro", i.Name).Msg("pinging metro")
 		addr := net.JoinHostPort(ips[0], port)
 		dialer := &net.Dialer{Timeout: timeout}
 		start := time.Now()
@@ -154,6 +158,7 @@ func (i Metro) Fields() ([]resource.Field, error) {
 	})
 
 	online := xsync.OnceCtxValues(func(ctx context.Context) (any, error) {
+		log.G(ctx).Trace().Str("metro", i.Name).Msg("checking metro online status")
 		client := &http.Client{
 			Timeout:   timeout,
 			Transport: baseClient.Transport,
@@ -280,6 +285,7 @@ type metroQuotas struct {
 
 	httpClient *http.Client
 	endpoint   string
+	name       string
 }
 
 func (q *metroQuotas) Lazy(ctx context.Context) (any, error) {
@@ -294,6 +300,7 @@ func (q *metroQuotas) Lazy(ctx context.Context) (any, error) {
 		platform.WithDefaultMetro(q.endpoint),
 	)
 
+	log.G(ctx).Trace().Str("metro", q.name).Msg("fetching metro quotas")
 	resp, err := client.GetUser(ctx)
 	if err != nil {
 		return nil, err
