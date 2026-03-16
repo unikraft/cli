@@ -337,6 +337,8 @@ github.com/tonistiigi/units v0.0.0-20180711220420-6950e57a87ea h1:SXhTLE6pb6eld/
 github.com/tonistiigi/units v0.0.0-20180711220420-6950e57a87ea/go.mod h1:WPnis/6cRcDZSUvVmezrxJPkiO87ThFYsoUiMwWNDJk=
 github.com/tonistiigi/vt100 v0.0.0-20240514184818-90bafcd6abab h1:H6aJ0yKQ0gF49Qb2z5hI1UHxSQt4JMyxebFR15KnApw=
 github.com/tonistiigi/vt100 v0.0.0-20240514184818-90bafcd6abab/go.mod h1:ulncasL3N9uLrVann0m+CDlJKWsIAP34MPcOJF6VRvc=
+github.com/unikraft-cloud/x/kraftfile v0.0.0-20260316123348-7066f0b1777d h1:XLmM/kBJDycshMC8O0kmdF6l4FjzICkR3J4JVzNh/P4=
+github.com/unikraft-cloud/x/kraftfile v0.0.0-20260316123348-7066f0b1777d/go.mod h1:OYaIMOzV1IpbZCe2J3SuC5jvT4tAfR0XG9uOPPD+p50=
 github.com/unikraft/go-archivefs v0.0.0-20260218131508-64011984668c h1:fB0U/0+zEfp0eakpsppngLU2CkCB/XaoaWZH274K2Sk=
 github.com/unikraft/go-archivefs v0.0.0-20260218131508-64011984668c/go.mod h1:JplM9tPeNUFGkZAKoCrEP+Sqpb/lJeVORnMbKPBA/pk=
 github.com/unikraft/go-cpio v0.0.0-20260209140144-8e02f12b23e0 h1:RNkUuza8WzrA3FL5aTmmO/IGXFppbevPVc2TSRPLsgg=
@@ -477,8 +479,6 @@ unikraft.com/x/joinerrgroup v0.0.0-20260304162956-523940cab1de h1:cm4FnPvnahRIK0
 unikraft.com/x/joinerrgroup v0.0.0-20260304162956-523940cab1de/go.mod h1:XND1VvLxwqKFGrmdwUTWps4WEpMm7HTHPQg9HWQtrxg=
 unikraft.com/x/kingkong v0.0.0-20260304162956-523940cab1de h1:jrsspHGxv0kXZG/9aZRQNwJidV/ZmI2ywkw2Zh4ZbeE=
 unikraft.com/x/kingkong v0.0.0-20260304162956-523940cab1de/go.mod h1:r7a+ee0VOkocN4sCclW70Z3dFTShgfUcnyHOW/p/2A4=
-unikraft.com/x/kraftfile v0.0.0-20260304162956-523940cab1de h1:6I5NCCc8BCoJqPDTE9RKXQVfuEGg/CIVnDcZTCVT/ow=
-unikraft.com/x/kraftfile v0.0.0-20260304162956-523940cab1de/go.mod h1:OYaIMOzV1IpbZCe2J3SuC5jvT4tAfR0XG9uOPPD+p50=
 unikraft.com/x/log v0.0.0-20260126171022-af62c17fcdf7 h1:kFOE7rmK33PiJ2GbWFd3v0WrE8DeAaQsPjrUQ+15CIU=
 unikraft.com/x/log v0.0.0-20260126171022-af62c17fcdf7/go.mod h1:f/+5628rnWTnRaRrCDD9mOMf7OV5QmkGIgARlTu4XGE=
 unikraft.com/x/ptr v0.0.0-20260116231133-1da0081544af h1:qEEtHdfIKn1p4OGrekAxbPe+Kbd1Gi1g5S3iJgTRcWM=

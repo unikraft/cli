@@ -8,6 +8,7 @@ package cmd
 import (
 	"context"
 
+	"golang.org/x/mod/semver"
 	"unikraft.com/cli/internal/builder"
 	"unikraft.com/cli/internal/buildkit"
 	"unikraft.com/cli/internal/config"
@@ -15,6 +16,7 @@ import (
 	imagespec "unikraft.com/x/image-spec"
 	"unikraft.com/x/kingkong"
 	"unikraft.com/x/kraftfile"
+	"unikraft.com/x/log"
 )
 
 type BuildCmd struct {
@@ -64,12 +66,23 @@ func (BuildCmd) Examples() []kingkong.Example {
 }
 
 func (c *BuildCmd) Run(ctx context.Context, cfg *config.Config) error {
-	kraftfile, err := kraftfile.ParseDirectory(c.Input)
+	kf, err := kraftfile.ParseDirectory(c.Input, kraftfile.WithSkippedVersionCheck)
 	if err != nil {
 		return err
 	}
+	if semver.Compare(kf.Spec, kraftfile.SpecVersionMin) < 0 {
+		log.G(ctx).Warn().
+			Str("spec", kf.Spec).
+			Str("min", kraftfile.SpecVersionMin).
+			Msg("Kraftfile spec version is older than minimum; parsing is best-effort")
+	} else if semver.Compare(kf.Spec, kraftfile.SpecVersionMax) > 0 {
+		log.G(ctx).Warn().
+			Str("spec", kf.Spec).
+			Str("max", kraftfile.SpecVersionMax).
+			Msg("Kraftfile spec version is newer than maximum; parsing is best-effort")
+	}
 
-	buildOpts, err := builder.KraftfileToBuildOpts(c.Input, kraftfile)
+	buildOpts, err := builder.KraftfileToBuildOpts(c.Input, kf)
 	if err != nil {
 		return err
 	}
