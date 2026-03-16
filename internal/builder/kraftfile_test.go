@@ -17,7 +17,7 @@ func TestKraftfileToBuildOpts(t *testing.T) {
 	rootfsDir := t.TempDir()
 	rootfsPath := "Dockerfile"
 
-	runtime := kraftfile.Runtime("index.unikraft.io/unikraft.org/base")
+	runtime := kraftfile.Runtime("unikraft.io/unikraft.org/base")
 	kf := &kraftfile.Kraftfile{
 		Cmd:     kraftfile.Command{"/server", "--flag"},
 		Env:     kraftfile.Map{{Key: "A", Value: "1"}},
@@ -44,7 +44,7 @@ func TestKraftfileToBuildOpts(t *testing.T) {
 	require.Equal(t, []string{"/server", "--flag"}, opts.Cmd)
 	require.Equal(t, kraftfile.Map{{Key: "A", Value: "1"}}, opts.Env)
 	require.Equal(t, map[string]string{"label": "value"}, opts.Labels)
-	require.Equal(t, "index.unikraft.io/unikraft.org/base", opts.Runtime)
+	require.Equal(t, "unikraft.io/unikraft.org/base", opts.Runtime)
 	require.Equal(t, kraftfile.FsTypeErofs, opts.Rootfs.Format)
 	require.Equal(t, rootfsDir, opts.Rootfs.Path)
 	require.Len(t, opts.Platform, 1)
@@ -61,7 +61,7 @@ func TestKraftfileToBuildOptsRootfsSourceError(t *testing.T) {
 	rootfsDir := t.TempDir()
 	rootfsPath := "rootfs.tar"
 
-	runtime := kraftfile.Runtime("index.unikraft.io/unikraft.org/base")
+	runtime := kraftfile.Runtime("unikraft.io/unikraft.org/base")
 	kf := &kraftfile.Kraftfile{
 		Runtime: &runtime,
 		Rootfs: &kraftfile.FS{

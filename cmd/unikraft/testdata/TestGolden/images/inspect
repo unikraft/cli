@@ -7,7 +7,7 @@ stdout:
 $ unikraft image inspect nginx:latest
 
 stdout:
-	ref:        index.unikraft.io/official/nginx:latest
+	ref:        unikraft.io/official/nginx:latest
 	digest:     sha256:abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890
 	config:
 	  platform: kraftcloud/x86_64

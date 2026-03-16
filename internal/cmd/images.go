@@ -411,19 +411,19 @@ func (cmd ImagesCopyCmd) Examples() []kingkong.Example {
 		{
 			Description: "Create a copy of an image",
 			Commands: []string{
-				"unikraft image copy index.unikraft.io/official/nginx:latest index.unikraft.io/my-user/my-nginx",
+				"unikraft image copy unikraft.io/official/nginx:latest unikraft.io/my-user/my-nginx",
 			},
 		},
 		{
 			Description: "Upload a local image to a remote registry",
 			Commands: []string{
-				"unikraft image copy ./my-local-image.tar index.unikraft.io/my-user/my-image:1.0.0",
+				"unikraft image copy ./my-local-image.tar unikraft.io/my-user/my-image:1.0.0",
 			},
 		},
 		{
 			Description: "Download an image from a remote registry",
 			Commands: []string{
-				"unikraft image copy index.unikraft.io/official/redis:latest ./my-redis-image.tar",
+				"unikraft image copy unikraft.io/official/redis:latest ./my-redis-image.tar",
 			},
 		},
 	}

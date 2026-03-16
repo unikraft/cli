@@ -15,7 +15,12 @@ import (
 	xreference "unikraft.com/cli/internal/x/reference"
 )
 
-const DefaultRegistry = "index.unikraft.io"
+const DefaultRegistry = "unikraft.io"
+
+var defaultRegistries = []string{
+	"unikraft.io",
+	"index.unikraft.io",
+}
 
 func Accessor(ctx context.Context) (*imagespec.Accessor, error) {
 	cfg := config.FromContextOrDefault(ctx)

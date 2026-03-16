@@ -35,7 +35,7 @@ EOF
 `
 	rootfsPath := writeDockerfile(t, dockerfile)
 	opts := BuildOpts{
-		Runtime: "index.unikraft.io/unikraft.org/base",
+		Runtime: "unikraft.io/unikraft.org/base",
 		Rootfs: RootfsOpts{
 			Format: kraftfile.FsTypeCpio,
 			Path:   rootfsPath,
@@ -59,7 +59,7 @@ EOF
 `
 	rootfsPath := writeDockerfile(t, dockerfile)
 	opts := BuildOpts{
-		Runtime: "index.unikraft.io/unikraft.org/base",
+		Runtime: "unikraft.io/unikraft.org/base",
 		Rootfs: RootfsOpts{
 			Format: kraftfile.FsTypeErofs,
 			Path:   rootfsPath,
@@ -83,7 +83,7 @@ EOF
 `
 	rootfsPath := writeDockerfile(t, dockerfile)
 	opts := BuildOpts{
-		Runtime: "index.unikraft.io/unikraft.org/base",
+		Runtime: "unikraft.io/unikraft.org/base",
 		Rootfs: RootfsOpts{
 			Format: kraftfile.FsTypeCpio,
 			Path:   rootfsPath,
@@ -111,7 +111,7 @@ RUN --mount=type=secret,id=api_key cat /run/secrets/api_key | grep -q s3cr3t
 	require.NoError(t, err)
 
 	opts := BuildOpts{
-		Runtime: "index.unikraft.io/unikraft.org/base",
+		Runtime: "unikraft.io/unikraft.org/base",
 		Rootfs: RootfsOpts{
 			Format:  kraftfile.FsTypeCpio,
 			Path:    rootfsPath,
@@ -134,7 +134,7 @@ CMD ["/dockerfile-cmd"]
 `
 	rootfsPath := writeDockerfile(t, dockerfile)
 	opts := BuildOpts{
-		Runtime: "index.unikraft.io/unikraft.org/base",
+		Runtime: "unikraft.io/unikraft.org/base",
 		Rootfs: RootfsOpts{
 			Format: kraftfile.FsTypeCpio,
 			Path:   rootfsPath,

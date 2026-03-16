@@ -10,6 +10,7 @@ import (
 	"errors"
 	"net/http"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/containerd/containerd/v2/core/remotes"
@@ -135,7 +136,7 @@ func hostCreds(profile *config.Profile, hostname string) (string, string, error)
 	}
 
 	// FIXME: why are there two different auth schemes?
-	if hostname == DefaultRegistry {
+	if slices.Contains(defaultRegistries, hostname) {
 		return decodeAuth(profile.Token)
 	}
 	for _, metro := range profile.Metros {
