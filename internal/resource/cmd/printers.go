@@ -20,8 +20,8 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/muesli/termenv"
-	"golang.org/x/sync/errgroup"
 	"sigs.k8s.io/yaml"
+	"unikraft.com/x/joinerrgroup"
 
 	"unikraft.com/cli/internal/kvwriter"
 	"unikraft.com/cli/internal/resource"
@@ -138,28 +138,39 @@ func (p Printer) Print(ctx context.Context, out io.Writer, fieldSpecs []string, 
 	case PrinterTypeTemplate:
 		return printTemplate(ctx, out, p.Value, resources...)
 	case PrintTypeDebug:
-		return printDebug(out, resources...)
+		return printDebug(ctx, out, resources...)
 	default:
 		return fmt.Errorf("unknown printer type: %s", p.Type)
 	}
 }
 
 func printKV(ctx context.Context, out io.Writer, specs []string, resources ...resource.Resource) error {
-	resolved, err := extractFields(ctx, resources, func(ctx context.Context, res resource.Resource) ([]resource.Field, error) {
-		fields, err := res.Fields()
-		if err != nil {
-			return nil, err
-		}
-		fields, err = selectResourceFields(fields, false, resource.FieldVerbosityLong, specs)
-		if err != nil {
-			return nil, err
-		}
-		if err := resource.ResolveAllFields(ctx, fields); err != nil {
-			return nil, err
-		}
-		return resource.DedupeFields(fields), nil
-	})
-	if err != nil {
+	if len(resources) == 0 {
+		return nil
+	}
+
+	// Resolve all resources in parallel
+	resolved := make([][]resource.Field, len(resources))
+	eg := joinerrgroup.Group{}
+	for i, res := range resources {
+		eg.Go(func() error {
+			fields, err := res.Fields()
+			if err != nil {
+				return err
+			}
+			fields, err = selectResourceFields(fields, false, resource.FieldVerbosityLong, specs)
+			if err != nil {
+				return err
+			}
+			paths, _ := xslices.Collect2(resource.IterFields(fields))
+			if err := resource.ResolveFields(ctx, fields, paths); err != nil {
+				return err
+			}
+			resolved[i] = fields
+			return nil
+		})
+	}
+	if err := eg.Wait(); err != nil {
 		return err
 	}
 
@@ -169,6 +180,7 @@ func printKV(ctx context.Context, out io.Writer, specs []string, resources ...re
 				return err
 			}
 		}
+		fields = resource.DedupeFields(fields)
 		if err := printKVFields(out, nil, fields, 0, 0); err != nil {
 			return err
 		}
@@ -288,21 +300,17 @@ func printTable(ctx context.Context, out io.Writer, fieldSpecs []string, base re
 		return err
 	}
 
-	resolved, err := extractFields(ctx, resources, func(ctx context.Context, res resource.Resource) ([]resource.Field, error) {
-		fields, err := res.Fields()
-		if err != nil {
-			return nil, err
-		}
-		if err := resource.ResolveFields(ctx, fields, headerPaths); err != nil {
-			return nil, err
-		}
-		return fields, nil
-	})
+	// Resolve all resources in parallel
+	resolved, err := resolveResources(ctx, resources, headerPaths)
 	if err != nil {
 		return err
 	}
 
-	for _, fields := range resolved {
+	for _, res := range resolved {
+		fields, err := res.Fields()
+		if err != nil {
+			return err
+		}
 
 		firstCol := true
 		for i, header := range headerFields {
@@ -384,21 +392,32 @@ func printQuiet(ctx context.Context, out io.Writer, specs []string, resources ..
 		return nil
 	}
 
-	resolved, err := extractFields(ctx, resources, func(ctx context.Context, res resource.Resource) ([]resource.Field, error) {
-		fields, err := res.Fields()
-		if err != nil {
-			return nil, err
-		}
-		fields, err = selectResourceFields(fields, false, resource.FieldVerbosityNone, specs)
-		if err != nil {
-			return nil, err
-		}
-		if err := resource.ResolveAllFields(ctx, fields); err != nil {
-			return nil, err
-		}
-		return fields, nil
-	})
-	if err != nil {
+	if len(resources) == 0 {
+		return nil
+	}
+
+	// Resolve all resources in parallel
+	resolved := make([][]resource.Field, len(resources))
+	eg := joinerrgroup.Group{}
+	for i, res := range resources {
+		eg.Go(func() error {
+			fields, err := res.Fields()
+			if err != nil {
+				return err
+			}
+			fields, err = selectResourceFields(fields, false, resource.FieldVerbosityNone, specs)
+			if err != nil {
+				return err
+			}
+			paths, _ := xslices.Collect2(resource.IterFields(fields))
+			if err := resource.ResolveFields(ctx, fields, paths); err != nil {
+				return err
+			}
+			resolved[i] = fields
+			return nil
+		})
+	}
+	if err := eg.Wait(); err != nil {
 		return err
 	}
 
@@ -424,23 +443,18 @@ func printQuiet(ctx context.Context, out io.Writer, specs []string, resources ..
 }
 
 func printJSON(ctx context.Context, out io.Writer, resources ...resource.Resource) error {
-	fields, err := extractFields(ctx, resources, func(ctx context.Context, res resource.Resource) ([]resource.Field, error) {
-		fields, err := res.Fields()
-		if err != nil {
-			return nil, err
-		}
-		if err := resource.ResolveAllFields(ctx, fields); err != nil {
-			return nil, err
-		}
-		return fields, nil
-	})
+	resolved, err := resolveAllResources(ctx, resources)
 	if err != nil {
 		return err
 	}
 
-	input := make([]any, len(resources))
-	for i := range fields {
-		input[i] = resource.FieldsToMap(fields[i])
+	input := make([]any, len(resolved))
+	for i, res := range resolved {
+		fields, err := res.Fields()
+		if err != nil {
+			return err
+		}
+		input[i] = resource.FieldsToMap(fields)
 	}
 	dt, err := json.MarshalIndent(input, "", "  ")
 	if err != nil {
@@ -451,23 +465,18 @@ func printJSON(ctx context.Context, out io.Writer, resources ...resource.Resourc
 }
 
 func printYAML(ctx context.Context, out io.Writer, resources ...resource.Resource) error {
-	fields, err := extractFields(ctx, resources, func(ctx context.Context, res resource.Resource) ([]resource.Field, error) {
-		fields, err := res.Fields()
-		if err != nil {
-			return nil, err
-		}
-		if err := resource.ResolveAllFields(ctx, fields); err != nil {
-			return nil, err
-		}
-		return fields, nil
-	})
+	resolved, err := resolveAllResources(ctx, resources)
 	if err != nil {
 		return err
 	}
 
-	input := make([]any, len(resources))
-	for i := range fields {
-		input[i] = resource.FieldsToMap(fields[i])
+	input := make([]any, len(resolved))
+	for i, res := range resolved {
+		fields, err := res.Fields()
+		if err != nil {
+			return err
+		}
+		input[i] = resource.FieldsToMap(fields)
 	}
 	dt, err := yaml.Marshal(input)
 	if err != nil {
@@ -498,12 +507,14 @@ func printTemplate(ctx context.Context, out io.Writer, tmplStr string, resources
 		return err
 	}
 
-	for _, res := range resources {
+	resolved, err := resolveAllResources(ctx, resources)
+	if err != nil {
+		return err
+	}
+
+	for _, res := range resolved {
 		fields, err := res.Fields()
 		if err != nil {
-			return err
-		}
-		if err := resource.ResolveAllFields(ctx, fields); err != nil {
 			return err
 		}
 		input := resource.FieldsToMap(fields)
@@ -523,8 +534,13 @@ func printTemplate(ctx context.Context, out io.Writer, tmplStr string, resources
 	return nil
 }
 
-func printDebug(out io.Writer, resources ...resource.Resource) error {
-	for _, res := range resources {
+func printDebug(ctx context.Context, out io.Writer, resources ...resource.Resource) error {
+	resolved, err := resolveAllResources(ctx, resources)
+	if err != nil {
+		return err
+	}
+
+	for _, res := range resolved {
 		fields, err := res.Fields()
 		if err != nil {
 			return err
@@ -656,25 +672,4 @@ func PrintPatches(out io.Writer, fields []resource.Field, create bool) error {
 		}
 	}
 	return tw.Flush()
-}
-
-func extractFields(ctx context.Context, resources []resource.Resource, fn func(context.Context, resource.Resource) ([]resource.Field, error)) ([][]resource.Field, error) {
-	result := make([][]resource.Field, len(resources))
-
-	g, ctx := errgroup.WithContext(ctx)
-	for i, res := range resources {
-		g.Go(func() error {
-			fields, err := fn(ctx, res)
-			if err != nil {
-				return err
-			}
-			result[i] = fields
-			return nil
-		})
-	}
-	if err := g.Wait(); err != nil {
-		return nil, err
-	}
-
-	return result, nil
 }
