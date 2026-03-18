@@ -50,7 +50,7 @@ jobs:
       - name: Run unit tests
         shell: bash
         run: |
-          task --yes test
+          task --yes unit-race
 
       - name: Run integration tests (without auth)
         if: ${{ !(github.event_name == 'push' || !github.event.pull_request.head.repo.fork) }}

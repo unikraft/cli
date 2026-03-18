@@ -54,6 +54,14 @@ tasks:
     cmds:
     - task: go:test
 
+  unit-race:
+    desc: Run unit tests with the race detector.
+    silent: true
+    cmds:
+    - task: go:test
+      vars:
+        CLI_ARGS: "-race"
+
   integration:
     desc: Run integration tests.
     silent: true
