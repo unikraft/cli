@@ -7,6 +7,7 @@ package images
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/distribution/reference"
 	imagespec "unikraft.com/x/image-spec"
@@ -40,6 +41,13 @@ func ParseNormalizedNamed(key string) (reference.Named, error) {
 }
 
 func ParseNormalizedNamedMetro(metro *config.Metro, key string) (reference.Named, error) {
+	if uri, err := imagespec.ParseURI(key); err == nil {
+		if uri.Scheme != imagespec.URISchemeOCI {
+			return nil, fmt.Errorf("%w: invalid scheme %q", reference.ErrReferenceInvalidFormat, uri.Scheme)
+		}
+		key = uri.Path
+	}
+
 	index := DefaultRegistry
 	if metro != nil {
 		index = metro.Index().Host
@@ -47,6 +55,14 @@ func ParseNormalizedNamedMetro(metro *config.Metro, key string) (reference.Named
 	return xreference.ParseNormalizedNamed(
 		key,
 		xreference.WithDefaultDomain(index),
-		xreference.WithDefaultPrefix("official"),
+		xreference.WithDefaultPrefix("official/"),
+	)
+}
+
+func FamiliarString(ref reference.Reference) string {
+	return xreference.FamiliarString(
+		ref,
+		xreference.WithDefaultDomain(DefaultRegistry),
+		xreference.WithDefaultPrefix("official/"),
 	)
 }

@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/distribution/reference"
 	"unikraft.com/cli/internal/config"
 	"unikraft.com/cli/internal/logs"
 	"unikraft.com/cli/internal/multimetro"
@@ -26,9 +27,9 @@ import (
 )
 
 type RunCmd struct {
-	Image string   `arg:"" help:"Image to run."`
-	Args  []string `arg:"" optional:"" help:"Arguments to pass to the instance."`
-	Env   []string `short:"e" help:"Set environment variables (KEY=VALUE)."`
+	Image *types.ImageRef[reference.Named] `arg:"" help:"Image to run."`
+	Args  []string                         `arg:"" optional:"" help:"Arguments to pass to the instance."`
+	Env   []string                         `short:"e" help:"Set environment variables (KEY=VALUE)."`
 
 	Name  string `short:"n" help:"Name of the instance."`
 	Metro string `help:"Metro to deploy the instance in." required:"" placeholder:"metro"`
@@ -122,7 +123,7 @@ func (RunCmd) Examples() []kingkong.Example {
 }
 
 func (c *RunCmd) Run(ctx context.Context, stdio config.Stdio, sandbox *resource.Sandbox) error {
-	if c.Image == "" {
+	if c.Image == nil {
 		return fmt.Errorf("image is required")
 	}
 	if c.Metro == "" {
@@ -253,7 +254,7 @@ func (c *RunCmd) applyCreatePatches(fields []resource.Field, env map[string]stri
 func (c *RunCmd) runCreatePatches(env map[string]string, volumes []*InstanceVolume, services []*Service, domains []Domain, scaleToZero *InstanceScaleToZero) map[string]any {
 	patches := map[string]any{
 		// FIXME: parse image key, don't require exact matches
-		"image": c.Image,
+		"image": *c.Image,
 		"metro": c.Metro,
 	}
 	if c.Name != "" {

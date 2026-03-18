@@ -29,8 +29,8 @@ stdout:
 $ unikraft instance list
 
 stdout:
-	METRO  NAME               STATE    IMAGE  ARGS  MEMORY  VCPUS  FQDN  CREATED
-	test   test-<INST>  running  nginx        128MiB  1            RELATIVE_TIME
+	METRO  NAME               STATE     IMAGE  ARGS  MEMORY  VCPUS  FQDN  CREATED
+	test   test-<INST>  starting  nginx        128MiB  1            RELATIVE_TIME
 
 $ unikraft instance inspect test-$UNIQ_INST
 

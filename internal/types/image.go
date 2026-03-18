@@ -6,25 +6,36 @@
 package types
 
 import (
+	"strings"
+
 	"github.com/distribution/reference"
+	"unikraft.com/cli/internal/images"
 )
 
 // ImageRef is a generic wrapper around a Docker image reference.
 type ImageRef[T interface {
-	reference.Reference
+	reference.Named
 	comparable
 }] struct {
 	Reference T
 }
 
-func (ir ImageRef[T]) String() string {
+func (ir ImageRef[T]) MarshalText() ([]byte, error) {
 	var zero T
 	if ir.Reference == zero {
-		return ""
+		return []byte{}, nil
 	}
-	return reference.FamiliarString(ir.Reference)
+	s := images.FamiliarString(ir.Reference)
+	s, _, _ = strings.Cut(s, "@")
+	return []byte(s), nil
 }
 
-func (ir ImageRef[T]) MarshalText() ([]byte, error) {
-	return []byte(ir.String()), nil
+func (ir *ImageRef[T]) UnmarshalText(text []byte) error {
+	ref, err := images.ParseNormalizedNamed(string(text))
+	if err != nil {
+		return err
+	}
+	ref = reference.TagNameOnly(ref)
+	ir.Reference = ref.(T)
+	return nil
 }

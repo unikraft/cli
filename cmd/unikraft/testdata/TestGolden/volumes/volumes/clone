@@ -23,7 +23,7 @@ stdout:
 	metro:      test
 	name:       test-<VOLUME_CLONE>
 	uuid:       12345678-1234-1234-1234-123456789abc
-	state:      available
+	state:      error
 	size:       10MiB
 	persistent: true
 	timestamps:
