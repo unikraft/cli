@@ -15,10 +15,10 @@ stdout:
 	          List volumes.
 	  delete, rm, remove
 	          Remove a volume.
-	  edit
-	          Edit a volume.
 	  create
 	          Create a volume.
+	  edit
+	          Edit a volume.
 	  clone
 	          Clone a volume.
 
@@ -38,15 +38,15 @@ stdout:
 	Global flags:
 	  -h, --help
 	          Show context-sensitive help.
-	      --config ($UNIKRAFT_CONFIG)
+	      --config=<file> ($UNIKRAFT_CONFIG)
 	          Path to the configuration file.
-	      --log-level ($UNIKRAFT_LOG_LEVEL)
+	      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
 	          Set the logging level.
-	          [default: info, choice: trace,debug,info,warn,error,fatal]
-	      --log-type ($UNIKRAFT_LOG_TYPE)
+	          [default: info, choices: trace, debug, info, warn, error, fatal]
+	      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
 	          Set the log type.
-	          [default: text, choice: text,json]
-	      --profile ($UNIKRAFT_PROFILE)
+	          [default: text, choices: text, json]
+	      --profile=<name> ($UNIKRAFT_PROFILE)
 	          Set the current profile.
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
@@ -94,15 +94,15 @@ stdout:
 	Global flags:
 	  -h, --help
 	          Show context-sensitive help.
-	      --config ($UNIKRAFT_CONFIG)
+	      --config=<file> ($UNIKRAFT_CONFIG)
 	          Path to the configuration file.
-	      --log-level ($UNIKRAFT_LOG_LEVEL)
+	      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
 	          Set the logging level.
-	          [default: info, choice: trace,debug,info,warn,error,fatal]
-	      --log-type ($UNIKRAFT_LOG_TYPE)
+	          [default: info, choices: trace, debug, info, warn, error, fatal]
+	      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
 	          Set the log type.
-	          [default: text, choice: text,json]
-	      --profile ($UNIKRAFT_PROFILE)
+	          [default: text, choices: text, json]
+	      --profile=<name> ($UNIKRAFT_PROFILE)
 	          Set the current profile.
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
@@ -154,15 +154,15 @@ stdout:
 	Global flags:
 	  -h, --help
 	          Show context-sensitive help.
-	      --config ($UNIKRAFT_CONFIG)
+	      --config=<file> ($UNIKRAFT_CONFIG)
 	          Path to the configuration file.
-	      --log-level ($UNIKRAFT_LOG_LEVEL)
+	      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
 	          Set the logging level.
-	          [default: info, choice: trace,debug,info,warn,error,fatal]
-	      --log-type ($UNIKRAFT_LOG_TYPE)
+	          [default: info, choices: trace, debug, info, warn, error, fatal]
+	      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
 	          Set the log type.
-	          [default: text, choice: text,json]
-	      --profile ($UNIKRAFT_PROFILE)
+	          [default: text, choices: text, json]
+	      --profile=<name> ($UNIKRAFT_PROFILE)
 	          Set the current profile.
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
@@ -212,15 +212,15 @@ stdout:
 	Global flags:
 	  -h, --help
 	          Show context-sensitive help.
-	      --config ($UNIKRAFT_CONFIG)
+	      --config=<file> ($UNIKRAFT_CONFIG)
 	          Path to the configuration file.
-	      --log-level ($UNIKRAFT_LOG_LEVEL)
+	      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
 	          Set the logging level.
-	          [default: info, choice: trace,debug,info,warn,error,fatal]
-	      --log-type ($UNIKRAFT_LOG_TYPE)
+	          [default: info, choices: trace, debug, info, warn, error, fatal]
+	      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
 	          Set the log type.
-	          [default: text, choice: text,json]
-	      --profile ($UNIKRAFT_PROFILE)
+	          [default: text, choices: text, json]
+	      --profile=<name> ($UNIKRAFT_PROFILE)
 	          Set the current profile.
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
@@ -239,9 +239,9 @@ stdout:
 	Examples:
 	  # Create a new volume
 	  unikraft volume create \
-	    --set name=demo-volume \
-	    --set size=10 \
-	    --set metro=fra
+	  	  --name demo-volume \
+	  	  --size 10 \
+	  	  --metro fra
 
 	Fields:
 	  metro
@@ -257,9 +257,9 @@ stdout:
 	  by.*.read-only
 
 	Flags:
-	      --set, --set-file
+	      --set=<name>=<value>, --set-file=<name>=<filename>
 	          Key-value pairs to set on the volume.
-	  -e, --visual
+	      --visual
 	          Open an editor to set fields visually.
 	      --dry-run
 	          Print patches without applying them.
@@ -271,21 +271,31 @@ stdout:
 	Global flags:
 	  -h, --help
 	          Show context-sensitive help.
-	      --config ($UNIKRAFT_CONFIG)
+	      --config=<file> ($UNIKRAFT_CONFIG)
 	          Path to the configuration file.
-	      --log-level ($UNIKRAFT_LOG_LEVEL)
+	      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
 	          Set the logging level.
-	          [default: info, choice: trace,debug,info,warn,error,fatal]
-	      --log-type ($UNIKRAFT_LOG_TYPE)
+	          [default: info, choices: trace, debug, info, warn, error, fatal]
+	      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
 	          Set the log type.
-	          [default: text, choice: text,json]
-	      --profile ($UNIKRAFT_PROFILE)
+	          [default: text, choices: text, json]
+	      --profile=<name> ($UNIKRAFT_PROFILE)
 	          Set the current profile.
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
 	          [default: true]
 	      --version
 	          Print version information.
+
+	Create flags:
+	      --metro=<metro>
+	          Metro to create in.
+	          [examples: fra, sfo, nyc]
+	  -n, --name=<name>
+	          Volume name.
+	      --size=<size>
+	          Volume size.
+	          [examples: 10GiB, 100GiB]
 
 $ unikraft volume clone --help
 
@@ -301,10 +311,10 @@ stdout:
 
 	Examples:
 	  # Clone a volume with a new name
-	  unikraft volume clone demo-volume --set name=demo-volume-clone
+	  unikraft volume clone demo-volume --name demo-volume-clone
 
 	Flags:
-	      --set, --set-file
+	      --set=<name>=<value>, --set-file=<name>=<filename>
 	          Key-value pairs to set on the volume.
 	  -f, --field
 	          Specify which fields to include in the output.
@@ -314,21 +324,28 @@ stdout:
 	Global flags:
 	  -h, --help
 	          Show context-sensitive help.
-	      --config ($UNIKRAFT_CONFIG)
+	      --config=<file> ($UNIKRAFT_CONFIG)
 	          Path to the configuration file.
-	      --log-level ($UNIKRAFT_LOG_LEVEL)
+	      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
 	          Set the logging level.
-	          [default: info, choice: trace,debug,info,warn,error,fatal]
-	      --log-type ($UNIKRAFT_LOG_TYPE)
+	          [default: info, choices: trace, debug, info, warn, error, fatal]
+	      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
 	          Set the log type.
-	          [default: text, choice: text,json]
-	      --profile ($UNIKRAFT_PROFILE)
+	          [default: text, choices: text, json]
+	      --profile=<name> ($UNIKRAFT_PROFILE)
 	          Set the current profile.
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
 	          [default: true]
 	      --version
 	          Print version information.
+
+	flag-clone
+	  -n, --name=<name>
+	          New volume name.
+	      --tags=<tag>
+	          Volume tags.
+	          [examples: env=prod, team=platform]
 
 $ unikraft volume edit --help
 
@@ -344,7 +361,7 @@ stdout:
 
 	Examples:
 	  # Resize a volume
-	  unikraft volume edit demo-volume --set size=20
+	  unikraft volume edit demo-volume --size 20
 
 	Fields:
 	  metro
@@ -360,13 +377,13 @@ stdout:
 	  by.*.read-only
 
 	Flags:
-	      --set, --set-file
+	      --set=<name>=<value>, --set-file=<name>=<filename>
 	          Key-value pairs to set on the volume.
-	      --add, --add-file
+	      --add=<name>=<value>, --add-file=<name>=<filename>
 	          Key-value pairs to add to the volume.
-	      --del, --del-file
+	      --del=<name>=<value>, --del-file=<name>=<filename>
 	          Keys to delete from the volume.
-	  -e, --visual
+	      --visual
 	          Open an editor to modify fields visually.
 	      --dry-run
 	          Print patches without applying them.
@@ -378,21 +395,26 @@ stdout:
 	Global flags:
 	  -h, --help
 	          Show context-sensitive help.
-	      --config ($UNIKRAFT_CONFIG)
+	      --config=<file> ($UNIKRAFT_CONFIG)
 	          Path to the configuration file.
-	      --log-level ($UNIKRAFT_LOG_LEVEL)
+	      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
 	          Set the logging level.
-	          [default: info, choice: trace,debug,info,warn,error,fatal]
-	      --log-type ($UNIKRAFT_LOG_TYPE)
+	          [default: info, choices: trace, debug, info, warn, error, fatal]
+	      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
 	          Set the log type.
-	          [default: text, choice: text,json]
-	      --profile ($UNIKRAFT_PROFILE)
+	          [default: text, choices: text, json]
+	      --profile=<name> ($UNIKRAFT_PROFILE)
 	          Set the current profile.
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
 	          [default: true]
 	      --version
 	          Print version information.
+
+	Edit flags:
+	      --size=<size>
+	          Volume size.
+	          [examples: 20GiB, 100GiB]
 
 $ unikraft volume delete --help
 
@@ -438,15 +460,15 @@ stdout:
 	Global flags:
 	  -h, --help
 	          Show context-sensitive help.
-	      --config ($UNIKRAFT_CONFIG)
+	      --config=<file> ($UNIKRAFT_CONFIG)
 	          Path to the configuration file.
-	      --log-level ($UNIKRAFT_LOG_LEVEL)
+	      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
 	          Set the logging level.
-	          [default: info, choice: trace,debug,info,warn,error,fatal]
-	      --log-type ($UNIKRAFT_LOG_TYPE)
+	          [default: info, choices: trace, debug, info, warn, error, fatal]
+	      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
 	          Set the log type.
-	          [default: text, choice: text,json]
-	      --profile ($UNIKRAFT_PROFILE)
+	          [default: text, choices: text, json]
+	      --profile=<name> ($UNIKRAFT_PROFILE)
 	          Set the current profile.
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.

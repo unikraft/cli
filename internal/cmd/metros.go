@@ -26,8 +26,8 @@ import (
 
 type MetrosCmd struct {
 	cmd.ResourceCmd[Metro]
-	cmd.GettableResourceCmd[Metro] `set:"name=metro" set:"names=metros"`
-	cmd.ListableResourceCmd[Metro] `set:"name=metro" set:"names=metros"`
+	cmd.GettableResourceCmd[Metro]
+	cmd.ListableResourceCmd[Metro]
 }
 
 type Metro struct {

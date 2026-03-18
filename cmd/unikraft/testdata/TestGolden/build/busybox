@@ -3,7 +3,7 @@ $ unikraft build . --output index.ukp-stable.apw.unikraft.internal/jedevc/busybo
 stderr:
 	│ found buildkit addr=<docker> version=v0.0.0+unknown
 
-$ unikraft run --name test-$UNIQ_INST --metro test --output quiet jedevc/busybox-e2e:$UNIQ_IMAGE
+$ unikraft run --name test-$UNIQ_INST --metro test --output quiet --image jedevc/busybox-e2e:$UNIQ_IMAGE
 
 stdout:
 	test/test-<INST>

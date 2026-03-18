@@ -12,6 +12,9 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/alecthomas/kong"
+
+	"unikraft.com/cli/internal/config"
 	"unikraft.com/cli/internal/resource"
 	"unikraft.com/cli/internal/resource/cmd"
 	xslices "unikraft.com/cli/internal/x/slices"
@@ -20,11 +23,43 @@ import (
 
 type AnyResourceCmd struct {
 	cmd.ResourceCmd[AnyResource]
-	cmd.GettableResourceCmd[AnyResource]      `set:"name=resource" set:"names=resources"`
-	cmd.ListableResourceCmd[AnyResource]      `set:"name=resource" set:"names=resources"`
-	cmd.EditableResourceCmd[AnyResource]      `set:"name=resource" set:"names=resources"`
-	cmd.CreatableResourceCmd[AnyResource]     `set:"name=resource" set:"names=resources"`
-	cmd.BulkDeletableResourceCmd[AnyResource] `set:"name=resource" set:"names=resources"`
+	cmd.GettableResourceCmd[AnyResource]
+	cmd.ListableResourceCmd[AnyResource]
+
+	Create AnyResourceCreateCmd `cmd:"" help:"Create a resource."`
+	Edit   AnyResourceEditCmd   `cmd:"" help:"Edit a resource."`
+
+	cmd.BulkDeletableResourceCmd[AnyResource]
+}
+
+// AnyResourceCreateCmd extends the generic resource create command with shortcut
+// flags for commonly used resource fields. Each field tagged with
+// `shortcut:"<path>"` is translated into a --set <path>=<value> entry before
+// the standard create pipeline runs.
+type AnyResourceCreateCmd struct {
+	cmd.ResourceCreateCmd[AnyResource]
+
+	Type string `group:"flag-create" shortcut:"type" help:"Resource type." placeholder:"type" example:"instance,volume,service,certificate"`
+}
+
+func (c *AnyResourceCreateCmd) Run(ctx context.Context, stdio config.Stdio, sandbox *resource.Sandbox, kctx *kong.Context) error {
+	if err := cmd.ApplyShortcutFlags(&c.SetArgs, kctx.Flags()); err != nil {
+		return err
+	}
+	return c.ResourceCreateCmd.Run(ctx, stdio, sandbox)
+}
+
+// AnyResourceEditCmd extends the generic resource edit command to enable
+// shortcut flag handling.
+type AnyResourceEditCmd struct {
+	cmd.ResourceEditCmd[AnyResource]
+}
+
+func (c *AnyResourceEditCmd) Run(ctx context.Context, stdio config.Stdio, sandbox *resource.Sandbox, kctx *kong.Context) error {
+	if err := cmd.ApplyShortcutFlags(&c.SetArgs, kctx.Flags()); err != nil {
+		return err
+	}
+	return c.ResourceEditCmd.Run(ctx, stdio, sandbox)
 }
 
 var resourceBackends = []resource.Resource{

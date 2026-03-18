@@ -12,6 +12,8 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/alecthomas/kong"
+
 	"unikraft.com/cloud/sdk/platform"
 	"unikraft.com/cloud/sdk/platform/group"
 	"unikraft.com/x/kingkong"
@@ -30,18 +32,58 @@ import (
 
 type VolumesCmd struct {
 	cmd.ResourceCmd[Volume]
-	cmd.GettableResourceCmd[Volume]      `set:"name=volume" set:"names=volumes"`
-	cmd.WaitableResourceCmd[Volume]      `set:"name=volume" set:"names=volumes"`
-	cmd.ListableResourceCmd[Volume]      `set:"name=volume" set:"names=volumes"`
-	cmd.BulkDeletableResourceCmd[Volume] `set:"name=volume" set:"names=volumes"`
-	cmd.EditableResourceCmd[Volume]      `set:"name=volume" set:"names=volumes"`
-	cmd.CreatableResourceCmd[Volume]     `set:"name=volume" set:"names=volumes"`
+	cmd.GettableResourceCmd[Volume]
+	cmd.WaitableResourceCmd[Volume]
+	cmd.ListableResourceCmd[Volume]
+	cmd.BulkDeletableResourceCmd[Volume]
 
-	Clone VolumesCloneCmd `cmd:"" help:"Clone a volume." set:"name=volume"`
+	Create VolumeCreateCmd `cmd:"" help:"Create a volume."`
+	Edit   VolumeEditCmd   `cmd:"" help:"Edit a volume."`
+
+	Clone VolumesCloneCmd `cmd:"" help:"Clone a volume."`
+}
+
+// VolumeCreateCmd extends the generic resource create command with shortcut
+// flags for commonly used volume fields. Each field tagged with
+// `shortcut:"<path>"` is translated into a --set <path>=<value> entry before
+// the standard create pipeline runs.
+type VolumeCreateCmd struct {
+	cmd.ResourceCreateCmd[Volume]
+
+	Metro string              `group:"flag-create" shortcut:"metro" help:"Metro to create in." placeholder:"metro" example:"fra,sfo,nyc"`
+	Name  string              `group:"flag-create" shortcut:"name" short:"n" help:"Volume name." placeholder:"name"`
+	Size  types.SizeMebibytes `group:"flag-create" shortcut:"size" help:"Volume size." placeholder:"size" example:"10GiB,100GiB"`
+}
+
+func (c *VolumeCreateCmd) Run(ctx context.Context, stdio config.Stdio, sandbox *resource.Sandbox, kctx *kong.Context) error {
+	if err := cmd.ApplyShortcutFlags(&c.SetArgs, kctx.Flags()); err != nil {
+		return err
+	}
+	return c.ResourceCreateCmd.Run(ctx, stdio, sandbox)
+}
+
+// VolumeEditCmd extends the generic resource edit command with shortcut
+// flags for commonly used editable volume fields. Each field tagged with
+// `shortcut:"<path>"` is translated into a --set <path>=<value> entry before
+// the standard edit pipeline runs.
+type VolumeEditCmd struct {
+	cmd.ResourceEditCmd[Volume]
+
+	Size types.SizeMebibytes `group:"flag-edit" shortcut:"size" help:"Volume size." placeholder:"size" example:"20GiB,100GiB"`
+}
+
+func (c *VolumeEditCmd) Run(ctx context.Context, stdio config.Stdio, sandbox *resource.Sandbox, kctx *kong.Context) error {
+	if err := cmd.ApplyShortcutFlags(&c.SetArgs, kctx.Flags()); err != nil {
+		return err
+	}
+	return c.ResourceEditCmd.Run(ctx, stdio, sandbox)
 }
 
 type VolumesCloneCmd struct {
 	Source string `arg:"" completion-predictor:"resource-key-volume" help:"Name or UUID of the volume to clone."`
+
+	Name string   `group:"flag-clone" shortcut:"name" short:"n" help:"New volume name." placeholder:"name"`
+	Tags []string `group:"flag-clone" shortcut:"tags" help:"Volume tags." placeholder:"tag" example:"env=prod,team=platform"`
 
 	cmd.SetArgs
 
@@ -52,12 +94,18 @@ func (VolumesCloneCmd) Examples() []kingkong.Example {
 	return []kingkong.Example{
 		{
 			Description: "Clone a volume with a new name",
-			Commands:    []string{"unikraft volume clone demo-volume --set name=demo-volume-clone"},
+			Commands: []string{
+				// "unikraft volume clone demo-volume --set name=demo-volume-clone",
+				"unikraft volume clone demo-volume --name demo-volume-clone",
+			},
 		},
 	}
 }
 
-func (c *VolumesCloneCmd) Run(ctx context.Context, stdio config.Stdio, sandbox *resource.Sandbox) error {
+func (c *VolumesCloneCmd) Run(ctx context.Context, stdio config.Stdio, sandbox *resource.Sandbox, kctx *kong.Context) error {
+	if err := cmd.ApplyShortcutFlags(&c.SetArgs, kctx.Flags()); err != nil {
+		return err
+	}
 	spec := patch.PatchSpec{
 		Set: make(map[string][]string),
 	}
@@ -426,17 +474,24 @@ func (Volume) Examples() map[cmd.CmdType][]kingkong.Example {
 			{
 				Description: "Create a new volume",
 				Commands: []string{
+					// `unikraft volume create \
+					//   --set name=demo-volume \
+					//   --set size=10 \
+					//   --set metro=fra`,
 					`unikraft volume create \
-  --set name=demo-volume \
-  --set size=10 \
-  --set metro=fra`,
+	  --name demo-volume \
+	  --size 10 \
+	  --metro fra`,
 				},
 			},
 		},
 		cmd.CmdTypeEdit: {
 			{
 				Description: "Resize a volume",
-				Commands:    []string{"unikraft volume edit demo-volume --set size=20"},
+				Commands: []string{
+					// "unikraft volume edit demo-volume --set size=20",
+					"unikraft volume edit demo-volume --size 20",
+				},
 			},
 		},
 		cmd.CmdTypeDelete: {

@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/alecthomas/kong"
 	"github.com/google/uuid"
 	"unikraft.com/cloud/sdk/platform"
 	"unikraft.com/cloud/sdk/platform/group"
@@ -36,17 +37,85 @@ import (
 
 type InstancesCmd struct {
 	cmd.ResourceCmd[Instance]
-	cmd.GettableResourceCmd[Instance]      `set:"name=instance" set:"names=instances"`
-	cmd.WaitableResourceCmd[Instance]      `set:"name=instance" set:"names=instances"`
-	cmd.ListableResourceCmd[Instance]      `set:"name=instance" set:"names=instances"`
-	cmd.BulkDeletableResourceCmd[Instance] `set:"name=instance" set:"names=instances"`
-	cmd.EditableResourceCmd[Instance]      `set:"name=instance" set:"names=instances"`
-	cmd.CreatableResourceCmd[Instance]     `set:"name=instance" set:"names=instances"`
+	cmd.GettableResourceCmd[Instance]
+	cmd.WaitableResourceCmd[Instance]
+	cmd.ListableResourceCmd[Instance]
+	cmd.BulkDeletableResourceCmd[Instance]
+
+	Create InstanceCreateCmd `cmd:"" help:"Create an instance."`
+	Edit   InstanceEditCmd   `cmd:"" help:"Edit an instance."`
 
 	Logs    InstancesLogsCmd    `cmd:"" help:"Fetch and display instance logs."`
 	Start   InstancesStartCmd   `cmd:"" help:"Start one or more instances."`
 	Stop    InstancesStopCmd    `cmd:"" help:"Stop one or more instances."`
 	Restart InstancesRestartCmd `cmd:"" help:"Restart one or more instances."`
+}
+
+// InstanceCreateCmd extends the generic resource create command with shortcut
+// flags for commonly used instance fields. Each field tagged with
+// `shortcut:"<path>"` is translated into a --set <path>=<value> entry before
+// the standard create pipeline runs.
+type InstanceCreateCmd struct {
+	cmd.ResourceCreateCmd[Instance]
+
+	// Shortcut flags - ordered to match Instance struct layout.
+	Metro string `group:"flag-create" shortcut:"metro" help:"Metro to deploy in." placeholder:"metro" example:"fra,sfo,nyc"`
+	Name  string `group:"flag-create" shortcut:"name" short:"n" help:"Instance name." placeholder:"name"`
+
+	Image string `group:"flag-create" shortcut:"image" help:"Image to deploy." placeholder:"<name>:<tag>" example:"nginx:latest,my-app:v1.2.3"`
+
+	Args []string `group:"flag-create" shortcut:"runtime.args" help:"Arguments to pass to the instance." placeholder:"arg"`
+	Env  []string `group:"flag-create" shortcut:"runtime.env" short:"e" help:"Environment variables." placeholder:"<key>=<value>" example:"DEBUG=true,PORT=8080"`
+
+	Memory types.SizeMebibytes `group:"flag-create" shortcut:"resources.memory" short:"m" help:"Memory allocation." placeholder:"size" example:"128MiB,1GiB"`
+	Vcpus  int                 `group:"flag-create" shortcut:"resources.vcpus" help:"Number of vCPUs." placeholder:"n" example:"1,2,4"`
+
+	Volume []string `group:"flag-create" shortcut:"volumes" short:"v" help:"Attach volume." placeholder:"<name>:<path>[:<ro>]" example:"my-vol:/data,cache:/tmp:ro"`
+
+	Service string   `group:"flag-create" shortcut:"service.name" help:"Service group name." placeholder:"name"`
+	Publish []string `group:"flag-create" shortcut:"service.services" short:"p" help:"Publish port." placeholder:"<src>:<dest>[/<handlers>]" example:"443:8080/http+tls,80:8080/http"`
+	Domain  []string `group:"flag-create" shortcut:"service.domains" help:"Service domain." placeholder:"fqdn" example:"example.com,api.example.com"`
+
+	ScaleToZero []string `group:"flag-create" shortcut:"scale-to-zero" help:"Scale-to-zero options." placeholder:"<key>=<value>" example:"policy=on\\,cooldown-time=300"`
+
+	Restart string `group:"flag-create" shortcut:"restart.policy" help:"Restart policy." placeholder:"policy" example:"always,on-failure,never"`
+
+	Autostart *bool    `group:"flag-create" shortcut:"autostart" help:"Start instance automatically."`
+	Replicas  int64    `group:"flag-create" shortcut:"replicas" help:"Number of replicas." placeholder:"n" example:"1,3"`
+	Features  []string `group:"flag-create" shortcut:"features" help:"Instance features." placeholder:"feature"`
+}
+
+func (c *InstanceCreateCmd) Run(ctx context.Context, stdio config.Stdio, sandbox *resource.Sandbox, kctx *kong.Context) error {
+	if err := cmd.ApplyShortcutFlags(&c.SetArgs, kctx.Flags()); err != nil {
+		return err
+	}
+	return c.ResourceCreateCmd.Run(ctx, stdio, sandbox)
+}
+
+// InstanceEditCmd extends the generic resource edit command with shortcut
+// flags for commonly used editable instance fields. Each field tagged with
+// `shortcut:"<path>"` is translated into a --set <path>=<value> entry before
+// the standard edit pipeline runs.
+type InstanceEditCmd struct {
+	cmd.ResourceEditCmd[Instance]
+
+	// Shortcut flags - only fields that support editing.
+	Image string `group:"flag-edit" shortcut:"image" help:"Image to deploy." placeholder:"<name>:<tag>" example:"nginx:latest,my-app:v1.2.3"`
+
+	Args []string `group:"flag-edit" shortcut:"runtime.args" help:"Arguments to pass to the instance." placeholder:"arg"`
+	Env  []string `group:"flag-edit" shortcut:"runtime.env" short:"e" help:"Environment variables." placeholder:"<key>=<value>" example:"DEBUG=true,PORT=8080"`
+
+	Memory types.SizeMebibytes `group:"flag-edit" shortcut:"resources.memory" short:"m" help:"Memory allocation." placeholder:"size" example:"128MiB,1GiB"`
+	Vcpus  int                 `group:"flag-edit" shortcut:"resources.vcpus" help:"Number of vCPUs." placeholder:"n" example:"1,2,4"`
+
+	ScaleToZero []string `group:"flag-edit" shortcut:"scale-to-zero" help:"Scale-to-zero options." placeholder:"<key>=<value>" example:"policy=on\\,cooldown-time=300"`
+}
+
+func (c *InstanceEditCmd) Run(ctx context.Context, stdio config.Stdio, sandbox *resource.Sandbox, kctx *kong.Context) error {
+	if err := cmd.ApplyShortcutFlags(&c.SetArgs, kctx.Flags()); err != nil {
+		return err
+	}
+	return c.ResourceEditCmd.Run(ctx, stdio, sandbox)
 }
 
 type Instance struct {
@@ -686,20 +755,30 @@ func (Instance) Examples() map[cmd.CmdType][]kingkong.Example {
 			{
 				Description: "Create a new instance",
 				Commands: []string{
+					// `unikraft instance create \
+					//   --set name=demo-instance \
+					//   --set metro=fra \
+					//   --set image=nginx:latest \
+					//   --set autostart=true \
+					//   --set resources.memory=128 \
+					//   --set resources.vcpus=1`,
 					`unikraft instance create \
-  --set name=demo-instance \
-  --set metro=fra \
-  --set image=nginx:latest \
-  --set autostart=true \
-  --set resources.memory=128 \
-  --set resources.vcpus=1`,
+	  --name demo-instance \
+	  --metro fra \
+	  --image nginx:latest \
+	  --autostart \
+	  --memory 128 \
+	  --vcpus 1`,
 				},
 			},
 		},
 		cmd.CmdTypeEdit: {
 			{
 				Description: "Resize instance memory",
-				Commands:    []string{"unikraft instance edit demo-instance --set resources.memory=256"},
+				Commands: []string{
+					// "unikraft instance edit demo-instance --set resources.memory=256",
+					"unikraft instance edit demo-instance --memory 256",
+				},
 			},
 		},
 		cmd.CmdTypeDelete: {

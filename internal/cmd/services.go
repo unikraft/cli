@@ -13,6 +13,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/alecthomas/kong"
+
 	"unikraft.com/cloud/sdk/platform"
 	"unikraft.com/cloud/sdk/platform/group"
 	"unikraft.com/x/kingkong"
@@ -29,12 +31,58 @@ import (
 
 type ServicesCmd struct {
 	cmd.ResourceCmd[ServiceGroup]
-	cmd.GettableResourceCmd[ServiceGroup]      `set:"name=service" set:"names=services"`
-	cmd.WaitableResourceCmd[ServiceGroup]      `set:"name=service" set:"names=services"`
-	cmd.ListableResourceCmd[ServiceGroup]      `set:"name=service" set:"names=services"`
-	cmd.BulkDeletableResourceCmd[ServiceGroup] `set:"name=service" set:"names=services"`
-	cmd.EditableResourceCmd[ServiceGroup]      `set:"name=service" set:"names=services"`
-	cmd.CreatableResourceCmd[ServiceGroup]     `set:"name=service" set:"names=services"`
+	cmd.GettableResourceCmd[ServiceGroup]
+	cmd.WaitableResourceCmd[ServiceGroup]
+	cmd.ListableResourceCmd[ServiceGroup]
+	cmd.BulkDeletableResourceCmd[ServiceGroup]
+
+	Create ServiceCreateCmd `cmd:"" help:"Create a service group."`
+	Edit   ServiceEditCmd   `cmd:"" help:"Edit a service group."`
+}
+
+// ServiceCreateCmd extends the generic resource create command with shortcut
+// flags for commonly used service group fields. Each field tagged with
+// `shortcut:"<path>"` is translated into a --set <path>=<value> entry before
+// the standard create pipeline runs.
+type ServiceCreateCmd struct {
+	cmd.ResourceCreateCmd[ServiceGroup]
+
+	Metro string `group:"flag-create" shortcut:"metro" help:"Metro to create in." placeholder:"metro" example:"fra,sfo,nyc"`
+	Name  string `group:"flag-create" shortcut:"name" help:"Service group name." placeholder:"name"`
+
+	SoftLimit uint64 `group:"flag-create" shortcut:"limits.soft" help:"Soft limit." placeholder:"n" example:"1,5"`
+	HardLimit uint64 `group:"flag-create" shortcut:"limits.hard" help:"Hard limit." placeholder:"n" example:"10,100"`
+
+	Domains  []string `group:"flag-create" shortcut:"domains" help:"Service domains." placeholder:"fqdn" example:"example.com,api.example.com"`
+	Services []string `group:"flag-create" shortcut:"services" help:"Service ports." placeholder:"<src>:<dest>[/<handlers>]" example:"443:8080/http+tls,80:8080/http"`
+}
+
+func (c *ServiceCreateCmd) Run(ctx context.Context, stdio config.Stdio, sandbox *resource.Sandbox, kctx *kong.Context) error {
+	if err := cmd.ApplyShortcutFlags(&c.SetArgs, kctx.Flags()); err != nil {
+		return err
+	}
+	return c.ResourceCreateCmd.Run(ctx, stdio, sandbox)
+}
+
+// ServiceEditCmd extends the generic resource edit command with shortcut
+// flags for commonly used editable service group fields. Each field tagged with
+// `shortcut:"<path>"` is translated into a --set <path>=<value> entry before
+// the standard edit pipeline runs.
+type ServiceEditCmd struct {
+	cmd.ResourceEditCmd[ServiceGroup]
+
+	SoftLimit uint64 `group:"flag-edit" shortcut:"limits.soft" help:"Soft limit." placeholder:"n" example:"1,5"`
+	HardLimit uint64 `group:"flag-edit" shortcut:"limits.hard" help:"Hard limit." placeholder:"n" example:"10,100"`
+
+	Domains  []string `group:"flag-edit" shortcut:"domains" help:"Service domains." placeholder:"fqdn" example:"example.com,api.example.com"`
+	Services []string `group:"flag-edit" shortcut:"services" help:"Service ports." placeholder:"<src>:<dest>[/<handlers>]" example:"443:8080/http+tls,80:8080/http"`
+}
+
+func (c *ServiceEditCmd) Run(ctx context.Context, stdio config.Stdio, sandbox *resource.Sandbox, kctx *kong.Context) error {
+	if err := cmd.ApplyShortcutFlags(&c.SetArgs, kctx.Flags()); err != nil {
+		return err
+	}
+	return c.ResourceEditCmd.Run(ctx, stdio, sandbox)
 }
 
 type ServiceGroup struct {
@@ -117,6 +165,7 @@ func (s *Service) UnmarshalText(text []byte) error {
 }
 
 type Domain struct {
+	// TODO: consolidate these and make easier to parse
 	FQDN string `mirror:"fqdn" field:",short"`
 	Name string `field:",invisible"` // edit-only field
 
@@ -393,18 +442,26 @@ func (ServiceGroup) Examples() map[cmd.CmdType][]kingkong.Example {
 			{
 				Description: "Create a new service group",
 				Commands: []string{
+					// `unikraft service create \
+					//   --set name=demo-service \
+					//   --set metro=fra \
+					//   --set domains=name=demo \
+					//   --set services=443:8080/tls+http`,
 					`unikraft service create \
-  --set name=demo-service \
-  --set metro=fra \
-  --set domains=name=demo \
-  --set services=443:8080/tls+http`,
+	  --name demo-service \
+	  --metro fra \
+	  --domains name=demo \
+	  --services 443:8080/tls+http`,
 				},
 			},
 		},
 		cmd.CmdTypeEdit: {
 			{
 				Description: "Add a new service port",
-				Commands:    []string{"unikraft service edit demo-service --add services=8443:8080/tls"},
+				Commands: []string{
+					// "unikraft service edit demo-service --add services=8443:8080/tls",
+					"unikraft service edit demo-service --services 8443:8080/tls",
+				},
 			},
 		},
 		cmd.CmdTypeDelete: {

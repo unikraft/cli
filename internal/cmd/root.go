@@ -43,18 +43,18 @@ type UnikraftCLI struct {
 
 	Login   login.LoginCmd  `cmd:"" help:"Login to Unikraft Cloud."`
 	Logout  login.LogoutCmd `cmd:"" help:"Logout from Unikraft Cloud."`
-	Profile ProfileCmd      `cmd:"" help:"Manage Unikraft Cloud profiles." aliases:"profile,profiles"`
-	Run     RunCmd          `cmd:"" help:"Run an image as an instance."`
+	Profile ProfileCmd      `cmd:"" help:"Manage Unikraft Cloud profiles." aliases:"profile,profiles" set:"name=profile" set:"names=profiles"`
+	Run     RunCmd          `cmd:"" help:"Run an image as an instance." set:"name=instance" set:"names=instances"`
 	Build   BuildCmd        `cmd:"" help:"Build a Unikraft project into a container image."`
 
-	Metros       MetrosCmd       `cmd:"" help:"Manage Unikraft Cloud metros." aliases:"metro,metros"`
-	Instances    InstancesCmd    `cmd:"" help:"Manage Unikraft Cloud instances." aliases:"instance,instances,vm,vms"`
-	Volumes      VolumesCmd      `cmd:"" help:"Manage Unikraft Cloud volumes." aliases:"volume,volumes,vol,vols"`
-	Services     ServicesCmd     `cmd:"" help:"Manage Unikraft Cloud services." aliases:"service,services,svc,svcs"`
-	Certificates CertificatesCmd `cmd:"" help:"Manage Unikraft Cloud certificates." aliases:"certificate,certificates,crt,crts,cert,certs"`
-	Images       ImagesCmd       `cmd:"" help:"Manage Unikraft Cloud images." aliases:"image,images,img,imgs"`
+	Metros       MetrosCmd       `cmd:"" help:"Manage Unikraft Cloud metros." aliases:"metro,metros" set:"name=metro" set:"names=metros"`
+	Instances    InstancesCmd    `cmd:"" help:"Manage Unikraft Cloud instances." aliases:"instance,instances,vm,vms" set:"name=instance" set:"names=instances"`
+	Volumes      VolumesCmd      `cmd:"" help:"Manage Unikraft Cloud volumes." aliases:"volume,volumes,vol,vols" set:"name=volume" set:"names=volumes"`
+	Services     ServicesCmd     `cmd:"" help:"Manage Unikraft Cloud services." aliases:"service,services,svc,svcs" set:"name=service" set:"names=services"`
+	Certificates CertificatesCmd `cmd:"" help:"Manage Unikraft Cloud certificates." aliases:"certificate,certificates,crt,crts,cert,certs" set:"name=certificate" set:"names=certificates"`
+	Images       ImagesCmd       `cmd:"" help:"Manage Unikraft Cloud images." aliases:"image,images,img,imgs" set:"name=image" set:"names=images"`
 
-	Resources AnyResourceCmd `cmd:"" hidden:"" help:"Manage any Unikraft Cloud resource." aliases:"resource,resources"`
+	Resources AnyResourceCmd `cmd:"" hidden:"" help:"Manage any Unikraft Cloud resource." aliases:"resource,resources" set:"name=resource" set:"names=resources"`
 
 	SendAnalytics SendAnalyticsCmd `cmd:"" help:"Send analytics payload (used internally for detached analytics)." name:"_send_analytics" hidden:""`
 }
@@ -82,7 +82,7 @@ func (cli UnikraftCLI) Examples() []kingkong.Example {
 		{
 			Description: "Deploy a new instance from an image",
 			Commands: []string{
-				"unikraft run --metro=sfo --autostart -p 443:8080/http+tls --scale-to-zero policy=on nginx:latest",
+				"unikraft run --metro=sfo --image=nginx:latest --autostart -p 443:8080/http+tls --scale-to-zero policy=on",
 			},
 		},
 		{
@@ -216,6 +216,7 @@ func NewRootCmd(ctx context.Context, args []string, stdio config.Stdio) (context
 			Msg("loaded sandbox from environment")
 	}
 	kctx.Bind(sandbox)
+	kctx.Bind(kctx)
 
 	cleanup := func() error {
 		if err := sandbox.Save(); err != nil {
@@ -305,6 +306,14 @@ func NewParser(cli *UnikraftCLI) (*kong.Kong, error) {
 			return nil
 		}),
 		kong.ExplicitGroups([]kong.Group{
+			{
+				Key:   "flag-create",
+				Title: kingkong.Underline("Create flags") + ":",
+			},
+			{
+				Key:   "flag-edit",
+				Title: kingkong.Underline("Edit flags") + ":",
+			},
 			globalFlagGroup,
 			{
 				Key:   "flag-local",

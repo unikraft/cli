@@ -11,6 +11,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/alecthomas/kong"
+
 	"unikraft.com/cloud/sdk/platform"
 	"unikraft.com/cloud/sdk/platform/group"
 	"unikraft.com/x/kingkong"
@@ -27,11 +29,34 @@ import (
 
 type CertificatesCmd struct {
 	cmd.ResourceCmd[Certificate]
-	cmd.GettableResourceCmd[Certificate]      `set:"name=certificate" set:"names=certificates"`
-	cmd.WaitableResourceCmd[Certificate]      `set:"name=certificate" set:"names=certificates"`
-	cmd.ListableResourceCmd[Certificate]      `set:"name=certificate" set:"names=certificates"`
-	cmd.BulkDeletableResourceCmd[Certificate] `set:"name=certificate" set:"names=certificates"`
-	cmd.CreatableResourceCmd[Certificate]     `set:"name=certificate" set:"names=certificates"`
+	cmd.GettableResourceCmd[Certificate]
+	cmd.WaitableResourceCmd[Certificate]
+	cmd.ListableResourceCmd[Certificate]
+	cmd.BulkDeletableResourceCmd[Certificate]
+
+	Create CertificateCreateCmd `cmd:"" help:"Create a certificate."`
+}
+
+// CertificateCreateCmd extends the generic resource create command with shortcut
+// flags for commonly used certificate fields. Each field tagged with
+// `shortcut:"<path>"` is translated into a --set <path>=<value> entry before
+// the standard create pipeline runs.
+type CertificateCreateCmd struct {
+	cmd.ResourceCreateCmd[Certificate]
+
+	Metro string `group:"flag-create" shortcut:"metro" help:"Metro to create in." placeholder:"metro" example:"fra,sfo,nyc"`
+	Name  string `group:"flag-create" shortcut:"name" help:"Certificate name." placeholder:"name"`
+
+	CommonName string `group:"flag-create" shortcut:"cn" help:"Certificate common name." placeholder:"fqdn" example:"demo.unikraft.dev." aliases:"cn"`
+	Chain      string `group:"flag-create" shortcut:"chain" help:"Certificate chain PEM." placeholder:"pem"`
+	PrivateKey string `group:"flag-create" shortcut:"pkey" help:"Certificate private key PEM." placeholder:"pem" aliases:"pkey"`
+}
+
+func (c *CertificateCreateCmd) Run(ctx context.Context, stdio config.Stdio, sandbox *resource.Sandbox, kctx *kong.Context) error {
+	if err := cmd.ApplyShortcutFlags(&c.SetArgs, kctx.Flags()); err != nil {
+		return err
+	}
+	return c.ResourceCreateCmd.Run(ctx, stdio, sandbox)
 }
 
 type Certificate struct {
@@ -267,12 +292,18 @@ func (Certificate) Examples() map[cmd.CmdType][]kingkong.Example {
   -subj "/CN=demo.unikraft.dev" \
   -keyout cert.key \
   -out cert.pem`,
+					// `unikraft certificate create \
+					//   --set name=demo-cert \
+					//   --set cn=demo.unikraft.dev. \
+					//   --set-file chain=cert.pem \
+					//   --set-file pkey=cert.key \
+					//   --set metro=fra`,
 					`unikraft certificate create \
-  --set name=demo-cert \
-  --set cn=demo.unikraft.dev. \
-  --set-file chain=cert.pem \
-  --set-file pkey=cert.key \
-  --set metro=fra`,
+	  --name demo-cert \
+	  --cn demo.unikraft.dev. \
+	  --chain "$(cat cert.pem)" \
+	  --pkey "$(cat cert.key)" \
+	  --metro fra`,
 				},
 			},
 		},

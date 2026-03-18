@@ -15,10 +15,10 @@ stdout:
 	          List services.
 	  delete, rm, remove
 	          Remove a service.
-	  edit
-	          Edit a service.
 	  create
-	          Create a service.
+	          Create a service group.
+	  edit
+	          Edit a service group.
 
 	Fields:
 	  metro
@@ -36,15 +36,15 @@ stdout:
 	Global flags:
 	  -h, --help
 	          Show context-sensitive help.
-	      --config ($UNIKRAFT_CONFIG)
+	      --config=<file> ($UNIKRAFT_CONFIG)
 	          Path to the configuration file.
-	      --log-level ($UNIKRAFT_LOG_LEVEL)
+	      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
 	          Set the logging level.
-	          [default: info, choice: trace,debug,info,warn,error,fatal]
-	      --log-type ($UNIKRAFT_LOG_TYPE)
+	          [default: info, choices: trace, debug, info, warn, error, fatal]
+	      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
 	          Set the log type.
-	          [default: text, choice: text,json]
-	      --profile ($UNIKRAFT_PROFILE)
+	          [default: text, choices: text, json]
+	      --profile=<name> ($UNIKRAFT_PROFILE)
 	          Set the current profile.
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
@@ -92,15 +92,15 @@ stdout:
 	Global flags:
 	  -h, --help
 	          Show context-sensitive help.
-	      --config ($UNIKRAFT_CONFIG)
+	      --config=<file> ($UNIKRAFT_CONFIG)
 	          Path to the configuration file.
-	      --log-level ($UNIKRAFT_LOG_LEVEL)
+	      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
 	          Set the logging level.
-	          [default: info, choice: trace,debug,info,warn,error,fatal]
-	      --log-type ($UNIKRAFT_LOG_TYPE)
+	          [default: info, choices: trace, debug, info, warn, error, fatal]
+	      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
 	          Set the log type.
-	          [default: text, choice: text,json]
-	      --profile ($UNIKRAFT_PROFILE)
+	          [default: text, choices: text, json]
+	      --profile=<name> ($UNIKRAFT_PROFILE)
 	          Set the current profile.
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
@@ -152,15 +152,15 @@ stdout:
 	Global flags:
 	  -h, --help
 	          Show context-sensitive help.
-	      --config ($UNIKRAFT_CONFIG)
+	      --config=<file> ($UNIKRAFT_CONFIG)
 	          Path to the configuration file.
-	      --log-level ($UNIKRAFT_LOG_LEVEL)
+	      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
 	          Set the logging level.
-	          [default: info, choice: trace,debug,info,warn,error,fatal]
-	      --log-type ($UNIKRAFT_LOG_TYPE)
+	          [default: info, choices: trace, debug, info, warn, error, fatal]
+	      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
 	          Set the log type.
-	          [default: text, choice: text,json]
-	      --profile ($UNIKRAFT_PROFILE)
+	          [default: text, choices: text, json]
+	      --profile=<name> ($UNIKRAFT_PROFILE)
 	          Set the current profile.
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
@@ -210,15 +210,15 @@ stdout:
 	Global flags:
 	  -h, --help
 	          Show context-sensitive help.
-	      --config ($UNIKRAFT_CONFIG)
+	      --config=<file> ($UNIKRAFT_CONFIG)
 	          Path to the configuration file.
-	      --log-level ($UNIKRAFT_LOG_LEVEL)
+	      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
 	          Set the logging level.
-	          [default: info, choice: trace,debug,info,warn,error,fatal]
-	      --log-type ($UNIKRAFT_LOG_TYPE)
+	          [default: info, choices: trace, debug, info, warn, error, fatal]
+	      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
 	          Set the log type.
-	          [default: text, choice: text,json]
-	      --profile ($UNIKRAFT_PROFILE)
+	          [default: text, choices: text, json]
+	      --profile=<name> ($UNIKRAFT_PROFILE)
 	          Set the current profile.
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
@@ -229,7 +229,7 @@ stdout:
 $ unikraft service create --help
 
 stdout:
-	Create a service.
+	Create a service group.
 
 	Usage:
 	  unikraft services create [flags]
@@ -237,10 +237,10 @@ stdout:
 	Examples:
 	  # Create a new service group
 	  unikraft service create \
-	    --set name=demo-service \
-	    --set metro=fra \
-	    --set domains=name=demo \
-	    --set services=443:8080/tls+http
+	  	  --name demo-service \
+	  	  --metro fra \
+	  	  --domains name=demo \
+	  	  --services 443:8080/tls+http
 
 	Fields:
 	  metro
@@ -256,9 +256,9 @@ stdout:
 	  services, services.*
 
 	Flags:
-	      --set, --set-file
+	      --set=<name>=<value>, --set-file=<name>=<filename>
 	          Key-value pairs to set on the service.
-	  -e, --visual
+	      --visual
 	          Open an editor to set fields visually.
 	      --dry-run
 	          Print patches without applying them.
@@ -270,15 +270,15 @@ stdout:
 	Global flags:
 	  -h, --help
 	          Show context-sensitive help.
-	      --config ($UNIKRAFT_CONFIG)
+	      --config=<file> ($UNIKRAFT_CONFIG)
 	          Path to the configuration file.
-	      --log-level ($UNIKRAFT_LOG_LEVEL)
+	      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
 	          Set the logging level.
-	          [default: info, choice: trace,debug,info,warn,error,fatal]
-	      --log-type ($UNIKRAFT_LOG_TYPE)
+	          [default: info, choices: trace, debug, info, warn, error, fatal]
+	      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
 	          Set the log type.
-	          [default: text, choice: text,json]
-	      --profile ($UNIKRAFT_PROFILE)
+	          [default: text, choices: text, json]
+	      --profile=<name> ($UNIKRAFT_PROFILE)
 	          Set the current profile.
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
@@ -286,10 +286,29 @@ stdout:
 	      --version
 	          Print version information.
 
+	Create flags:
+	      --metro=<metro>
+	          Metro to create in.
+	          [examples: fra, sfo, nyc]
+	      --name=<name>
+	          Service group name.
+	      --soft-limit=<n>
+	          Soft limit.
+	          [examples: 1, 5]
+	      --hard-limit=<n>
+	          Hard limit.
+	          [examples: 10, 100]
+	      --domains=<fqdn>
+	          Service domains.
+	          [examples: example.com, api.example.com]
+	      --services=<src>:<dest>[/<handlers>]
+	          Service ports.
+	          [examples: 443:8080/http+tls, 80:8080/http]
+
 $ unikraft service edit --help
 
 stdout:
-	Edit a service.
+	Edit a service group.
 
 	Usage:
 	  unikraft services edit <name> [flags]
@@ -300,7 +319,7 @@ stdout:
 
 	Examples:
 	  # Add a new service port
-	  unikraft service edit demo-service --add services=8443:8080/tls
+	  unikraft service edit demo-service --services 8443:8080/tls
 
 	Fields:
 	  metro
@@ -316,13 +335,13 @@ stdout:
 	  services, services.*
 
 	Flags:
-	      --set, --set-file
+	      --set=<name>=<value>, --set-file=<name>=<filename>
 	          Key-value pairs to set on the service.
-	      --add, --add-file
+	      --add=<name>=<value>, --add-file=<name>=<filename>
 	          Key-value pairs to add to the service.
-	      --del, --del-file
+	      --del=<name>=<value>, --del-file=<name>=<filename>
 	          Keys to delete from the service.
-	  -e, --visual
+	      --visual
 	          Open an editor to modify fields visually.
 	      --dry-run
 	          Print patches without applying them.
@@ -334,21 +353,35 @@ stdout:
 	Global flags:
 	  -h, --help
 	          Show context-sensitive help.
-	      --config ($UNIKRAFT_CONFIG)
+	      --config=<file> ($UNIKRAFT_CONFIG)
 	          Path to the configuration file.
-	      --log-level ($UNIKRAFT_LOG_LEVEL)
+	      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
 	          Set the logging level.
-	          [default: info, choice: trace,debug,info,warn,error,fatal]
-	      --log-type ($UNIKRAFT_LOG_TYPE)
+	          [default: info, choices: trace, debug, info, warn, error, fatal]
+	      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
 	          Set the log type.
-	          [default: text, choice: text,json]
-	      --profile ($UNIKRAFT_PROFILE)
+	          [default: text, choices: text, json]
+	      --profile=<name> ($UNIKRAFT_PROFILE)
 	          Set the current profile.
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
 	          [default: true]
 	      --version
 	          Print version information.
+
+	Edit flags:
+	      --soft-limit=<n>
+	          Soft limit.
+	          [examples: 1, 5]
+	      --hard-limit=<n>
+	          Hard limit.
+	          [examples: 10, 100]
+	      --domains=<fqdn>
+	          Service domains.
+	          [examples: example.com, api.example.com]
+	      --services=<src>:<dest>[/<handlers>]
+	          Service ports.
+	          [examples: 443:8080/http+tls, 80:8080/http]
 
 $ unikraft service delete --help
 
@@ -394,15 +427,15 @@ stdout:
 	Global flags:
 	  -h, --help
 	          Show context-sensitive help.
-	      --config ($UNIKRAFT_CONFIG)
+	      --config=<file> ($UNIKRAFT_CONFIG)
 	          Path to the configuration file.
-	      --log-level ($UNIKRAFT_LOG_LEVEL)
+	      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
 	          Set the logging level.
-	          [default: info, choice: trace,debug,info,warn,error,fatal]
-	      --log-type ($UNIKRAFT_LOG_TYPE)
+	          [default: info, choices: trace, debug, info, warn, error, fatal]
+	      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
 	          Set the log type.
-	          [default: text, choice: text,json]
-	      --profile ($UNIKRAFT_PROFILE)
+	          [default: text, choices: text, json]
+	      --profile=<name> ($UNIKRAFT_PROFILE)
 	          Set the current profile.
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.

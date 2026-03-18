@@ -6,15 +6,18 @@
 package main
 
 import (
+	"io"
 	"iter"
 	"path/filepath"
 	"slices"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/alecthomas/kong"
 	"github.com/stretchr/testify/require"
-	"mvdan.cc/sh/v3/shell"
+	"mvdan.cc/sh/v3/expand"
+	"mvdan.cc/sh/v3/syntax"
 
 	"unikraft.com/cli/internal/cmd"
 	"unikraft.com/cli/internal/config"
@@ -55,7 +58,7 @@ func TestExamples(t *testing.T) {
 		t.Run(nodePath(node), func(t *testing.T) {
 			for _, example := range provider.Examples() {
 				for _, command := range example.Commands {
-					args, err := shell.Fields(command, func(string) string { return "" })
+					args, err := exampleFields(command)
 					require.NoError(t, err)
 					require.NotEmpty(t, args, "no args parsed for example")
 					if args[0] != unikraftCmd {
@@ -119,4 +122,20 @@ func nodePath(node *kong.Node) string {
 		return node.Name
 	}
 	return nodePath(node.Parent) + " " + node.Name
+}
+
+func exampleFields(s string) ([]string, error) {
+	p := syntax.NewParser()
+	var words []*syntax.Word
+	for w, err := range p.WordsSeq(strings.NewReader(s)) {
+		if err != nil {
+			return nil, err
+		}
+		words = append(words, w)
+	}
+	cfg := &expand.Config{
+		Env:      expand.FuncEnviron(func(string) string { return "" }),
+		CmdSubst: func(w io.Writer, _ *syntax.CmdSubst) error { return nil },
+	}
+	return expand.Fields(cfg, words...)
 }

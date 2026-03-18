@@ -59,7 +59,7 @@ cmd: ["sh", "/entrypoint.sh"]
 			},
 			commands: []command{
 				{args: []string{unikraftCmd, "build", ".", "--output", busyboxFull}},
-				{args: []string{unikraftCmd, "run", "--name", "test-$UNIQ_INST", "--metro", cfg.MetroName, "--output", "quiet", busybox}},
+				{args: []string{unikraftCmd, "run", "--name", "test-$UNIQ_INST", "--metro", cfg.MetroName, "--output", "quiet", "--image", busybox}},
 				{args: []string{unikraftCmd, "instance", "wait", "--until", "state==stopped", "--timeout", "10s", "test-$UNIQ_INST"}},
 				{args: []string{unikraftCmd, "instance", "logs", "test-$UNIQ_INST"}},
 				{args: []string{unikraftCmd, "instance", "delete", "test-$UNIQ_INST"}},

@@ -49,18 +49,14 @@ require (
 	unikraft.com/x/guesstermwidth v0.0.0-20260304162956-523940cab1de
 	unikraft.com/x/image-spec v0.0.0-20260304162956-523940cab1de
 	unikraft.com/x/joinerrgroup v0.0.0-20260304162956-523940cab1de
-	unikraft.com/x/kingkong v0.0.0-20260304162956-523940cab1de
+	unikraft.com/x/kingkong v0.0.0-20260318103446-c2c548a69fc0
 	unikraft.com/x/kraftfile v0.0.0-20260318103446-c2c548a69fc0
 	unikraft.com/x/log v0.0.0-20260126171022-af62c17fcdf7
 	unikraft.com/x/ptr v0.0.0-20260116231133-1da0081544af
 )
 
 require (
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.38.0 // indirect
-	go.opentelemetry.io/proto/otlp v1.7.1 // indirect
-)
-
-require (
+	charm.land/lipgloss/v2 v2.0.0-beta.3.0.20260212100304-e18737634dea // indirect
 	cyphar.com/go-pathrs v0.2.3 // indirect
 	dario.cat/mergo v1.0.2 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
@@ -71,7 +67,10 @@ require (
 	github.com/buger/jsonparser v1.1.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/charmbracelet/colorprofile v0.4.2 // indirect
+	github.com/charmbracelet/ultraviolet v0.0.0-20251205161215-1948445e3318 // indirect
 	github.com/charmbracelet/x/cellbuf v0.0.15 // indirect
+	github.com/charmbracelet/x/termios v0.1.1 // indirect
+	github.com/charmbracelet/x/windows v0.2.2 // indirect
 	github.com/clipperhouse/displaywidth v0.11.0 // indirect
 	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
 	github.com/containerd/console v1.0.5 // indirect
@@ -157,9 +156,11 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace v0.63.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.64.0 // indirect
 	go.opentelemetry.io/otel v1.40.0 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.38.0 // indirect
 	go.opentelemetry.io/otel/metric v1.40.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.40.0 // indirect
 	go.opentelemetry.io/otel/trace v1.40.0 // indirect
+	go.opentelemetry.io/proto/otlp v1.7.1 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	go4.org/mem v0.0.0-20240501181205-ae6ca9944745 // indirect
 	golang.org/x/crypto v0.49.0 // indirect

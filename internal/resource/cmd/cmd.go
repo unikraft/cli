@@ -584,7 +584,7 @@ type ResourceEditCmd[R resource.EditableResource] struct {
 	AddArgs
 	DelArgs
 
-	Visual bool `short:"e" help:"Open an editor to modify fields visually."`
+	Visual bool `help:"Open an editor to modify fields visually."`
 	DryRun bool `help:"Print patches without applying them."`
 
 	FormatOpts
@@ -698,7 +698,7 @@ func (cmd *ResourceEditCmd[R]) Run(ctx context.Context, stdio config.Stdio, sand
 type ResourceCreateCmd[R resource.CreatableResource] struct {
 	SetArgs
 
-	Visual bool `short:"e" help:"Open an editor to set fields visually."`
+	Visual bool `help:"Open an editor to set fields visually."`
 	DryRun bool `help:"Print patches without applying them."`
 
 	FormatOpts
@@ -728,9 +728,14 @@ func (cmd *ResourceCreateCmd[R]) toPatchSpec() (patch.PatchSpec, error) {
 }
 
 func (cmd *ResourceCreateCmd[R]) Run(ctx context.Context, stdio config.Stdio, sandbox *resource.Sandbox) error {
+	_, err := cmd.RunResources(ctx, stdio, sandbox)
+	return err
+}
+
+func (cmd *ResourceCreateCmd[R]) RunResources(ctx context.Context, stdio config.Stdio, sandbox *resource.Sandbox) ([]resource.Resource, error) {
 	spec, err := cmd.toPatchSpec()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var empty R
@@ -745,36 +750,36 @@ func (cmd *ResourceCreateCmd[R]) Run(ctx context.Context, stdio config.Stdio, sa
 	}
 	fields, err := fieldsResource.Fields()
 	if err != nil {
-		return fmt.Errorf("failed to get fields: %w", err)
+		return nil, fmt.Errorf("failed to get fields: %w", err)
 	}
 	patched, err := patch.PatchedFields(fields, spec)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if cmd.Visual {
 		// FIXME: should allow required fields
 		patched, err = patch.VisualCreate(ctx, stdio, empty, fields, patched)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
 	fields = patch.FilterCreatableFields(patched)
 
 	if cmd.DryRun {
-		return PrintPatches(stdio.Stdout, fields, true)
+		return nil, PrintPatches(stdio.Stdout, fields, true)
 	}
 
 	resources, opErr := r.Create(ctx, fields)
 	if opErr != nil && len(resources) == 0 {
-		return opErr
+		return nil, opErr
 	}
 	printErr := cmd.Output.
 		WithDefault(PrinterTypeKeyValue).
 		Print(ctx, stdio.Stdout, cmd.Field, empty, resources...)
 	if printErr != nil {
-		return errors.Join(opErr, printErr)
+		return resources, errors.Join(opErr, printErr)
 	}
-	return opErr
+	return resources, opErr
 }

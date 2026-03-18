@@ -15,10 +15,10 @@ stdout:
 	          List instances.
 	  delete, rm, remove
 	          Remove a instance.
-	  edit
-	          Edit a instance.
 	  create
-	          Create a instance.
+	          Create an instance.
+	  edit
+	          Edit an instance.
 	  logs
 	          Fetch and display instance logs.
 	  start
@@ -57,15 +57,15 @@ stdout:
 	Global flags:
 	  -h, --help
 	          Show context-sensitive help.
-	      --config ($UNIKRAFT_CONFIG)
+	      --config=<file> ($UNIKRAFT_CONFIG)
 	          Path to the configuration file.
-	      --log-level ($UNIKRAFT_LOG_LEVEL)
+	      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
 	          Set the logging level.
-	          [default: info, choice: trace,debug,info,warn,error,fatal]
-	      --log-type ($UNIKRAFT_LOG_TYPE)
+	          [default: info, choices: trace, debug, info, warn, error, fatal]
+	      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
 	          Set the log type.
-	          [default: text, choice: text,json]
-	      --profile ($UNIKRAFT_PROFILE)
+	          [default: text, choices: text, json]
+	      --profile=<name> ($UNIKRAFT_PROFILE)
 	          Set the current profile.
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
@@ -126,15 +126,15 @@ stdout:
 	Global flags:
 	  -h, --help
 	          Show context-sensitive help.
-	      --config ($UNIKRAFT_CONFIG)
+	      --config=<file> ($UNIKRAFT_CONFIG)
 	          Path to the configuration file.
-	      --log-level ($UNIKRAFT_LOG_LEVEL)
+	      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
 	          Set the logging level.
-	          [default: info, choice: trace,debug,info,warn,error,fatal]
-	      --log-type ($UNIKRAFT_LOG_TYPE)
+	          [default: info, choices: trace, debug, info, warn, error, fatal]
+	      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
 	          Set the log type.
-	          [default: text, choice: text,json]
-	      --profile ($UNIKRAFT_PROFILE)
+	          [default: text, choices: text, json]
+	      --profile=<name> ($UNIKRAFT_PROFILE)
 	          Set the current profile.
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
@@ -199,15 +199,15 @@ stdout:
 	Global flags:
 	  -h, --help
 	          Show context-sensitive help.
-	      --config ($UNIKRAFT_CONFIG)
+	      --config=<file> ($UNIKRAFT_CONFIG)
 	          Path to the configuration file.
-	      --log-level ($UNIKRAFT_LOG_LEVEL)
+	      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
 	          Set the logging level.
-	          [default: info, choice: trace,debug,info,warn,error,fatal]
-	      --log-type ($UNIKRAFT_LOG_TYPE)
+	          [default: info, choices: trace, debug, info, warn, error, fatal]
+	      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
 	          Set the log type.
-	          [default: text, choice: text,json]
-	      --profile ($UNIKRAFT_PROFILE)
+	          [default: text, choices: text, json]
+	      --profile=<name> ($UNIKRAFT_PROFILE)
 	          Set the current profile.
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
@@ -270,15 +270,15 @@ stdout:
 	Global flags:
 	  -h, --help
 	          Show context-sensitive help.
-	      --config ($UNIKRAFT_CONFIG)
+	      --config=<file> ($UNIKRAFT_CONFIG)
 	          Path to the configuration file.
-	      --log-level ($UNIKRAFT_LOG_LEVEL)
+	      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
 	          Set the logging level.
-	          [default: info, choice: trace,debug,info,warn,error,fatal]
-	      --log-type ($UNIKRAFT_LOG_TYPE)
+	          [default: info, choices: trace, debug, info, warn, error, fatal]
+	      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
 	          Set the log type.
-	          [default: text, choice: text,json]
-	      --profile ($UNIKRAFT_PROFILE)
+	          [default: text, choices: text, json]
+	      --profile=<name> ($UNIKRAFT_PROFILE)
 	          Set the current profile.
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
@@ -289,7 +289,7 @@ stdout:
 $ unikraft instance create --help
 
 stdout:
-	Create a instance.
+	Create an instance.
 
 	Usage:
 	  unikraft instances create [flags]
@@ -297,12 +297,12 @@ stdout:
 	Examples:
 	  # Create a new instance
 	  unikraft instance create \
-	    --set name=demo-instance \
-	    --set metro=fra \
-	    --set image=nginx:latest \
-	    --set autostart=true \
-	    --set resources.memory=128 \
-	    --set resources.vcpus=1
+	  	  --name demo-instance \
+	  	  --metro fra \
+	  	  --image nginx:latest \
+	  	  --autostart \
+	  	  --memory 128 \
+	  	  --vcpus 1
 
 	Fields:
 	  metro
@@ -331,9 +331,9 @@ stdout:
 	  features
 
 	Flags:
-	      --set, --set-file
+	      --set=<name>=<value>, --set-file=<name>=<filename>
 	          Key-value pairs to set on the instance.
-	  -e, --visual
+	      --visual
 	          Open an editor to set fields visually.
 	      --dry-run
 	          Print patches without applying them.
@@ -345,15 +345,15 @@ stdout:
 	Global flags:
 	  -h, --help
 	          Show context-sensitive help.
-	      --config ($UNIKRAFT_CONFIG)
+	      --config=<file> ($UNIKRAFT_CONFIG)
 	          Path to the configuration file.
-	      --log-level ($UNIKRAFT_LOG_LEVEL)
+	      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
 	          Set the logging level.
-	          [default: info, choice: trace,debug,info,warn,error,fatal]
-	      --log-type ($UNIKRAFT_LOG_TYPE)
+	          [default: info, choices: trace, debug, info, warn, error, fatal]
+	      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
 	          Set the log type.
-	          [default: text, choice: text,json]
-	      --profile ($UNIKRAFT_PROFILE)
+	          [default: text, choices: text, json]
+	      --profile=<name> ($UNIKRAFT_PROFILE)
 	          Set the current profile.
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
@@ -361,10 +361,55 @@ stdout:
 	      --version
 	          Print version information.
 
+	Create flags:
+	      --metro=<metro>
+	          Metro to deploy in.
+	          [examples: fra, sfo, nyc]
+	  -n, --name=<name>
+	          Instance name.
+	      --image=<name>:<tag>
+	          Image to deploy.
+	          [examples: nginx:latest, my-app:v1.2.3]
+	      --args=<arg>
+	          Arguments to pass to the instance.
+	  -e, --env=<key>=<value>
+	          Environment variables.
+	          [examples: DEBUG=true, PORT=8080]
+	  -m, --memory=<size>
+	          Memory allocation.
+	          [examples: 128MiB, 1GiB]
+	      --vcpus=<n>
+	          Number of vCPUs.
+	          [examples: 1, 2, 4]
+	  -v, --volume=<name>:<path>[:<ro>]
+	          Attach volume.
+	          [examples: my-vol:/data, cache:/tmp:ro]
+	      --service=<name>
+	          Service group name.
+	  -p, --publish=<src>:<dest>[/<handlers>]
+	          Publish port.
+	          [examples: 443:8080/http+tls, 80:8080/http]
+	      --domain=<fqdn>
+	          Service domain.
+	          [examples: example.com, api.example.com]
+	      --scale-to-zero=<key>=<value>
+	          Scale-to-zero options.
+	          [example: policy=on,cooldown-time=300]
+	      --restart=<policy>
+	          Restart policy.
+	          [examples: always, on-failure, never]
+	      --autostart
+	          Start instance automatically.
+	      --replicas=<n>
+	          Number of replicas.
+	          [examples: 1, 3]
+	      --features=<feature>
+	          Instance features.
+
 $ unikraft instance edit --help
 
 stdout:
-	Edit a instance.
+	Edit an instance.
 
 	Usage:
 	  unikraft instances edit <name> [flags]
@@ -375,7 +420,7 @@ stdout:
 
 	Examples:
 	  # Resize instance memory
-	  unikraft instance edit demo-instance --set resources.memory=256
+	  unikraft instance edit demo-instance --memory 256
 
 	Fields:
 	  metro
@@ -404,13 +449,13 @@ stdout:
 	  features
 
 	Flags:
-	      --set, --set-file
+	      --set=<name>=<value>, --set-file=<name>=<filename>
 	          Key-value pairs to set on the instance.
-	      --add, --add-file
+	      --add=<name>=<value>, --add-file=<name>=<filename>
 	          Key-value pairs to add to the instance.
-	      --del, --del-file
+	      --del=<name>=<value>, --del-file=<name>=<filename>
 	          Keys to delete from the instance.
-	  -e, --visual
+	      --visual
 	          Open an editor to modify fields visually.
 	      --dry-run
 	          Print patches without applying them.
@@ -422,21 +467,40 @@ stdout:
 	Global flags:
 	  -h, --help
 	          Show context-sensitive help.
-	      --config ($UNIKRAFT_CONFIG)
+	      --config=<file> ($UNIKRAFT_CONFIG)
 	          Path to the configuration file.
-	      --log-level ($UNIKRAFT_LOG_LEVEL)
+	      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
 	          Set the logging level.
-	          [default: info, choice: trace,debug,info,warn,error,fatal]
-	      --log-type ($UNIKRAFT_LOG_TYPE)
+	          [default: info, choices: trace, debug, info, warn, error, fatal]
+	      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
 	          Set the log type.
-	          [default: text, choice: text,json]
-	      --profile ($UNIKRAFT_PROFILE)
+	          [default: text, choices: text, json]
+	      --profile=<name> ($UNIKRAFT_PROFILE)
 	          Set the current profile.
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
 	          [default: true]
 	      --version
 	          Print version information.
+
+	Edit flags:
+	      --image=<name>:<tag>
+	          Image to deploy.
+	          [examples: nginx:latest, my-app:v1.2.3]
+	      --args=<arg>
+	          Arguments to pass to the instance.
+	  -e, --env=<key>=<value>
+	          Environment variables.
+	          [examples: DEBUG=true, PORT=8080]
+	  -m, --memory=<size>
+	          Memory allocation.
+	          [examples: 128MiB, 1GiB]
+	      --vcpus=<n>
+	          Number of vCPUs.
+	          [examples: 1, 2, 4]
+	      --scale-to-zero=<key>=<value>
+	          Scale-to-zero options.
+	          [example: policy=on,cooldown-time=300]
 
 $ unikraft instance delete --help
 
@@ -495,15 +559,15 @@ stdout:
 	Global flags:
 	  -h, --help
 	          Show context-sensitive help.
-	      --config ($UNIKRAFT_CONFIG)
+	      --config=<file> ($UNIKRAFT_CONFIG)
 	          Path to the configuration file.
-	      --log-level ($UNIKRAFT_LOG_LEVEL)
+	      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
 	          Set the logging level.
-	          [default: info, choice: trace,debug,info,warn,error,fatal]
-	      --log-type ($UNIKRAFT_LOG_TYPE)
+	          [default: info, choices: trace, debug, info, warn, error, fatal]
+	      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
 	          Set the log type.
-	          [default: text, choice: text,json]
-	      --profile ($UNIKRAFT_PROFILE)
+	          [default: text, choices: text, json]
+	      --profile=<name> ($UNIKRAFT_PROFILE)
 	          Set the current profile.
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
@@ -545,15 +609,15 @@ stdout:
 	Global flags:
 	  -h, --help
 	          Show context-sensitive help.
-	      --config ($UNIKRAFT_CONFIG)
+	      --config=<file> ($UNIKRAFT_CONFIG)
 	          Path to the configuration file.
-	      --log-level ($UNIKRAFT_LOG_LEVEL)
+	      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
 	          Set the logging level.
-	          [default: info, choice: trace,debug,info,warn,error,fatal]
-	      --log-type ($UNIKRAFT_LOG_TYPE)
+	          [default: info, choices: trace, debug, info, warn, error, fatal]
+	      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
 	          Set the log type.
-	          [default: text, choice: text,json]
-	      --profile ($UNIKRAFT_PROFILE)
+	          [default: text, choices: text, json]
+	      --profile=<name> ($UNIKRAFT_PROFILE)
 	          Set the current profile.
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
@@ -586,15 +650,15 @@ stdout:
 	Global flags:
 	  -h, --help
 	          Show context-sensitive help.
-	      --config ($UNIKRAFT_CONFIG)
+	      --config=<file> ($UNIKRAFT_CONFIG)
 	          Path to the configuration file.
-	      --log-level ($UNIKRAFT_LOG_LEVEL)
+	      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
 	          Set the logging level.
-	          [default: info, choice: trace,debug,info,warn,error,fatal]
-	      --log-type ($UNIKRAFT_LOG_TYPE)
+	          [default: info, choices: trace, debug, info, warn, error, fatal]
+	      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
 	          Set the log type.
-	          [default: text, choice: text,json]
-	      --profile ($UNIKRAFT_PROFILE)
+	          [default: text, choices: text, json]
+	      --profile=<name> ($UNIKRAFT_PROFILE)
 	          Set the current profile.
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
@@ -638,15 +702,15 @@ stdout:
 	Global flags:
 	  -h, --help
 	          Show context-sensitive help.
-	      --config ($UNIKRAFT_CONFIG)
+	      --config=<file> ($UNIKRAFT_CONFIG)
 	          Path to the configuration file.
-	      --log-level ($UNIKRAFT_LOG_LEVEL)
+	      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
 	          Set the logging level.
-	          [default: info, choice: trace,debug,info,warn,error,fatal]
-	      --log-type ($UNIKRAFT_LOG_TYPE)
+	          [default: info, choices: trace, debug, info, warn, error, fatal]
+	      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
 	          Set the log type.
-	          [default: text, choice: text,json]
-	      --profile ($UNIKRAFT_PROFILE)
+	          [default: text, choices: text, json]
+	      --profile=<name> ($UNIKRAFT_PROFILE)
 	          Set the current profile.
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
@@ -687,15 +751,15 @@ stdout:
 	Global flags:
 	  -h, --help
 	          Show context-sensitive help.
-	      --config ($UNIKRAFT_CONFIG)
+	      --config=<file> ($UNIKRAFT_CONFIG)
 	          Path to the configuration file.
-	      --log-level ($UNIKRAFT_LOG_LEVEL)
+	      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
 	          Set the logging level.
-	          [default: info, choice: trace,debug,info,warn,error,fatal]
-	      --log-type ($UNIKRAFT_LOG_TYPE)
+	          [default: info, choices: trace, debug, info, warn, error, fatal]
+	      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
 	          Set the log type.
-	          [default: text, choice: text,json]
-	      --profile ($UNIKRAFT_PROFILE)
+	          [default: text, choices: text, json]
+	      --profile=<name> ($UNIKRAFT_PROFILE)
 	          Set the current profile.
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.

@@ -1,3 +1,5 @@
+charm.land/lipgloss/v2 v2.0.0-beta.3.0.20260212100304-e18737634dea h1:XBmpGhIKPN8o9VjuXg+X5WXFsEqUs/YtPx0Q0zzmTTA=
+charm.land/lipgloss/v2 v2.0.0-beta.3.0.20260212100304-e18737634dea/go.mod h1:xylWHUuJWcFJqoGrKdZP8Z0y3THC6xqrnfl1IYDviTE=
 cyphar.com/go-pathrs v0.2.3 h1:0pH8gep37wB0BgaXrEaN1OtZhUMeS7VvaejSr6i822o=
 cyphar.com/go-pathrs v0.2.3/go.mod h1:y8f1EMG7r+hCuFf/rXsKqMJrJAUoADZGNh5/vZPKcGc=
 dario.cat/mergo v1.0.2 h1:85+piFYR1tMbRrLcDwR18y4UKJ3aH1Tbzi24VRW1TK8=
@@ -40,12 +42,18 @@ github.com/charmbracelet/colorprofile v0.4.2 h1:BdSNuMjRbotnxHSfxy+PCSa4xAmz7szw
 github.com/charmbracelet/colorprofile v0.4.2/go.mod h1:0rTi81QpwDElInthtrQ6Ni7cG0sDtwAd4C4le060fT8=
 github.com/charmbracelet/lipgloss v1.1.0 h1:vYXsiLHVkK7fp74RkV7b2kq9+zDLoEU4MZoFqR/noCY=
 github.com/charmbracelet/lipgloss v1.1.0/go.mod h1:/6Q8FR2o+kj8rz4Dq0zQc3vYf7X+B0binUUBwA0aL30=
+github.com/charmbracelet/ultraviolet v0.0.0-20251205161215-1948445e3318 h1:OqDqxQZliC7C8adA7KjelW3OjtAxREfeHkNcd66wpeI=
+github.com/charmbracelet/ultraviolet v0.0.0-20251205161215-1948445e3318/go.mod h1:Y6kE2GzHfkyQQVCSL9r2hwokSrIlHGzZG+71+wDYSZI=
 github.com/charmbracelet/x/ansi v0.11.6 h1:GhV21SiDz/45W9AnV2R61xZMRri5NlLnl6CVF7ihZW8=
 github.com/charmbracelet/x/ansi v0.11.6/go.mod h1:2JNYLgQUsyqaiLovhU2Rv/pb8r6ydXKS3NIttu3VGZQ=
 github.com/charmbracelet/x/cellbuf v0.0.15 h1:ur3pZy0o6z/R7EylET877CBxaiE1Sp1GMxoFPAIztPI=
 github.com/charmbracelet/x/cellbuf v0.0.15/go.mod h1:J1YVbR7MUuEGIFPCaaZ96KDl5NoS0DAWkskup+mOY+Q=
 github.com/charmbracelet/x/term v0.2.2 h1:xVRT/S2ZcKdhhOuSP4t5cLi5o+JxklsoEObBSgfgZRk=
 github.com/charmbracelet/x/term v0.2.2/go.mod h1:kF8CY5RddLWrsgVwpw4kAa6TESp6EB5y3uxGLeCqzAI=
+github.com/charmbracelet/x/termios v0.1.1 h1:o3Q2bT8eqzGnGPOYheoYS8eEleT5ZVNYNy8JawjaNZY=
+github.com/charmbracelet/x/termios v0.1.1/go.mod h1:rB7fnv1TgOPOyyKRJ9o+AsTU/vK5WHJ2ivHeut/Pcwo=
+github.com/charmbracelet/x/windows v0.2.2 h1:IofanmuvaxnKHuV04sC0eBy/smG6kIKrWG2/jYn2GuM=
+github.com/charmbracelet/x/windows v0.2.2/go.mod h1:/8XtdKZzedat74NQFn0NGlGL4soHB0YQZrETF96h75k=
 github.com/clipperhouse/displaywidth v0.11.0 h1:lBc6kY44VFw+TDx4I8opi/EtL9m20WSEFgwIwO+UVM8=
 github.com/clipperhouse/displaywidth v0.11.0/go.mod h1:bkrFNkf81G8HyVqmKGxsPufD3JhNl3dSqnGhOoSD/o0=
 github.com/clipperhouse/uax29/v2 v2.7.0 h1:+gs4oBZ2gPfVrKPthwbMzWZDaAFPGYK72F0NJv2v7Vk=
@@ -475,8 +483,8 @@ unikraft.com/x/image-spec v0.0.0-20260304162956-523940cab1de h1:D0yMS95zf5Vgi479
 unikraft.com/x/image-spec v0.0.0-20260304162956-523940cab1de/go.mod h1:l0+tgd72OA6DzrX+V7z9XYjd80PrMJMCPnXNTODBjrc=
 unikraft.com/x/joinerrgroup v0.0.0-20260304162956-523940cab1de h1:cm4FnPvnahRIK0derbI+T4ds1LsD5CFeyyAvIqcOCek=
 unikraft.com/x/joinerrgroup v0.0.0-20260304162956-523940cab1de/go.mod h1:XND1VvLxwqKFGrmdwUTWps4WEpMm7HTHPQg9HWQtrxg=
-unikraft.com/x/kingkong v0.0.0-20260304162956-523940cab1de h1:jrsspHGxv0kXZG/9aZRQNwJidV/ZmI2ywkw2Zh4ZbeE=
-unikraft.com/x/kingkong v0.0.0-20260304162956-523940cab1de/go.mod h1:r7a+ee0VOkocN4sCclW70Z3dFTShgfUcnyHOW/p/2A4=
+unikraft.com/x/kingkong v0.0.0-20260318103446-c2c548a69fc0 h1:MbWYcTDo3M0CJq4vC4oru/9foAFnkXFcMpvHcmlsf0s=
+unikraft.com/x/kingkong v0.0.0-20260318103446-c2c548a69fc0/go.mod h1:x/sY2g/oA3GKDTZyOFC1xArmd6ZySwc4KZlp1MO8a2k=
 unikraft.com/x/kraftfile v0.0.0-20260318103446-c2c548a69fc0 h1:uhgXdAhZzAM5AGeymiyeP8zmZGcOj94YYsnc0JmuRTg=
 unikraft.com/x/kraftfile v0.0.0-20260318103446-c2c548a69fc0/go.mod h1:OYaIMOzV1IpbZCe2J3SuC5jvT4tAfR0XG9uOPPD+p50=
 unikraft.com/x/log v0.0.0-20260126171022-af62c17fcdf7 h1:kFOE7rmK33PiJ2GbWFd3v0WrE8DeAaQsPjrUQ+15CIU=

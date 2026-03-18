@@ -36,9 +36,9 @@ import (
 
 type ImagesCmd struct {
 	cmd.ResourceCmd[ImageEntry]
-	cmd.GettableResourceCmd[Image] `set:"name=image" set:"names=images"`
+	cmd.GettableResourceCmd[Image]
 
-	List ImagesListCmd `cmd:"" set:"name=image" set:"names=images" help:"List images." aliases:"ls"`
+	List ImagesListCmd `cmd:"" help:"List images." aliases:"ls"`
 
 	Copy ImagesCopyCmd `cmd:"" help:"Copy images."`
 }
