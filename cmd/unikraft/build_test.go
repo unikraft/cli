@@ -18,8 +18,9 @@ func buildTestCases(t *testing.T, cfg *integration.Config) []testCase {
 		t.Skip("integration config not found")
 	}
 
-	busybox := cfg.Profile.Organization + "/busybox-e2e:$UNIQ_IMAGE"
-	busyboxFull := fmt.Sprintf("%s/%s", cfg.Metro.Index().Host, busybox)
+	busybox := fmt.Sprintf("%s/busybox-e2e:$UNIQ_IMAGE", cfg.Profile.Organization)
+	// this is what we'd use to test direct push
+	// busybox := fmt.Sprintf("%s/%s/busybox-e2e:$UNIQ_IMAGE", cfg.Metro.Index().Host, cfg.Profile.Organization)
 
 	return []testCase{
 		{
@@ -58,7 +59,7 @@ cmd: ["sh", "/entrypoint.sh"]
 `,
 			},
 			commands: []command{
-				{args: []string{unikraftCmd, "build", ".", "--output", busyboxFull}},
+				{args: []string{unikraftCmd, "build", ".", "--output", busybox}},
 				{args: []string{unikraftCmd, "run", "--name", "test-$UNIQ_INST", "--metro", cfg.MetroName, "--output", "quiet", busybox}},
 				{args: []string{unikraftCmd, "instance", "wait", "--until", "state==stopped", "--timeout", "10s", "test-$UNIQ_INST"}},
 				{args: []string{unikraftCmd, "instance", "logs", "test-$UNIQ_INST"}},

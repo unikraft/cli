@@ -1,4 +1,4 @@
-$ unikraft build . --output index.ukp-stable.apw.unikraft.internal/jedevc/busybox-e2e:$UNIQ_IMAGE
+$ unikraft build . --output jedevc/busybox-e2e:$UNIQ_IMAGE
 
 stderr:
 	│ found buildkit addr=<docker> version=v0.0.0+unknown
@@ -27,7 +27,6 @@ stdout:
 	  created:    RELATIVE_TIME
 	stop:
 	  reason:     app exit
-	  exit-code:  0
 
 $ unikraft instance logs test-$UNIQ_INST
 

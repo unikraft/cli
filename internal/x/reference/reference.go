@@ -125,3 +125,48 @@ func splitDockerDomain(name string, opt *parseOptions) (domain, remoteName strin
 
 	return domain, remoteName
 }
+
+func FamiliarString(ref reference.Reference, opts ...ParseOpt) string {
+	opt := &parseOptions{
+		defaultDomain: dockerDomain,
+		defaultPrefix: "library/",
+	}
+	for _, o := range opts {
+		o(opt)
+	}
+
+	nn, ok := ref.(reference.Named)
+	if !ok {
+		return ref.String()
+	}
+
+	domain := reference.Domain(nn)
+	if domain == opt.defaultDomain {
+		domain = ""
+	}
+
+	path := reference.Path(nn)
+	if domain == "" {
+		path = strings.TrimPrefix(path, opt.defaultPrefix)
+		path = strings.TrimPrefix(path, "/")
+	} else {
+		path = "/" + path
+	}
+
+	tag := ""
+	if tagged, ok := ref.(reference.NamedTagged); ok {
+		tag = tagged.Tag()
+		if tag == "latest" {
+			tag = ""
+		} else {
+			tag = ":" + tag
+		}
+	}
+
+	digest := ""
+	if canonical, ok := ref.(reference.Canonical); ok {
+		digest = "@" + canonical.Digest().String()
+	}
+
+	return domain + path + tag + digest
+}

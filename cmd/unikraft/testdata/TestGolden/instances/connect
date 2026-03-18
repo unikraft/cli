@@ -28,6 +28,35 @@ stdout:
 
 $ FQDN=$(unikraft instance inspect test-$UNIQ_INST --output 'template={{ (index .service.domains 0).fqdn }}')
 
+$ unikraft instance wait --until state==running --timeout 10s test-$UNIQ_INST
+
+stdout:
+	metro:        test
+	name:         test-<INST>
+	uuid:         12345678-1234-1234-1234-123456789abc
+	state:        running
+	image:        nginx
+	runtime:
+	  args:       /usr/bin/nginx,-c,/etc/nginx/nginx.conf
+	  env:
+	    A:        1
+	    B:        2
+	    C:        3
+	resources:
+	  memory:     128MiB
+	  vcpus:      1
+	service:
+	  uuid:       12345678-1234-1234-1234-123456789abc
+	  name:       <SERVICE_NAME>
+	  domains:
+	  - fqdn:     <DOMAIN>.unikraft.internal
+	networks:
+	- uuid:       12345678-1234-1234-1234-123456789abc
+	  private-ip: 10.X.X.X
+	  mac:        aa:bb:cc:dd:ee:ff
+	timestamps:
+	  created:    RELATIVE_TIME
+
 $ curl -k --fail --silent --show-error --output /dev/null --write-out 'HTTP %{http_code} OK\n%header{server}\n' --retry 10 --retry-delay 2 --retry-all-errors --connect-timeout 5 --max-time 10 https://$FQDN
 
 stdout:

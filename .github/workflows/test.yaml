@@ -66,4 +66,4 @@ jobs:
           echo "${UNIKRAFT_CONFIG}" > ~/.config/unikraft/config.yaml
           task --yes integration
         env:
-          UNIKRAFT_CONFIG: ${{ secrets.UNIKRAFT_CONFIG }}
+          UNIKRAFT_CONFIG: ${{ secrets.UNIKRAFT_CONFIG_STAGING }}

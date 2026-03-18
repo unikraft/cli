@@ -77,7 +77,7 @@ func instancesTestCases(t *testing.T, cfg *integration.Config) []testCase {
 					"--set", "resources.memory=16Mib",
 					"--set", "resources.vcpus=1",
 				}},
-				{args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}},
+				{args: []string{unikraftCmd, "instance", "wait", "--until", "state==stopped", "--timeout", "10s", "test-$UNIQ_INST"}},
 				{args: []string{unikraftCmd, "instance", "delete", "test-$UNIQ_INST"}},
 			},
 			cleaners: instanceCleaners,
@@ -106,6 +106,7 @@ func instancesTestCases(t *testing.T, cfg *integration.Config) []testCase {
 					},
 					captureEnv: "FQDN",
 				},
+				{args: []string{unikraftCmd, "instance", "wait", "--until", "state==running", "--timeout", "10s", "test-$UNIQ_INST"}},
 				{args: []string{
 					"curl",
 					"-k",

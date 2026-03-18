@@ -45,8 +45,7 @@ stdout:
 	  timestamps:
 	    created:    RELATIVE_TIME
 	+ stop:
-	+   reason:     user shutdown complete
-	+   exit-code:  137
+	+   reason:     user stop
 
 $ unikraft instance inspect test-$UNIQ_INST
 
@@ -71,8 +70,7 @@ stdout:
 	timestamps:
 	  created:    RELATIVE_TIME
 	stop:
-	  reason:     user shutdown complete
-	  exit-code:  137
+	  reason:     user stop
 
 $ unikraft instance start test-$UNIQ_INST
 
@@ -98,8 +96,7 @@ stdout:
 	  timestamps:
 	    created:    RELATIVE_TIME
 	- stop:
-	-   reason:     user shutdown complete
-	-   exit-code:  137
+	-   reason:     user stop
 
 $ unikraft instance inspect test-$UNIQ_INST
 
@@ -148,8 +145,7 @@ stdout:
 	  timestamps:
 	    created:    RELATIVE_TIME
 	+ stop:
-	+   reason:     user shutdown complete
-	+   exit-code:  137
+	+   reason:     user stop
 
 $ unikraft instance inspect test-$UNIQ_INST
 
@@ -174,8 +170,7 @@ stdout:
 	timestamps:
 	  created:    RELATIVE_TIME
 	stop:
-	  reason:     user shutdown complete
-	  exit-code:  137
+	  reason:     user stop
 
 $ unikraft instance edit test-$UNIQ_INST --set state=running
 
@@ -201,8 +196,7 @@ stdout:
 	  timestamps:
 	    created:    RELATIVE_TIME
 	- stop:
-	-   reason:     user shutdown complete
-	-   exit-code:  137
+	-   reason:     user stop
 
 $ unikraft instance inspect test-$UNIQ_INST
 
