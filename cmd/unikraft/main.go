@@ -196,7 +196,7 @@ func run(ctx context.Context, args []string, stdio config.Stdio) (context.Contex
 		ctx = telemetry.WithCommand(ctx, cmdPath)
 	}
 
-	err = cli.RunNode(node, &opts.Config)
+	err = cli.RunNode(node, &opts.ConfigPath)
 	if cleanup != nil {
 		err = errors.Join(err, cleanup())
 	}

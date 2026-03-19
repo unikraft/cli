@@ -1,0 +1,59 @@
+$ unikraft config get
+
+stdout:
+	path:           /tmp/TestGolden/001/config.yaml
+	profile:        default
+	profiles:
+	- name:         default
+	  type:         cloud
+	  token:        <token>
+	  organization: jedevc
+	  metros:
+	  - name:       test
+	    endpoint:   https://api.test.unikraft.internal
+	    country:    xx
+
+$ unikraft config get -o json
+
+stdout:
+	[
+	  {
+	    "path": "/tmp/TestGolden/001/config.yaml",
+	    "profile": "default",
+	    "profiles": {
+	      "default": {
+	        "control-plane": "",
+	        "metros": [
+	          {
+	            "country": "xx",
+	            "endpoint": "https://api.test.unikraft.internal",
+	            "insecure": false,
+	            "name": "test"
+	          }
+	        ],
+	        "name": "default",
+	        "organization": "jedevc",
+	        "token": "<token>",
+	        "type": "cloud"
+	      }
+	    }
+	  }
+	]
+
+$ unikraft config get -o yaml
+
+stdout:
+	- path: /tmp/TestGolden/001/config.yaml
+	  profile: default
+	  profiles:
+	    default:
+	      control-plane: ""
+	      metros:
+	      - country: xx
+	        endpoint: https://api.test.unikraft.internal
+	        insecure: false
+	        name: test
+	      name: default
+	      organization: jedevc
+	      token: <token>
+	      type: cloud

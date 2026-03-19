@@ -216,7 +216,7 @@ func (cmd *ResourceListCmd[R]) Run(ctx context.Context, stdio config.Stdio, sand
 }
 
 type ResourceGetCmd[R resource.GettableResource] struct {
-	Name  []string       `arg:"" completion-predictor:"resource-key-${name}" help:"Names of the ${names} to inspect."`
+	Name  []string       `arg:"" optional:"" completion-predictor:"resource-key-${name}" help:"Names of the ${names} to inspect."`
 	Watch *time.Duration `short:"w" help:"Watch for changes and refresh output." type:"optional"`
 
 	FormatOpts
@@ -239,9 +239,23 @@ func (cmd *ResourceGetCmd[R]) Run(ctx context.Context, stdio config.Stdio, sandb
 	r := sandbox.WrapGettable(empty)
 
 	render := func(out io.Writer) error {
-		resources, opErr := r.Get(ctx, cmd.Name)
-		if opErr != nil && len(resources) == 0 {
-			return opErr
+		var resources []resource.Resource
+		var opErr error
+		if len(cmd.Name) == 0 {
+			def, ok := any(empty).(resource.DefaultResource)
+			if !ok {
+				return fmt.Errorf("parsing arguments: no %s specified", empty.Type().Names)
+			}
+			res, err := def.Default(ctx)
+			if err != nil {
+				return err
+			}
+			resources = []resource.Resource{res}
+		} else {
+			resources, opErr = r.Get(ctx, cmd.Name)
+			if opErr != nil && len(resources) == 0 {
+				return opErr
+			}
 		}
 		printErr := cmd.Output.
 			WithDefault(PrinterTypeKeyValue).
@@ -579,7 +593,7 @@ func (cmd *ResourceBulkRemoveCmd[R]) Run(ctx context.Context, stdio config.Stdio
 }
 
 type ResourceEditCmd[R resource.EditableResource] struct {
-	Name string `arg:"" completion-predictor:"resource-key-${name}" help:"Name of the ${name} to edit."`
+	Name string `arg:"" optional:"" completion-predictor:"resource-key-${name}" help:"Name of the ${name} to edit."`
 
 	SetArgs
 	AddArgs
@@ -633,21 +647,34 @@ func (cmd *ResourceEditCmd[R]) Run(ctx context.Context, stdio config.Stdio, sand
 
 	var empty R
 	r := sandbox.WrapEditable(empty)
-	resources, err := r.Get(ctx, []string{cmd.Name})
-	if err != nil {
-		return err
-	}
-	if len(resources) == 0 {
-		return fmt.Errorf("resource not found: %s", cmd.Name)
-	}
-	if len(resources) > 1 {
-		var keys []string
-		for _, res := range resources {
-			keys = append(keys, res.Key().String())
+
+	var res resource.Resource
+	if cmd.Name == "" {
+		def, ok := any(empty).(resource.DefaultResource)
+		if !ok {
+			return fmt.Errorf("parsing arguments: no %s specified", empty.Type().Names)
 		}
-		return fmt.Errorf("ambiguous resource name: %s (found %v)", cmd.Name, keys)
+		res, err = def.Default(ctx)
+		if err != nil {
+			return err
+		}
+	} else {
+		resources, err := r.Get(ctx, []string{cmd.Name})
+		if err != nil {
+			return err
+		}
+		if len(resources) == 0 {
+			return fmt.Errorf("resource not found: %s", cmd.Name)
+		}
+		if len(resources) > 1 {
+			var keys []string
+			for _, res := range resources {
+				keys = append(keys, res.Key().String())
+			}
+			return fmt.Errorf("ambiguous resource name: %s (found %v)", cmd.Name, keys)
+		}
+		res = resources[0]
 	}
-	res := resources[0]
 
 	allFields := make(map[string]int)
 	for k := range spec.Set {

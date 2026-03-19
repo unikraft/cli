@@ -1,0 +1,85 @@
+$ unikraft config --help
+
+stdout:
+	Manage CLI configuration.
+
+	Usage:
+	  unikraft config <command> [flags]
+
+	Commands:
+	  get, inspect, show
+	          Inspect a config.
+
+	Fields:
+	  path
+	  profile
+	  profiles, profiles.*, profiles.*.name, profiles.*.type, profiles.*.token,
+	  profiles.*.organization, profiles.*.control-plane, profiles.*.metros,
+	  profiles.*.metros.*, profiles.*.metros.*.name, profiles.*.metros.*.endpoint,
+	  profiles.*.metros.*.country, profiles.*.metros.*.insecure
+
+	Global flags:
+	  -h, --help
+	          Show context-sensitive help.
+	      --config ($UNIKRAFT_CONFIG)
+	          Path to the configuration file.
+	      --log-level ($UNIKRAFT_LOG_LEVEL)
+	          Set the logging level.
+	          [default: info, choice: trace,debug,info,warn,error,fatal]
+	      --log-type ($UNIKRAFT_LOG_TYPE)
+	          Set the log type.
+	          [default: text, choice: text,json]
+	      --profile ($UNIKRAFT_PROFILE)
+	          Set the current profile.
+	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+	          Toggle anonymous usage analytics.
+	          [default: true]
+
+$ unikraft config get --help
+
+stdout:
+	Inspect a config.
+
+	Usage:
+	  unikraft config get [<name> ...] [flags]
+
+	Arguments:
+	  [<name> ...]
+	          Names of the config to inspect.
+
+	Examples:
+	  # Show the current configuration
+	  unikraft config get
+
+	Fields:
+	  path
+	  profile
+	  profiles, profiles.*, profiles.*.name, profiles.*.type, profiles.*.token,
+	  profiles.*.organization, profiles.*.control-plane, profiles.*.metros,
+	  profiles.*.metros.*, profiles.*.metros.*.name, profiles.*.metros.*.endpoint,
+	  profiles.*.metros.*.country, profiles.*.metros.*.insecure
+
+	Flags:
+	  -w, --watch
+	          Watch for changes and refresh output.
+	  -f, --field
+	          Specify which fields to include in the output.
+	  -o, --output
+	          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+	Global flags:
+	  -h, --help
+	          Show context-sensitive help.
+	      --config ($UNIKRAFT_CONFIG)
+	          Path to the configuration file.
+	      --log-level ($UNIKRAFT_LOG_LEVEL)
+	          Set the logging level.
+	          [default: info, choice: trace,debug,info,warn,error,fatal]
+	      --log-type ($UNIKRAFT_LOG_TYPE)
+	          Set the log type.
+	          [default: text, choice: text,json]
+	      --profile ($UNIKRAFT_PROFILE)
+	          Set the current profile.
+	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+	          Toggle anonymous usage analytics.
+	          [default: true]

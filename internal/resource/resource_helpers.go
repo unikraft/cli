@@ -92,7 +92,13 @@ func FieldsToMap(fields []Field) map[string]any {
 
 func fieldToValue(field Field) any {
 	if field.Elem != nil {
-		return fieldsToSlice(field.Subfields)
+		var value any
+		if field.ElemMap {
+			value = fieldsToMap(field.Subfields)
+		} else {
+			value = fieldsToSlice(field.Subfields)
+		}
+		return value
 	}
 	if len(field.Subfields) > 0 {
 		return fieldsToMap(field.Subfields)

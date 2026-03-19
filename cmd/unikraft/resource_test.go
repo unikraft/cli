@@ -20,19 +20,14 @@ func resourceTestCases(t *testing.T, cfg *integration.Config) []testCase {
 
 	return []testCase{
 		{
-			name: "resource/help",
+			name: "help",
 			commands: []command{
 				{args: []string{unikraftCmd, "resource", "--help"}},
-			},
-		},
-		{
-			name: "resource/delete/help",
-			commands: []command{
 				{args: []string{unikraftCmd, "resource", "delete", "--help"}},
 			},
 		},
 		{
-			name:   "resource/volume-flow",
+			name:   "volume-flow",
 			online: true,
 			commands: []command{
 				{args: []string{unikraftCmd, "resource", "create", "--set", "type=volume", "--set", "name=test-$UNIQ_VOLUME", "--set", "size=10", "--set", "metro=" + metroName}},

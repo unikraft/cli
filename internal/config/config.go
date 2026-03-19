@@ -19,10 +19,10 @@ import (
 
 // Config represents the global configuration for the Unikraft CLI.
 type Config struct {
-	Path string `json:"-"`
+	Path string `json:"-" field:"path,short"`
 
-	DefaultProfile string             `json:"profile"`
-	Profiles       map[string]Profile `json:"profiles"`
+	DefaultProfile string             `json:"profile" field:"profile,short"`
+	Profiles       map[string]Profile `json:"profiles" field:",short,embed"`
 
 	selectedProfile string
 }

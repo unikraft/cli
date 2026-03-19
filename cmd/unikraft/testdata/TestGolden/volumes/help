@@ -60,10 +60,10 @@ stdout:
 	Inspect a volume.
 
 	Usage:
-	  unikraft volumes get <name> ... [flags]
+	  unikraft volumes get [<name> ...] [flags]
 
 	Arguments:
-	  <name> ...
+	  [<name> ...]
 	          Names of the volumes to inspect.
 
 	Examples:
@@ -340,10 +340,10 @@ stdout:
 	Edit a volume.
 
 	Usage:
-	  unikraft volumes edit <name> [flags]
+	  unikraft volumes edit [<name>] [flags]
 
 	Arguments:
-	  <name>
+	  [<name>]
 	          Name of the volume to edit.
 
 	Examples:

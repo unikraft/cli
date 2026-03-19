@@ -58,10 +58,10 @@ stdout:
 	Inspect a service.
 
 	Usage:
-	  unikraft services get <name> ... [flags]
+	  unikraft services get [<name> ...] [flags]
 
 	Arguments:
-	  <name> ...
+	  [<name> ...]
 	          Names of the services to inspect.
 
 	Examples:
@@ -296,10 +296,10 @@ stdout:
 	Edit a service.
 
 	Usage:
-	  unikraft services edit <name> [flags]
+	  unikraft services edit [<name>] [flags]
 
 	Arguments:
-	  <name>
+	  [<name>]
 	          Name of the service to edit.
 
 	Examples:

@@ -80,6 +80,7 @@ func TestGolden(t *testing.T) {
 		{name: "images", cases: imagesTestCases},
 		{name: "resources", cases: resourceTestCases},
 		{name: "build", cases: buildTestCases},
+		{name: "config", cases: configTestCases},
 	}
 
 	t.Parallel()
@@ -100,17 +101,17 @@ func TestGolden(t *testing.T) {
 func runTestCase(t *testing.T, tc testCase, cfg *integration.Config, unikraftPath string) {
 	t.Helper()
 
-	testCfg := cfg
-	if tc.online {
-		if testCfg == nil {
-			t.Skip("online test requires config, but no config found")
-		}
+	if tc.online && cfg == nil {
+		t.Skip("online test requires config, but no config found")
+	}
 
-		cloned, err := copystructure.Copy(testCfg)
+	configPath := filepath.Join(t.TempDir(), "config.yaml")
+	var testCfg *integration.Config
+	if cfg != nil {
+		cloned, err := copystructure.Copy(cfg)
 		require.NoError(t, err)
 		testCfg = cloned.(*integration.Config)
-
-		testCfg.Config.Path = filepath.Join(t.TempDir(), "config.yaml")
+		testCfg.Config.Path = configPath
 		require.NoError(t, testCfg.Config.Save())
 	}
 
@@ -168,9 +169,7 @@ func runTestCase(t *testing.T, tc testCase, cfg *integration.Config, unikraftPat
 			return strings.HasPrefix(s, "UNIKRAFT_")
 		})
 		cmd.Env = append(cmd.Env, "NO_COLOR=1") // color makes golden files harder to read
-		if testCfg != nil {
-			cmd.Env = append(cmd.Env, "UNIKRAFT_CONFIG="+testCfg.Config.Path)
-		}
+		cmd.Env = append(cmd.Env, "UNIKRAFT_CONFIG="+configPath)
 		cmd.Env = append(cmd.Env, "BUILDKIT_PROGRESS=quiet")
 		cmd.Env = append(cmd.Env, resource.UnikraftSandboxEnv+"="+sandboxPath)
 
@@ -217,6 +216,13 @@ func runTestCase(t *testing.T, tc testCase, cfg *integration.Config, unikraftPat
 				cleaner{
 					pattern: regexp.MustCompile(regexp.QuoteMeta(testCfg.Profile.Name)),
 					repl:    "default",
+				},
+			)
+			report.cleaners = append(
+				report.cleaners,
+				cleaner{
+					pattern: regexp.MustCompile(regexp.QuoteMeta(testCfg.Profile.Token)),
+					repl:    "<token>",
 				},
 			)
 			for _, metro := range testCfg.Profile.Metros {
@@ -400,6 +406,11 @@ var cleaners = []cleaner{
 		// image digests like "sha256:abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890" may change between runs
 		pattern: regexp.MustCompile(`\bsha256:[0-9a-f]{64}\b`),
 		repl:    "sha256:abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+	},
+	{
+		// temp config paths like "/tmp/TestGolden.../001/config.yaml" change between runs
+		pattern: regexp.MustCompile(`/tmp/TestGolden[^/]+/`),
+		repl:    "/tmp/TestGolden/",
 	},
 }
 

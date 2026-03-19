@@ -55,18 +55,18 @@ const (
 // Profile represents a user profile configuration for the Unikraft CLI.
 type Profile struct {
 	// Name of the profile
-	Name string `json:"-"`
+	Name string `json:"-" field:",short"`
 	// Type of the profile
-	Type ProfileType `json:"type"`
+	Type ProfileType `json:"type" field:",long"`
 	// Token is the authentication token associated with the profile, used for
 	// authenticating with Unikraft Cloud services.
-	Token string `json:"token"`
+	Token string `json:"token" field:",long"`
 	// Organization is the organization associated with the profile.
-	Organization string `json:"organization,omitempty"`
+	Organization string `json:"organization,omitempty" field:",short"`
 	// ControlPlane is the endpoint for the control plane associated with the profile.
-	ControlPlane string `json:"controlplane,omitempty"`
+	ControlPlane string `json:"controlplane,omitempty" field:",long"`
 	// Metros is a static list of metros.
-	Metros []Metro `json:"metros,omitempty"`
+	Metros []Metro `json:"metros,omitempty" field:",long,embed"`
 }
 
 func (p Profile) Validate() error {
@@ -89,13 +89,13 @@ func (p Profile) Validate() error {
 // Metro represents a metro configuration for a profile in the Unikraft CLI.
 type Metro struct {
 	// Name of the metro.
-	Name string `json:"name"`
+	Name string `json:"name" field:",short"`
 	// Endpoint for the metro.
-	Endpoint string `json:"endpoint"`
+	Endpoint string `json:"endpoint" field:",long"`
 	// Country code for the metro.
-	Country string `json:"country"`
+	Country string `json:"country" field:",short"`
 	// Allows insecure connections to the metro, skipping TLS verification.
-	Insecure bool `json:"insecure,omitempty"`
+	Insecure bool `json:"insecure,omitempty" field:",long"`
 }
 
 type Index struct {

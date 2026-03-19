@@ -20,6 +20,7 @@ import (
 	ctrdlog "github.com/containerd/log"
 	kongcompletion "github.com/jotaen/kong-completion"
 	jujuerrors "github.com/juju/errors"
+	"github.com/posener/complete"
 	"github.com/sirupsen/logrus"
 	"unikraft.com/x/kingkong"
 	"unikraft.com/x/log"
@@ -43,11 +44,13 @@ type UnikraftCLI struct {
 
 	TUI TUICmd `cmd:"" help:"Browse resources in a TUI."`
 
+	Run   RunCmd   `cmd:"" help:"Run an image as an instance."`
+	Build BuildCmd `cmd:"" help:"Build a Unikraft project into a container image."`
+
 	Login   login.LoginCmd  `cmd:"" help:"Login to Unikraft Cloud."`
 	Logout  login.LogoutCmd `cmd:"" help:"Logout from Unikraft Cloud."`
 	Profile ProfileCmd      `cmd:"" help:"Manage Unikraft Cloud profiles." aliases:"profile,profiles"`
-	Run     RunCmd          `cmd:"" help:"Run an image as an instance."`
-	Build   BuildCmd        `cmd:"" help:"Build a Unikraft project into a container image."`
+	Config  ConfigCmd       `cmd:"" help:"Manage CLI configuration." aliases:"config,conf,cfg"`
 
 	Metros       MetrosCmd       `cmd:"" help:"Manage Unikraft Cloud metros." aliases:"metro,metros"`
 	Instances    InstancesCmd    `cmd:"" help:"Manage Unikraft Cloud instances." aliases:"instance,instances,vm,vms"`
@@ -98,7 +101,7 @@ func (cli UnikraftCLI) Examples() []kingkong.Example {
 }
 
 type globalFlags struct {
-	Config string `group:"flag-global" name:"config" env:"UNIKRAFT_CONFIG" help:"Path to the configuration file." placeholder:"file"`
+	ConfigPath string `group:"flag-global" name:"config" env:"UNIKRAFT_CONFIG" help:"Path to the configuration file." placeholder:"file"`
 
 	LogLevel log.Level `group:"flag-global" name:"log-level" env:"UNIKRAFT_LOG_LEVEL" help:"Set the logging level." enum:"trace,debug,info,warn,error,fatal" placeholder:"level" default:"info"`
 	LogType  log.Type  `group:"flag-global" name:"log-type" env:"UNIKRAFT_LOG_TYPE" help:"Set the log type." enum:"text,json" placeholder:"type" default:"text"`
@@ -123,6 +126,7 @@ func NewRootCmd(ctx context.Context, args []string, stdio config.Stdio) (context
 
 	kongcompletion.Register(
 		parser,
+		kongcompletion.WithPredictor("resource-key-config", complete.PredictFiles("*")),
 		kongcompletion.WithPredictor("resource-key-profile", cmd.PredictResourceKey[Profile](ctx)),
 		kongcompletion.WithPredictor("resource-key-metro", cmd.PredictResourceKey[Metro](ctx)),
 		kongcompletion.WithPredictor("resource-key-instance", cmd.PredictResourceKey[Instance](ctx)),
@@ -177,7 +181,7 @@ func NewRootCmd(ctx context.Context, args []string, stdio config.Stdio) (context
 
 	ctx = ctxWithLogger(ctx, stdio.Stderr, cli.LogType, cli.LogLevel)
 
-	configPath := cli.Config
+	configPath := cli.ConfigPath
 	if configPath == "" {
 		configPath, err = config.ConfigFilePath()
 		if err != nil {

@@ -55,7 +55,7 @@ func volumesTestCases(t *testing.T, cfg *integration.Config) []testCase {
 			},
 		},
 		{
-			name:   "volumes/clone",
+			name:   "clone",
 			online: true,
 			commands: []command{
 				{args: []string{unikraftCmd, "volume", "create", "--output", "quiet", "--set", "name=test-$UNIQ_VOLUME", "--set", "size=10", "--set", "metro=" + metroName}},

@@ -80,10 +80,10 @@ stdout:
 	Inspect a instance.
 
 	Usage:
-	  unikraft instances get <name> ... [flags]
+	  unikraft instances get [<name> ...] [flags]
 
 	Arguments:
-	  <name> ...
+	  [<name> ...]
 	          Names of the instances to inspect.
 
 	Examples:
@@ -376,10 +376,10 @@ stdout:
 	Edit a instance.
 
 	Usage:
-	  unikraft instances edit <name> [flags]
+	  unikraft instances edit [<name>] [flags]
 
 	Arguments:
-	  <name>
+	  [<name>]
 	          Name of the instance to edit.
 
 	Examples:

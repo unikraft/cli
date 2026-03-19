@@ -57,10 +57,10 @@ stdout:
 	Inspect a certificate.
 
 	Usage:
-	  unikraft certificates get <name> ... [flags]
+	  unikraft certificates get [<name> ...] [flags]
 
 	Arguments:
-	  <name> ...
+	  [<name> ...]
 	          Names of the certificates to inspect.
 
 	Examples:

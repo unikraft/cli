@@ -110,10 +110,10 @@ stdout:
 	Inspect a profile.
 
 	Usage:
-	  unikraft profile get <name> ... [flags]
+	  unikraft profile get [<name> ...] [flags]
 
 	Arguments:
-	  <name> ...
+	  [<name> ...]
 	          Names of the profiles to inspect.
 
 	Examples:
@@ -289,10 +289,10 @@ stdout:
 	Inspect a metro.
 
 	Usage:
-	  unikraft metros get <name> ... [flags]
+	  unikraft metros get [<name> ...] [flags]
 
 	Arguments:
-	  <name> ...
+	  [<name> ...]
 	          Names of the metros to inspect.
 
 	Examples:

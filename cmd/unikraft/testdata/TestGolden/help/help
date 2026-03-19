@@ -19,16 +19,18 @@ stdout:
 	          Outputs shell code for initialising tab completions.
 	  tui
 	          Browse resources in a TUI.
+	  run
+	          Run an image as an instance.
+	  build
+	          Build a Unikraft project into a container image.
 	  login
 	          Login to Unikraft Cloud.
 	  logout
 	          Logout from Unikraft Cloud.
 	  profile, profiles
 	          Manage Unikraft Cloud profiles.
-	  run
-	          Run an image as an instance.
-	  build
-	          Build a Unikraft project into a container image.
+	  config, conf, cfg
+	          Manage CLI configuration.
 	  metros, metro
 	          Manage Unikraft Cloud metros.
 	  instances, instance, vm, vms

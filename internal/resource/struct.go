@@ -114,6 +114,18 @@ func fieldFromStruct(pf *ParsedField, v reflect.Value) (field *Field, err error)
 			result.Verbosity = cmp.Or(result.Verbosity, newField.Verbosity)
 		}
 
+		newField, err = fieldFromMap(parsedField, fieldVal)
+		if err != nil {
+			return nil, err
+		}
+		if newField != nil {
+			result.Value = newField.Value
+			result.Elem = newField.Elem
+			result.Subfields = newField.Subfields
+			result.ElemMap = newField.ElemMap
+			result.Verbosity = cmp.Or(result.Verbosity, newField.Verbosity)
+		}
+
 		result.Verbosity = cmp.Or(result.Verbosity, FieldVerbosityHidden)
 		fields = append(fields, result)
 	}
@@ -174,6 +186,57 @@ func fieldFromSlice(pf *ParsedField, v reflect.Value) (field *Field, err error) 
 	}
 
 	return &Field{
+		Elem:      elem,
+		Subfields: fields,
+		Verbosity: elem.Verbosity,
+	}, nil
+}
+
+func fieldFromMap(pf *ParsedField, v reflect.Value) (field *Field, err error) {
+	if v.Kind() == reflect.Pointer {
+		if v.IsNil() {
+			v = reflect.New(v.Type().Elem())
+		} else {
+			v = v.Elem()
+		}
+	}
+	if v.Kind() != reflect.Map {
+		return nil, nil
+	}
+	if v.Type().Key().Kind() != reflect.String {
+		return nil, nil
+	}
+
+	elemType := v.Type().Elem()
+	elemVal := reflect.New(elemType).Elem()
+	elem, err := fieldFromStruct(pf, elemVal)
+	if err != nil {
+		return nil, err
+	}
+	if elem == nil {
+		return nil, nil
+	}
+
+	var fields []Field
+	keys := v.MapKeys()
+	slices.SortFunc(keys, func(a, b reflect.Value) int {
+		return cmp.Compare(a.String(), b.String())
+	})
+	for _, key := range keys {
+		vv := v.MapIndex(key)
+		field, err := fieldFromStruct(pf, vv)
+		if err != nil {
+			return nil, err
+		}
+		if field == nil {
+			continue
+		}
+		field.Name = key.String()
+		fields = append(fields, *field)
+	}
+
+	return &Field{
+		ElemMap:   true,
 		Elem:      elem,
 		Subfields: fields,
 		Verbosity: elem.Verbosity,

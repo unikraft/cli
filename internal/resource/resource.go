@@ -61,6 +61,11 @@ type DeletableResource interface {
 	Delete(ctx context.Context, targets []Resource) error
 }
 
+type DefaultResource interface {
+	GettableResource
+	Default(ctx context.Context) (Resource, error)
+}
+
 type Link struct {
 	Type string
 	Key  string
@@ -80,6 +85,9 @@ type Field struct {
 	// Elem is used to indicate that all subfields have the same substructure
 	// (e.g. for arrays)
 	Elem *Field `json:"elem,omitempty"`
+	// ElemMap indicates this field contains map elements, and subfields should
+	// be rendered as key-value pairs.
+	ElemMap bool `json:"elemMap,omitempty"`
 
 	Links []Link `json:"links,omitempty"`
 

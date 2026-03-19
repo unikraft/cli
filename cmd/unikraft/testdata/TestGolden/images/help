@@ -45,10 +45,10 @@ stdout:
 	Inspect a image.
 
 	Usage:
-	  unikraft images get <name> ... [flags]
+	  unikraft images get [<name> ...] [flags]
 
 	Arguments:
-	  <name> ...
+	  [<name> ...]
 	          Names of the images to inspect.
 
 	Examples:
