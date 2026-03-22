@@ -8,35 +8,31 @@ package main
 import (
 	"regexp"
 	"testing"
-
-	"unikraft.com/cli/internal/integration"
 )
 
-func servicesTestCases(t *testing.T, cfg *integration.Config) []testCase {
-	t.Helper()
-	if cfg == nil {
-		t.Skip("integration config not found")
+func servicesTests(t *testing.T, r *testRunner) {
+	t.Run("help", func(t *testing.T) {
+		r.run(t, []command{
+			{args: []string{unikraftCmd, "service", "--help"}},
+			{args: []string{unikraftCmd, "service", "get", "--help"}},
+			{args: []string{unikraftCmd, "service", "list", "--help"}},
+			{args: []string{unikraftCmd, "service", "wait", "--help"}},
+			{args: []string{unikraftCmd, "service", "create", "--help"}},
+			{args: []string{unikraftCmd, "service", "edit", "--help"}},
+			{args: []string{unikraftCmd, "service", "delete", "--help"}},
+		})
+	})
+
+	metroName := ""
+	if r.cfg != nil {
+		metroName = r.cfg.MetroName
 	}
 
-	metroName := cfg.MetroName
-
-	return []testCase{
-		{
-			name: "help",
-			commands: []command{
-				{args: []string{unikraftCmd, "service", "--help"}},
-				{args: []string{unikraftCmd, "service", "get", "--help"}},
-				{args: []string{unikraftCmd, "service", "list", "--help"}},
-				{args: []string{unikraftCmd, "service", "wait", "--help"}},
-				{args: []string{unikraftCmd, "service", "create", "--help"}},
-				{args: []string{unikraftCmd, "service", "edit", "--help"}},
-				{args: []string{unikraftCmd, "service", "delete", "--help"}},
-			},
-		},
-		{
-			name:   "create",
-			online: true,
-			commands: []command{
+	t.Run("create", func(t *testing.T) {
+		r.
+			online().
+			withCleaners(serviceCleaners).
+			run(t, []command{
 				{args: []string{unikraftCmd, "service", "list"}},
 				{args: []string{
 					unikraftCmd, "service", "create",
@@ -57,13 +53,14 @@ func servicesTestCases(t *testing.T, cfg *integration.Config) []testCase {
 				{args: []string{unikraftCmd, "service", "inspect", "test-$UNIQ_SVC_A", "test-$UNIQ_SVC_B"}},
 
 				{args: []string{unikraftCmd, "service", "delete", "test-$UNIQ_SVC_A", "test-$UNIQ_SVC_B"}},
-			},
-			cleaners: serviceCleaners,
-		},
-		{
-			name:   "edit",
-			online: true,
-			commands: []command{
+			})
+	})
+
+	t.Run("edit", func(t *testing.T) {
+		r.
+			online().
+			withCleaners(serviceCleaners).
+			run(t, []command{
 				{args: []string{
 					unikraftCmd, "service", "create",
 					"--output", "quiet",
@@ -82,10 +79,8 @@ func servicesTestCases(t *testing.T, cfg *integration.Config) []testCase {
 				}},
 				{args: []string{unikraftCmd, "service", "inspect", "test-$UNIQ_SVC"}},
 				{args: []string{unikraftCmd, "service", "delete", "test-$UNIQ_SVC"}},
-			},
-			cleaners: serviceCleaners,
-		},
-	}
+			})
+	})
 }
 
 var serviceCleaners = []cleaner{

@@ -51,8 +51,6 @@ stdout:
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
 	          [default: true]
-	      --version
-	          Print version information.
 
 $ unikraft volume get --help
 
@@ -60,11 +58,11 @@ stdout:
 	Inspect a volume.
 
 	Usage:
-	  unikraft volumes get [<name> ...] [flags]
+	  unikraft volumes get [<target> ...] [flags]
 
 	Arguments:
-	  [<name> ...]
-	          Names of the volumes to inspect.
+	  [<target> ...]
+	          Target volumes to get.
 
 	Examples:
 	  # Inspect a volume by name or UUID
@@ -107,8 +105,6 @@ stdout:
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
 	          [default: true]
-	      --version
-	          Print version information.
 
 $ unikraft volume list --help
 
@@ -116,11 +112,11 @@ stdout:
 	List volumes.
 
 	Usage:
-	  unikraft volumes list [<name> ...] [flags]
+	  unikraft volumes list [<target> ...] [flags]
 
 	Arguments:
-	  [<name> ...]
-	          Names of the volumes to list.
+	  [<target> ...]
+	          Target volumes to list.
 
 	Examples:
 	  # List all volumes
@@ -167,8 +163,6 @@ stdout:
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
 	          [default: true]
-	      --version
-	          Print version information.
 
 $ unikraft volume wait --help
 
@@ -176,11 +170,11 @@ stdout:
 	Wait for volumes to match a filter.
 
 	Usage:
-	  unikraft volumes wait --until=UNTIL <name> ... [flags]
+	  unikraft volumes wait --until=UNTIL <target> ... [flags]
 
 	Arguments:
-	  <name> ...
-	          Names of the volumes to wait for.
+	  <target> ...
+	          Target volumes to wait for.
 
 	Fields:
 	  metro
@@ -225,8 +219,6 @@ stdout:
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
 	          [default: true]
-	      --version
-	          Print version information.
 
 $ unikraft volume create --help
 
@@ -288,8 +280,6 @@ stdout:
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
 	          [default: true]
-	      --version
-	          Print version information.
 
 $ unikraft volume clone --help
 
@@ -331,8 +321,6 @@ stdout:
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
 	          [default: true]
-	      --version
-	          Print version information.
 
 $ unikraft volume edit --help
 
@@ -340,11 +328,11 @@ stdout:
 	Edit a volume.
 
 	Usage:
-	  unikraft volumes edit [<name>] [flags]
+	  unikraft volumes edit <target> [flags]
 
 	Arguments:
-	  [<name>]
-	          Name of the volume to edit.
+	  <target>
+	          Target volume to edit.
 
 	Examples:
 	  # Resize a volume
@@ -399,8 +387,6 @@ stdout:
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
 	          [default: true]
-	      --version
-	          Print version information.
 
 $ unikraft volume delete --help
 
@@ -408,11 +394,11 @@ stdout:
 	Remove a volume.
 
 	Usage:
-	  unikraft volumes delete [<name> ...] [flags]
+	  unikraft volumes delete [<target> ...] [flags]
 
 	Arguments:
-	  [<name> ...]
-	          Names of the volumes to remove.
+	  [<target> ...]
+	          Target volumes to remove.
 
 	Examples:
 	  # Delete a volume by name or UUID
@@ -459,5 +445,3 @@ stdout:
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
 	          [default: true]
-	      --version
-	          Print version information.

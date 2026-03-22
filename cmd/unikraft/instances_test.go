@@ -8,39 +8,35 @@ package main
 import (
 	"regexp"
 	"testing"
-
-	"unikraft.com/cli/internal/integration"
 )
 
-func instancesTestCases(t *testing.T, cfg *integration.Config) []testCase {
-	t.Helper()
-	if cfg == nil {
-		t.Skip("integration config not found")
+func instancesTests(t *testing.T, r *testRunner) {
+	t.Run("help", func(t *testing.T) {
+		r.run(t, []command{
+			{args: []string{unikraftCmd, "instance", "--help"}},
+			{args: []string{unikraftCmd, "instance", "get", "--help"}},
+			{args: []string{unikraftCmd, "instance", "list", "--help"}},
+			{args: []string{unikraftCmd, "instance", "wait", "--help"}},
+			{args: []string{unikraftCmd, "instance", "create", "--help"}},
+			{args: []string{unikraftCmd, "instance", "edit", "--help"}},
+			{args: []string{unikraftCmd, "instance", "delete", "--help"}},
+			{args: []string{unikraftCmd, "instance", "logs", "--help"}},
+			{args: []string{unikraftCmd, "instance", "start", "--help"}},
+			{args: []string{unikraftCmd, "instance", "stop", "--help"}},
+			{args: []string{unikraftCmd, "instance", "restart", "--help"}},
+		})
+	})
+
+	metroName := ""
+	if r.cfg != nil {
+		metroName = r.cfg.MetroName
 	}
 
-	metroName := cfg.MetroName
-
-	return []testCase{
-		{
-			name: "help",
-			commands: []command{
-				{args: []string{unikraftCmd, "instance", "--help"}},
-				{args: []string{unikraftCmd, "instance", "get", "--help"}},
-				{args: []string{unikraftCmd, "instance", "list", "--help"}},
-				{args: []string{unikraftCmd, "instance", "wait", "--help"}},
-				{args: []string{unikraftCmd, "instance", "create", "--help"}},
-				{args: []string{unikraftCmd, "instance", "edit", "--help"}},
-				{args: []string{unikraftCmd, "instance", "delete", "--help"}},
-				{args: []string{unikraftCmd, "instance", "logs", "--help"}},
-				{args: []string{unikraftCmd, "instance", "start", "--help"}},
-				{args: []string{unikraftCmd, "instance", "stop", "--help"}},
-				{args: []string{unikraftCmd, "instance", "restart", "--help"}},
-			},
-		},
-		{
-			name:   "create",
-			online: true,
-			commands: []command{
+	t.Run("create", func(t *testing.T) {
+		r.
+			online().
+			withCleaners(instanceCleaners).
+			run(t, []command{
 				{args: []string{unikraftCmd, "instance", "list"}},
 
 				// Create an nginx instance
@@ -60,13 +56,14 @@ func instancesTestCases(t *testing.T, cfg *integration.Config) []testCase {
 
 				{args: []string{unikraftCmd, "instance", "delete", "test-$UNIQ_INST"}},
 				{args: []string{unikraftCmd, "instance", "list"}},
-			},
-			cleaners: instanceCleaners,
-		},
-		{
-			name:   "create-oom",
-			online: true,
-			commands: []command{
+			})
+	})
+
+	t.Run("create-oom", func(t *testing.T) {
+		r.
+			online().
+			withCleaners(instanceCleaners).
+			run(t, []command{
 				{args: []string{
 					unikraftCmd, "instance", "create",
 					"--output", "quiet",
@@ -79,13 +76,14 @@ func instancesTestCases(t *testing.T, cfg *integration.Config) []testCase {
 				}},
 				{args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}},
 				{args: []string{unikraftCmd, "instance", "delete", "test-$UNIQ_INST"}},
-			},
-			cleaners: instanceCleaners,
-		},
-		{
-			name:   "connect",
-			online: true,
-			commands: []command{
+			})
+	})
+
+	t.Run("connect", func(t *testing.T) {
+		r.
+			online().
+			withCleaners(instanceCleaners).
+			run(t, []command{
 				// Create an nginx instance with a service
 				{args: []string{
 					unikraftCmd, "instance", "create",
@@ -122,13 +120,14 @@ func instancesTestCases(t *testing.T, cfg *integration.Config) []testCase {
 					"https://$FQDN",
 				}},
 				{args: []string{unikraftCmd, "instance", "delete", "test-$UNIQ_INST"}},
-			},
-			cleaners: instanceCleaners,
-		},
-		{
-			name:   "start-stop",
-			online: true,
-			commands: []command{
+			})
+	})
+
+	t.Run("start-stop", func(t *testing.T) {
+		r.
+			online().
+			withCleaners(instanceCleaners).
+			run(t, []command{
 				// Create an nginx instance
 				{args: []string{
 					unikraftCmd, "instance", "create",
@@ -157,13 +156,14 @@ func instancesTestCases(t *testing.T, cfg *integration.Config) []testCase {
 				// {args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}},
 
 				{args: []string{unikraftCmd, "instance", "delete", "test-$UNIQ_INST"}},
-			},
-			cleaners: instanceCleaners,
-		},
-		{
-			name:   "edit",
-			online: true,
-			commands: []command{
+			})
+	})
+
+	t.Run("edit", func(t *testing.T) {
+		r.
+			online().
+			withCleaners(instanceCleaners).
+			run(t, []command{
 				{args: []string{
 					unikraftCmd, "instance", "create",
 					"--output", "quiet",
@@ -187,13 +187,14 @@ func instancesTestCases(t *testing.T, cfg *integration.Config) []testCase {
 				}},
 				{args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}},
 				{args: []string{unikraftCmd, "instance", "delete", "test-$UNIQ_INST"}},
-			},
-			cleaners: instanceCleaners,
-		},
-		{
-			name:   "instances/volume",
-			online: true,
-			commands: []command{
+			})
+	})
+
+	t.Run("instances/volume", func(t *testing.T) {
+		r.
+			online().
+			withCleaners(instanceCleaners).
+			run(t, []command{
 				// Create a volume first
 				{args: []string{
 					unikraftCmd, "volume", "create",
@@ -216,13 +217,14 @@ func instancesTestCases(t *testing.T, cfg *integration.Config) []testCase {
 				{args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}},
 				{args: []string{unikraftCmd, "instance", "delete", "test-$UNIQ_INST"}},
 				{args: []string{unikraftCmd, "volume", "delete", "test-$UNIQ_VOL"}},
-			},
-			cleaners: instanceCleaners,
-		},
-		{
-			name:   "instances/volume-inline",
-			online: true,
-			commands: []command{
+			})
+	})
+
+	t.Run("instances/volume-inline", func(t *testing.T) {
+		r.
+			online().
+			withCleaners(instanceCleaners).
+			run(t, []command{
 				// Create an instance with an inline volume (volume created automatically)
 				// This tests the create-only "size" field in InstanceVolume
 				// Format is :AT[:ro][:size=N] (no name, only size)
@@ -238,13 +240,14 @@ func instancesTestCases(t *testing.T, cfg *integration.Config) []testCase {
 				}},
 				{args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}},
 				{args: []string{unikraftCmd, "instance", "delete", "test-$UNIQ_INST"}},
-			},
-			cleaners: instanceCleaners,
-		},
-		{
-			name:   "instances/autostart",
-			online: true,
-			commands: []command{
+			})
+	})
+
+	t.Run("instances/autostart", func(t *testing.T) {
+		r.
+			online().
+			withCleaners(instanceCleaners).
+			run(t, []command{
 				// Create an instance with autostart=true (should start automatically)
 				{args: []string{
 					unikraftCmd, "instance", "create",
@@ -259,13 +262,14 @@ func instancesTestCases(t *testing.T, cfg *integration.Config) []testCase {
 				// Verify instance is running (autostart worked)
 				{args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}},
 				{args: []string{unikraftCmd, "instance", "delete", "test-$UNIQ_INST"}},
-			},
-			cleaners: instanceCleaners,
-		},
-		{
-			name:   "instances/add-domain",
-			online: true,
-			commands: []command{
+			})
+	})
+
+	t.Run("instances/add-domain", func(t *testing.T) {
+		r.
+			online().
+			withCleaners(instanceCleaners).
+			run(t, []command{
 				// Create an instance with a service (required to add domains later)
 				{args: []string{
 					unikraftCmd, "instance", "create",
@@ -294,10 +298,8 @@ func instancesTestCases(t *testing.T, cfg *integration.Config) []testCase {
 				// Verify instance now has the domain via the service
 				{args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}},
 				{args: []string{unikraftCmd, "instance", "delete", "test-$UNIQ_INST"}},
-			},
-			cleaners: instanceCleaners,
-		},
-	}
+			})
+	})
 }
 
 var instanceCleaners = []cleaner{

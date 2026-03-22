@@ -793,7 +793,7 @@ func (Instance) Examples() map[cmd.CmdType][]kingkong.Example {
 }
 
 type InstancesLogsCmd struct {
-	Name []string `arg:"" completion-predictor:"resource-key-instance" help:"Names of the instances to fetch logs for."`
+	Targets []string `arg:"" name:"target" completion-predictor:"resource-key-instance" help:"Target instances to fetch logs for."`
 
 	Prefix bool `help:"Prefix log lines with instance name." negatable:"" default:"true"`
 	Tail   int  `help:"Number of lines to show from the end of the logs."`
@@ -827,7 +827,7 @@ func (cmd *InstancesLogsCmd) Run(ctx context.Context, stdio config.Stdio) error 
 	// HACK: we resolve the keys early, so that we can assume that all the
 	// instances actually exist (this is a potential race condition, but it's
 	// acceptable for now)
-	instances, err := Instance{}.Get(ctx, cmd.Name)
+	instances, err := Instance{}.Get(ctx, cmd.Targets)
 	if err != nil {
 		return err
 	}
@@ -878,7 +878,7 @@ func (cmd *InstancesLogsCmd) Run(ctx context.Context, stdio config.Stdio) error 
 }
 
 type InstancesStartCmd struct {
-	Name []string `arg:"" completion-predictor:"resource-key-instance" help:"Names of the instances to start."`
+	Targets []string `arg:"" name:"target" completion-predictor:"resource-key-instance" help:"Target instances to start."`
 
 	cmd.FormatOpts
 }
@@ -895,7 +895,7 @@ func (cmd InstancesStartCmd) Examples() []kingkong.Example {
 }
 
 func (c *InstancesStartCmd) Run(ctx context.Context, stdio config.Stdio) error {
-	keys := multimetro.ParseKeys(c.Name)
+	keys := multimetro.ParseKeys(c.Targets)
 	before, opErr := Instance{}.Get(ctx, keys.Strings())
 	if opErr != nil && len(before) == 0 {
 		return opErr
@@ -942,7 +942,7 @@ func (c *InstancesStartCmd) Run(ctx context.Context, stdio config.Stdio) error {
 }
 
 type InstancesStopCmd struct {
-	Name []string `arg:"" completion-predictor:"resource-key-instance" help:"Names of the instances to stop."`
+	Targets []string `arg:"" name:"target" completion-predictor:"resource-key-instance" help:"Target instances to stop."`
 	StopOpts
 
 	cmd.FormatOpts
@@ -972,7 +972,7 @@ func (cmd InstancesStopCmd) Examples() []kingkong.Example {
 }
 
 func (c *InstancesStopCmd) Run(ctx context.Context, stdio config.Stdio) error {
-	keys := multimetro.ParseKeys(c.Name)
+	keys := multimetro.ParseKeys(c.Targets)
 	before, opErr := Instance{}.Get(ctx, keys.Strings())
 	if opErr != nil && len(before) == 0 {
 		return opErr
@@ -1018,7 +1018,7 @@ func (c *InstancesStopCmd) Run(ctx context.Context, stdio config.Stdio) error {
 }
 
 type InstancesRestartCmd struct {
-	Name []string `arg:"" completion-predictor:"resource-key-instance" help:"Names of the instances to restart."`
+	Targets []string `arg:"" name:"target" completion-predictor:"resource-key-instance" help:"Target instances to restart."`
 	StopOpts
 
 	cmd.FormatOpts
@@ -1042,7 +1042,7 @@ func (cmd InstancesRestartCmd) Examples() []kingkong.Example {
 }
 
 func (c *InstancesRestartCmd) Run(ctx context.Context, stdio config.Stdio) error {
-	keys := multimetro.ParseKeys(c.Name)
+	keys := multimetro.ParseKeys(c.Targets)
 	before, opErr := Instance{}.Get(ctx, keys.Strings())
 	if opErr != nil && len(before) == 0 {
 		return opErr

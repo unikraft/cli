@@ -132,10 +132,10 @@ type FormatOpts struct {
 }
 
 type ResourceListCmd[R resource.GettableListableResource] struct {
-	Name   []string            `arg:"" optional:"" completion-predictor:"resource-key-${name}" help:"Names of the ${names} to list."`
-	Filter []string            `help:"Filter output based on a field value (e.g. --filter state==running)." sep:"none"`
-	Watch  *time.Duration      `short:"w" help:"Watch for changes and refresh output." type:"optional"`
-	Sort   xkong.GreedyStrings `help:"Sort output by field values (e.g. --sort name,-timestamps.created-at). Use - prefix for descending, + for ascending."`
+	Targets []string            `arg:"" name:"target" optional:"" completion-predictor:"resource-key-${name}" help:"Target ${names} to list."`
+	Filter  []string            `help:"Filter output based on a field value (e.g. --filter state==running)." sep:"none"`
+	Watch   *time.Duration      `short:"w" help:"Watch for changes and refresh output." type:"optional"`
+	Sort    xkong.GreedyStrings `help:"Sort output by field values (e.g. --sort name,-timestamps.created-at). Use - prefix for descending, + for ascending."`
 
 	FormatOpts
 
@@ -176,9 +176,9 @@ func (cmd *ResourceListCmd[R]) Run(ctx context.Context, stdio config.Stdio, sand
 	render := func(out io.Writer) error {
 		var resources []resource.Resource
 		var opErr error
-		if len(cmd.Name) > 0 {
+		if len(cmd.Targets) > 0 {
 			r := sandbox.WrapGettable(empty)
-			resources, opErr = r.Get(ctx, cmd.Name)
+			resources, opErr = r.Get(ctx, cmd.Targets)
 		} else {
 			r := sandbox.WrapListable(empty)
 			resources, opErr = r.List(ctx)
@@ -216,8 +216,8 @@ func (cmd *ResourceListCmd[R]) Run(ctx context.Context, stdio config.Stdio, sand
 }
 
 type ResourceGetCmd[R resource.GettableResource] struct {
-	Name  []string       `arg:"" optional:"" completion-predictor:"resource-key-${name}" help:"Names of the ${names} to inspect."`
-	Watch *time.Duration `short:"w" help:"Watch for changes and refresh output." type:"optional"`
+	Targets []string       `arg:"" name:"target" optional:"" completion-predictor:"resource-key-${name}" help:"Target ${names} to get."`
+	Watch   *time.Duration `short:"w" help:"Watch for changes and refresh output." type:"optional"`
 
 	FormatOpts
 }
@@ -241,7 +241,7 @@ func (cmd *ResourceGetCmd[R]) Run(ctx context.Context, stdio config.Stdio, sandb
 	render := func(out io.Writer) error {
 		var resources []resource.Resource
 		var opErr error
-		if len(cmd.Name) == 0 {
+		if len(cmd.Targets) == 0 {
 			def, ok := any(empty).(resource.DefaultResource)
 			if !ok {
 				return fmt.Errorf("parsing arguments: no %s specified", empty.Type().Names)
@@ -252,7 +252,7 @@ func (cmd *ResourceGetCmd[R]) Run(ctx context.Context, stdio config.Stdio, sandb
 			}
 			resources = []resource.Resource{res}
 		} else {
-			resources, opErr = r.Get(ctx, cmd.Name)
+			resources, opErr = r.Get(ctx, cmd.Targets)
 			if opErr != nil && len(resources) == 0 {
 				return opErr
 			}
@@ -274,8 +274,8 @@ func (cmd *ResourceGetCmd[R]) Run(ctx context.Context, stdio config.Stdio, sandb
 }
 
 type ResourceWaitCmd[R resource.GettableResource] struct {
-	Name  []string `arg:"" completion-predictor:"resource-key-${name}" help:"Names of the ${names} to wait for."`
-	Until []string `help:"Filter expression to wait for (e.g. --until state==running)." sep:"none" required:"" aliases:"filter"`
+	Targets []string `arg:"" name:"target" completion-predictor:"resource-key-${name}" help:"Target ${names} to wait for."`
+	Until   []string `help:"Filter expression to wait for (e.g. --until state==running)." sep:"none" required:"" aliases:"filter"`
 
 	Interval time.Duration `long:"interval" default:"2s" help:"Polling interval."`
 	Timeout  time.Duration `long:"timeout" default:"0" help:"Timeout before giving up."`
@@ -297,7 +297,7 @@ func (cmd ResourceWaitCmd[R]) Examples() []kingkong.Example {
 
 func (cmd *ResourceWaitCmd[R]) Run(ctx context.Context, stdio config.Stdio, sandbox *resource.Sandbox) error {
 	var empty R
-	if len(cmd.Name) == 0 {
+	if len(cmd.Targets) == 0 {
 		return fmt.Errorf("no %s specified", empty.Type().Names)
 	}
 	r := sandbox.WrapGettable(empty)
@@ -319,7 +319,7 @@ func (cmd *ResourceWaitCmd[R]) Run(ctx context.Context, stdio config.Stdio, sand
 
 	passing := map[string]bool{}
 	for {
-		resources, err := r.Get(ctx, cmd.Name)
+		resources, err := r.Get(ctx, cmd.Targets)
 		if err != nil {
 			return err
 		}
@@ -330,7 +330,7 @@ func (cmd *ResourceWaitCmd[R]) Run(ctx context.Context, stdio config.Stdio, sand
 		}
 		if len(filtered) == len(resources) {
 			log.G(ctx).Debug().
-				Strs("resources", cmd.Name).
+				Strs("resources", cmd.Targets).
 				Msg("all resources match the specified conditions")
 
 			return cmd.Output.
@@ -338,7 +338,7 @@ func (cmd *ResourceWaitCmd[R]) Run(ctx context.Context, stdio config.Stdio, sand
 				Print(ctx, stdio.Stdout, []string(cmd.Field), empty, filtered...)
 		}
 		log.G(ctx).Debug().
-			Strs("resources", cmd.Name).
+			Strs("resources", cmd.Targets).
 			Int("matching", len(filtered)).
 			Int("total", len(resources)).
 			Msg("not all resources match the specified conditions yet")
@@ -416,7 +416,7 @@ func filterResources(ctx context.Context, resources []resource.Resource, filter 
 }
 
 type ResourceRemoveCmd[R resource.DeletableResource] struct {
-	Name []string `arg:"" completion-predictor:"resource-key-${name}" help:"Names of the ${names} to remove."`
+	Targets []string `arg:"" name:"target" completion-predictor:"resource-key-${name}" help:"Target ${names} to remove."`
 
 	FormatOpts
 }
@@ -436,7 +436,7 @@ func (cmd ResourceRemoveCmd[R]) Examples() []kingkong.Example {
 func (cmd *ResourceRemoveCmd[R]) Run(ctx context.Context, stdio config.Stdio, sandbox *resource.Sandbox) error {
 	var empty R
 	r := sandbox.WrapDeletable(empty)
-	resources, getErr := r.Get(ctx, cmd.Name)
+	resources, getErr := r.Get(ctx, cmd.Targets)
 	if getErr != nil && len(resources) == 0 {
 		return getErr
 	}
@@ -477,7 +477,7 @@ type ResourceBulkRemoveCmd[R interface {
 	resource.DeletableResource
 	resource.ListableResource
 }] struct {
-	Name []string `arg:"" optional:"" completion-predictor:"resource-key-${name}" help:"Names of the ${names} to remove."`
+	Targets []string `arg:"" name:"target" optional:"" completion-predictor:"resource-key-${name}" help:"Target ${names} to remove."`
 
 	All    bool     `xor:"select" help:"Remove all ${names}. Prompts for confirmation."`
 	Filter []string `xor:"select" help:"Filter ${names} to remove (e.g. --filter state==running). Prompts for confirmation." sep:"none"`
@@ -502,7 +502,7 @@ func (cmd *ResourceBulkRemoveCmd[R]) Run(ctx context.Context, stdio config.Stdio
 	var empty R
 	var resources []resource.Resource
 	if cmd.All || len(cmd.Filter) > 0 {
-		if len(cmd.Name) > 0 {
+		if len(cmd.Targets) > 0 {
 			// would be nice if xor groups could enforce this
 			return fmt.Errorf("cannot specify names when using --all or --filter")
 		}
@@ -572,10 +572,10 @@ func (cmd *ResourceBulkRemoveCmd[R]) Run(ctx context.Context, stdio config.Stdio
 			return err
 		}
 		return nil
-	} else if len(cmd.Name) > 0 {
+	} else if len(cmd.Targets) > 0 {
 		r := sandbox.WrapDeletable(empty)
 		var err error
-		resources, err = r.Get(ctx, cmd.Name)
+		resources, err = r.Get(ctx, cmd.Targets)
 		if err != nil {
 			return err
 		}
@@ -593,7 +593,7 @@ func (cmd *ResourceBulkRemoveCmd[R]) Run(ctx context.Context, stdio config.Stdio
 }
 
 type ResourceEditCmd[R resource.EditableResource] struct {
-	Name string `arg:"" optional:"" completion-predictor:"resource-key-${name}" help:"Name of the ${name} to edit."`
+	Target string `arg:"" name:"target" completion-predictor:"resource-key-${name}" help:"Target ${name} to edit."`
 
 	SetArgs
 	AddArgs
@@ -649,7 +649,7 @@ func (cmd *ResourceEditCmd[R]) Run(ctx context.Context, stdio config.Stdio, sand
 	r := sandbox.WrapEditable(empty)
 
 	var res resource.Resource
-	if cmd.Name == "" {
+	if cmd.Target == "" {
 		def, ok := any(empty).(resource.DefaultResource)
 		if !ok {
 			return fmt.Errorf("parsing arguments: no %s specified", empty.Type().Names)
@@ -659,19 +659,19 @@ func (cmd *ResourceEditCmd[R]) Run(ctx context.Context, stdio config.Stdio, sand
 			return err
 		}
 	} else {
-		resources, err := r.Get(ctx, []string{cmd.Name})
+		resources, err := r.Get(ctx, []string{cmd.Target})
 		if err != nil {
 			return err
 		}
 		if len(resources) == 0 {
-			return fmt.Errorf("resource not found: %s", cmd.Name)
+			return fmt.Errorf("resource not found: %s", cmd.Target)
 		}
 		if len(resources) > 1 {
 			var keys []string
 			for _, res := range resources {
 				keys = append(keys, res.Key().String())
 			}
-			return fmt.Errorf("ambiguous resource name: %s (found %v)", cmd.Name, keys)
+			return fmt.Errorf("ambiguous resource name: %s (found %v)", cmd.Target, keys)
 		}
 		res = resources[0]
 	}

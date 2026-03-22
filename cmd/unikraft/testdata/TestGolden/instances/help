@@ -71,8 +71,6 @@ stdout:
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
 	          [default: true]
-	      --version
-	          Print version information.
 
 $ unikraft instance get --help
 
@@ -80,11 +78,11 @@ stdout:
 	Inspect a instance.
 
 	Usage:
-	  unikraft instances get [<name> ...] [flags]
+	  unikraft instances get [<target> ...] [flags]
 
 	Arguments:
-	  [<name> ...]
-	          Names of the instances to inspect.
+	  [<target> ...]
+	          Target instances to get.
 
 	Examples:
 	  # Inspect an instance by name or UUID
@@ -141,8 +139,6 @@ stdout:
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
 	          [default: true]
-	      --version
-	          Print version information.
 
 $ unikraft instance list --help
 
@@ -150,11 +146,11 @@ stdout:
 	List instances.
 
 	Usage:
-	  unikraft instances list [<name> ...] [flags]
+	  unikraft instances list [<target> ...] [flags]
 
 	Arguments:
-	  [<name> ...]
-	          Names of the instances to list.
+	  [<target> ...]
+	          Target instances to list.
 
 	Examples:
 	  # List instances across metros
@@ -215,8 +211,6 @@ stdout:
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
 	          [default: true]
-	      --version
-	          Print version information.
 
 $ unikraft instance wait --help
 
@@ -224,11 +218,11 @@ stdout:
 	Wait for instances to match a filter.
 
 	Usage:
-	  unikraft instances wait --until=UNTIL <name> ... [flags]
+	  unikraft instances wait --until=UNTIL <target> ... [flags]
 
 	Arguments:
-	  <name> ...
-	          Names of the instances to wait for.
+	  <target> ...
+	          Target instances to wait for.
 
 	Fields:
 	  metro
@@ -287,8 +281,6 @@ stdout:
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
 	          [default: true]
-	      --version
-	          Print version information.
 
 $ unikraft instance create --help
 
@@ -367,8 +359,6 @@ stdout:
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
 	          [default: true]
-	      --version
-	          Print version information.
 
 $ unikraft instance edit --help
 
@@ -376,11 +366,11 @@ stdout:
 	Edit a instance.
 
 	Usage:
-	  unikraft instances edit [<name>] [flags]
+	  unikraft instances edit <target> [flags]
 
 	Arguments:
-	  [<name>]
-	          Name of the instance to edit.
+	  <target>
+	          Target instance to edit.
 
 	Examples:
 	  # Resize instance memory
@@ -449,8 +439,6 @@ stdout:
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
 	          [default: true]
-	      --version
-	          Print version information.
 
 $ unikraft instance delete --help
 
@@ -458,11 +446,11 @@ stdout:
 	Remove a instance.
 
 	Usage:
-	  unikraft instances delete [<name> ...] [flags]
+	  unikraft instances delete [<target> ...] [flags]
 
 	Arguments:
-	  [<name> ...]
-	          Names of the instances to remove.
+	  [<target> ...]
+	          Target instances to remove.
 
 	Examples:
 	  # Delete an instance by name or UUID
@@ -523,8 +511,6 @@ stdout:
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
 	          [default: true]
-	      --version
-	          Print version information.
 
 $ unikraft instance logs --help
 
@@ -532,11 +518,11 @@ stdout:
 	Fetch and display instance logs.
 
 	Usage:
-	  unikraft instances logs <name> ... [flags]
+	  unikraft instances logs <target> ... [flags]
 
 	Arguments:
-	  <name> ...
-	          Names of the instances to fetch logs for.
+	  <target> ...
+	          Target instances to fetch logs for.
 
 	Examples:
 	  # Fetch logs from an instance
@@ -573,8 +559,6 @@ stdout:
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
 	          [default: true]
-	      --version
-	          Print version information.
 
 $ unikraft instance start --help
 
@@ -582,11 +566,11 @@ stdout:
 	Start one or more instances.
 
 	Usage:
-	  unikraft instances start <name> ... [flags]
+	  unikraft instances start <target> ... [flags]
 
 	Arguments:
-	  <name> ...
-	          Names of the instances to start.
+	  <target> ...
+	          Target instances to start.
 
 	Examples:
 	  # Start an instance
@@ -614,8 +598,6 @@ stdout:
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
 	          [default: true]
-	      --version
-	          Print version information.
 
 $ unikraft instance stop --help
 
@@ -623,11 +605,11 @@ stdout:
 	Stop one or more instances.
 
 	Usage:
-	  unikraft instances stop <name> ... [flags]
+	  unikraft instances stop <target> ... [flags]
 
 	Arguments:
-	  <name> ...
-	          Names of the instances to stop.
+	  <target> ...
+	          Target instances to stop.
 
 	Examples:
 	  # Stop an instance
@@ -666,8 +648,6 @@ stdout:
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
 	          [default: true]
-	      --version
-	          Print version information.
 
 $ unikraft instance restart --help
 
@@ -675,11 +655,11 @@ stdout:
 	Restart one or more instances.
 
 	Usage:
-	  unikraft instances restart <name> ... [flags]
+	  unikraft instances restart <target> ... [flags]
 
 	Arguments:
-	  <name> ...
-	          Names of the instances to restart.
+	  <target> ...
+	          Target instances to restart.
 
 	Examples:
 	  # Restart an instance
@@ -715,5 +695,3 @@ stdout:
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
 	          [default: true]
-	      --version
-	          Print version information.

@@ -1,22 +1,26 @@
-$ unikraft config --help
+$ unikraft resource --help
 
 stdout:
-	Manage CLI configuration.
+	Manage any Unikraft Cloud resource.
 
 	Usage:
-	  unikraft config <command> [flags]
+	  unikraft resources <command> [flags]
 
 	Commands:
 	  get, inspect, show
-	          Inspect a path.
+	          Inspect a resource.
+	  list, ls
+	          List resources.
+	  edit
+	          Edit a resource.
+	  create
+	          Create a resource.
+	  delete, rm, remove
+	          Remove a resource.
 
 	Fields:
-	  path
-	  profile
-	  profiles, profiles.*, profiles.*.name, profiles.*.type, profiles.*.token,
-	  profiles.*.organization, profiles.*.control-plane, profiles.*.metros,
-	  profiles.*.metros.*, profiles.*.metros.*.name, profiles.*.metros.*.endpoint,
-	  profiles.*.metros.*.country, profiles.*.metros.*.insecure
+	  type
+	  key
 
 	Global flags:
 	  -h, --help
@@ -35,33 +39,29 @@ stdout:
 	          Toggle anonymous usage analytics.
 	          [default: true]
 
-$ unikraft config get --help
+$ unikraft resource delete --help
 
 stdout:
-	Inspect a path.
+	Remove a resource.
 
 	Usage:
-	  unikraft config get [<target> ...] [flags]
+	  unikraft resources delete [<target> ...] [flags]
 
 	Arguments:
 	  [<target> ...]
-	          Target paths to get.
-
-	Examples:
-	  # Show the current configuration
-	  unikraft config get
+	          Target resources to remove.
 
 	Fields:
-	  path
-	  profile
-	  profiles, profiles.*, profiles.*.name, profiles.*.type, profiles.*.token,
-	  profiles.*.organization, profiles.*.control-plane, profiles.*.metros,
-	  profiles.*.metros.*, profiles.*.metros.*.name, profiles.*.metros.*.endpoint,
-	  profiles.*.metros.*.country, profiles.*.metros.*.insecure
+	  type
+	  key
 
 	Flags:
-	  -w, --watch
-	          Watch for changes and refresh output.
+	      --all
+	          Remove all resources. Prompts for confirmation.
+	      --filter
+	          Filter resources to remove (e.g. --filter state==running). Prompts for confirmation.
+	      --force
+	          Do not prompt for confirmation when using --all or --filter.
 	  -f, --field
 	          Specify which fields to include in the output.
 	  -o, --output

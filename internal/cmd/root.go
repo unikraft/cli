@@ -126,7 +126,7 @@ func NewRootCmd(ctx context.Context, args []string, stdio config.Stdio) (context
 
 	kongcompletion.Register(
 		parser,
-		kongcompletion.WithPredictor("resource-key-config", complete.PredictFiles("*")),
+		kongcompletion.WithPredictor("resource-key-path", complete.PredictFiles("*")),
 		kongcompletion.WithPredictor("resource-key-profile", cmd.PredictResourceKey[Profile](ctx)),
 		kongcompletion.WithPredictor("resource-key-metro", cmd.PredictResourceKey[Metro](ctx)),
 		kongcompletion.WithPredictor("resource-key-instance", cmd.PredictResourceKey[Instance](ctx)),

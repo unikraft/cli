@@ -5,43 +5,35 @@
 
 package main
 
-import (
-	"testing"
+import "testing"
 
-	"unikraft.com/cli/internal/integration"
-)
+func certificatesTests(t *testing.T, r *testRunner) {
+	t.Run("help", func(t *testing.T) {
+		r.run(t, []command{
+			{args: []string{unikraftCmd, "certificate", "--help"}},
+			{args: []string{unikraftCmd, "certificate", "get", "--help"}},
+			{args: []string{unikraftCmd, "certificate", "list", "--help"}},
+			{args: []string{unikraftCmd, "certificate", "wait", "--help"}},
+			{args: []string{unikraftCmd, "certificate", "create", "--help"}},
+			{args: []string{unikraftCmd, "certificate", "delete", "--help"}},
+		})
+	})
 
-func certificatesTestCases(t *testing.T, cfg *integration.Config) []testCase {
-	t.Helper()
-	if cfg == nil {
-		t.Skip("integration config not found")
+	metroName := ""
+	if r.cfg != nil {
+		metroName = r.cfg.MetroName
 	}
 
-	metroName := cfg.MetroName
-
-	return []testCase{
-		{
-			name: "help",
-			commands: []command{
-				{args: []string{unikraftCmd, "certificate", "--help"}},
-				{args: []string{unikraftCmd, "certificate", "get", "--help"}},
-				{args: []string{unikraftCmd, "certificate", "list", "--help"}},
-				{args: []string{unikraftCmd, "certificate", "wait", "--help"}},
-				{args: []string{unikraftCmd, "certificate", "create", "--help"}},
-				{args: []string{unikraftCmd, "certificate", "delete", "--help"}},
-			},
-		},
-		{
-			name:   "create",
-			online: true,
-			commands: []command{
+	t.Run("create", func(t *testing.T) {
+		r.
+			online().
+			run(t, []command{
 				{args: []string{unikraftCmd, "certificate", "list"}},
 				{args: []string{unikraftCmd, "certificate", "create", "--set", "name=test-$UNIQ_CERT_A", "--set", "cn=$CERT_A_CN", "--set", "chain=$CERT_A_CHAIN", "--set", "pkey=$CERT_A_KEY", "--set", "metro=" + metroName}},
 				{args: []string{unikraftCmd, "certificate", "create", "--set", "name=test-$UNIQ_CERT_B", "--set", "cn=$CERT_B_CN", "--set", "chain=$CERT_B_CHAIN", "--set", "pkey=$CERT_B_KEY", "--set", "metro=" + metroName}},
 				{args: []string{unikraftCmd, "certificate", "list"}},
 				{args: []string{unikraftCmd, "certificate", "inspect", "test-$UNIQ_CERT_A", "test-$UNIQ_CERT_B"}},
 				{args: []string{unikraftCmd, "certificate", "delete", "test-$UNIQ_CERT_A", "test-$UNIQ_CERT_B"}},
-			},
-		},
-	}
+			})
+	})
 }

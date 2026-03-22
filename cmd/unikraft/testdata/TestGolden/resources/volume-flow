@@ -1,0 +1,81 @@
+$ unikraft resource create --set type=volume --set name=test-$UNIQ_VOLUME --set size=10 --set metro=test
+
+stdout:
+	type:       volume
+	key:        volume:test/test-<VOLUME>
+	metro:      test
+	name:       test-<VOLUME>
+	uuid:       12345678-1234-1234-1234-123456789abc
+	state:      available
+	size:       10MiB
+	persistent: true
+	timestamps:
+	  created:  RELATIVE_TIME
+
+$ unikraft resource get volume:test/test-$UNIQ_VOLUME
+
+stdout:
+	type:       volume
+	key:        volume:test/test-<VOLUME>
+	metro:      test
+	name:       test-<VOLUME>
+	uuid:       12345678-1234-1234-1234-123456789abc
+	state:      available
+	size:       10MiB
+	persistent: true
+	timestamps:
+	  created:  RELATIVE_TIME
+
+$ unikraft resource list
+
+stdout:
+	TYPE    KEY
+	volume  volume:test/test-<VOLUME>
+
+$ unikraft resource edit volume:test/test-$UNIQ_VOLUME --set size=20
+
+stdout:
+	  type:       volume
+	  key:        volume:test/test-<VOLUME>
+	  metro:      test
+	  name:       test-<VOLUME>
+	  uuid:       12345678-1234-1234-1234-123456789abc
+	  state:      available
+	- size:       10MiB
+	+ size:       20MiB
+	  persistent: true
+	  timestamps:
+	    created:  RELATIVE_TIME
+
+$ unikraft resource get volume:test/test-$UNIQ_VOLUME
+
+stdout:
+	type:       volume
+	key:        volume:test/test-<VOLUME>
+	metro:      test
+	name:       test-<VOLUME>
+	uuid:       12345678-1234-1234-1234-123456789abc
+	state:      available
+	size:       20MiB
+	persistent: true
+	timestamps:
+	  created:  RELATIVE_TIME
+
+$ unikraft volume get test-$UNIQ_VOLUME
+
+stdout:
+	metro:      test
+	name:       test-<VOLUME>
+	uuid:       12345678-1234-1234-1234-123456789abc
+	state:      available
+	size:       20MiB
+	persistent: true
+	timestamps:
+	  created:  RELATIVE_TIME
+
+$ unikraft resource delete --all --force
+
+$ unikraft volume ls
+
+stdout:
+	METRO  NAME  STATE  SIZE  CREATED

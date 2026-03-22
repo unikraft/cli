@@ -49,8 +49,6 @@ stdout:
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
 	          [default: true]
-	      --version
-	          Print version information.
 
 $ unikraft service get --help
 
@@ -58,11 +56,11 @@ stdout:
 	Inspect a service.
 
 	Usage:
-	  unikraft services get [<name> ...] [flags]
+	  unikraft services get [<target> ...] [flags]
 
 	Arguments:
-	  [<name> ...]
-	          Names of the services to inspect.
+	  [<target> ...]
+	          Target services to get.
 
 	Examples:
 	  # Inspect a service group by name or UUID
@@ -105,8 +103,6 @@ stdout:
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
 	          [default: true]
-	      --version
-	          Print version information.
 
 $ unikraft service list --help
 
@@ -114,11 +110,11 @@ stdout:
 	List services.
 
 	Usage:
-	  unikraft services list [<name> ...] [flags]
+	  unikraft services list [<target> ...] [flags]
 
 	Arguments:
-	  [<name> ...]
-	          Names of the services to list.
+	  [<target> ...]
+	          Target services to list.
 
 	Examples:
 	  # List all service groups
@@ -165,8 +161,6 @@ stdout:
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
 	          [default: true]
-	      --version
-	          Print version information.
 
 $ unikraft service wait --help
 
@@ -174,11 +168,11 @@ stdout:
 	Wait for services to match a filter.
 
 	Usage:
-	  unikraft services wait --until=UNTIL <name> ... [flags]
+	  unikraft services wait --until=UNTIL <target> ... [flags]
 
 	Arguments:
-	  <name> ...
-	          Names of the services to wait for.
+	  <target> ...
+	          Target services to wait for.
 
 	Fields:
 	  metro
@@ -223,8 +217,6 @@ stdout:
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
 	          [default: true]
-	      --version
-	          Print version information.
 
 $ unikraft service create --help
 
@@ -287,8 +279,6 @@ stdout:
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
 	          [default: true]
-	      --version
-	          Print version information.
 
 $ unikraft service edit --help
 
@@ -296,11 +286,11 @@ stdout:
 	Edit a service.
 
 	Usage:
-	  unikraft services edit [<name>] [flags]
+	  unikraft services edit <target> [flags]
 
 	Arguments:
-	  [<name>]
-	          Name of the service to edit.
+	  <target>
+	          Target service to edit.
 
 	Examples:
 	  # Add a new service port
@@ -355,8 +345,6 @@ stdout:
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
 	          [default: true]
-	      --version
-	          Print version information.
 
 $ unikraft service delete --help
 
@@ -364,11 +352,11 @@ stdout:
 	Remove a service.
 
 	Usage:
-	  unikraft services delete [<name> ...] [flags]
+	  unikraft services delete [<target> ...] [flags]
 
 	Arguments:
-	  [<name> ...]
-	          Names of the services to remove.
+	  [<target> ...]
+	          Target services to remove.
 
 	Examples:
 	  # Delete a service group by name or UUID
@@ -415,5 +403,3 @@ stdout:
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
 	          [default: true]
-	      --version
-	          Print version information.

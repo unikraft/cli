@@ -8,30 +8,26 @@ package main
 import (
 	"fmt"
 	"testing"
-
-	"unikraft.com/cli/internal/integration"
 )
 
-func buildTestCases(t *testing.T, cfg *integration.Config) []testCase {
-	t.Helper()
-	if cfg == nil {
-		t.Skip("integration config not found")
+func buildTests(t *testing.T, r *testRunner) {
+	t.Run("help", func(t *testing.T) {
+		r.run(t, []command{
+			{args: []string{unikraftCmd, "build", "--help"}},
+		})
+	})
+
+	var busybox, busyboxFull, metroName string
+	if r.cfg != nil {
+		busybox = r.cfg.Profile.Organization + "/busybox-e2e:$UNIQ_IMAGE"
+		busyboxFull = fmt.Sprintf("%s/%s", r.cfg.Metro.Index().Host, busybox)
+		metroName = r.cfg.MetroName
 	}
 
-	busybox := cfg.Profile.Organization + "/busybox-e2e:$UNIQ_IMAGE"
-	busyboxFull := fmt.Sprintf("%s/%s", cfg.Metro.Index().Host, busybox)
-
-	return []testCase{
-		{
-			name: "help",
-			commands: []command{
-				{args: []string{unikraftCmd, "build", "--help"}},
-			},
-		},
-		{
-			name:   "busybox",
-			online: true,
-			context: map[string]string{
+	t.Run("busybox", func(t *testing.T) {
+		r.
+			online().
+			withContext(map[string]string{
 				"Dockerfile": `
 FROM busybox:latest
 RUN echo "unikraft-e2e" > /etc/unikraft-e2e
@@ -56,14 +52,13 @@ runtime: base-compat:latest
 rootfs: ./Dockerfile
 cmd: ["sh", "/entrypoint.sh"]
 `,
-			},
-			commands: []command{
+			}).
+			run(t, []command{
 				{args: []string{unikraftCmd, "build", ".", "--output", busyboxFull}},
-				{args: []string{unikraftCmd, "run", "--name", "test-$UNIQ_INST", "--metro", cfg.MetroName, "--output", "quiet", busybox}},
+				{args: []string{unikraftCmd, "run", "--name", "test-$UNIQ_INST", "--metro", metroName, "--output", "quiet", busybox}},
 				{args: []string{unikraftCmd, "instance", "wait", "--until", "state==stopped", "--timeout", "10s", "test-$UNIQ_INST"}},
 				{args: []string{unikraftCmd, "instance", "logs", "test-$UNIQ_INST"}},
 				{args: []string{unikraftCmd, "instance", "delete", "test-$UNIQ_INST"}},
-			},
-		},
-	}
+			})
+	})
 }

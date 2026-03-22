@@ -81,7 +81,7 @@ func TestList(t *testing.T) {
 
 	var listOut bytes.Buffer
 	listCmd := &ResourceListCmd[resourcet.TestResource]{
-		Name: nil,
+		Targets: nil,
 	}
 	err = listCmd.Run(ctx, testStdio(&listOut), sandbox)
 	require.NoError(t, err)
@@ -108,7 +108,7 @@ func TestList(t *testing.T) {
 		assert.NotContains(t, output, "https://example.com")
 
 		out.Reset()
-		cmd.Name = []string{"test1"}
+		cmd.Targets = []string{"test1"}
 		err = cmd.Run(ctx, testStdio(&out), sandbox)
 		require.NoError(t, err)
 
@@ -148,7 +148,7 @@ func TestList(t *testing.T) {
 		assert.NotContains(t, output, "test2")
 
 		out.Reset()
-		cmd.Name = []string{"test1", "test2"}
+		cmd.Targets = []string{"test1", "test2"}
 		err = cmd.Run(ctx, testStdio(&out), sandbox)
 		require.NoError(t, err)
 
@@ -508,7 +508,7 @@ func TestPartialResultsPrintedBeforeError(t *testing.T) {
 
 		var out bytes.Buffer
 		cmd := &ResourceGetCmd[resourcet.TestResource]{
-			Name:       []string{"test1", "missing"},
+			Targets:    []string{"test1", "missing"},
 			FormatOpts: FormatOpts{Output: Printer{Type: PrinterTypeQuiet}},
 		}
 		err := cmd.Run(ctx, testStdio(&out), nil)
@@ -547,7 +547,7 @@ func TestPartialResultsPrintedBeforeError(t *testing.T) {
 
 		var out bytes.Buffer
 		cmd := &ResourceRemoveCmd[resourcet.TestResource]{
-			Name:       []string{"ok", "fail"},
+			Targets:    []string{"ok", "fail"},
 			FormatOpts: FormatOpts{Output: Printer{Type: PrinterTypeQuiet}},
 		}
 		err := cmd.Run(ctx, testStdio(&out), nil)
@@ -592,7 +592,7 @@ func TestPartialResultsOrderWhenCallerPrintsError(t *testing.T) {
 
 		var out bytes.Buffer
 		cmd := &ResourceGetCmd[resourcet.TestResource]{
-			Name:       []string{"test1", "missing"},
+			Targets:    []string{"test1", "missing"},
 			FormatOpts: FormatOpts{Output: Printer{Type: PrinterTypeKeyValue}},
 		}
 		err := cmd.Run(ctx, testStdio(&out), nil)
@@ -621,7 +621,7 @@ func TestPartialResultsOrderWhenCallerPrintsError(t *testing.T) {
 
 		var out bytes.Buffer
 		cmd := &ResourceRemoveCmd[resourcet.TestResource]{
-			Name:       []string{"ok", "fail"},
+			Targets:    []string{"ok", "fail"},
 			FormatOpts: FormatOpts{Output: Printer{Type: PrinterTypeQuiet}},
 		}
 		err := cmd.Run(ctx, testStdio(&out), nil)
@@ -673,7 +673,7 @@ func TestTableNestedFieldSelection(t *testing.T) {
 
 	var out bytes.Buffer
 	cmd := &ResourceGetCmd[resourcet.TestResource]{
-		Name: []string{"test1"},
+		Targets: []string{"test1"},
 		FormatOpts: FormatOpts{
 			Output: Printer{Type: PrinterTypeTable},
 			Field:  xkong.GreedyStrings{"name", "authors"},
@@ -709,7 +709,7 @@ func TestGet(t *testing.T) {
 
 	var inspectOut bytes.Buffer
 	inspectCmd := &ResourceGetCmd[resourcet.TestResource]{
-		Name: []string{"test1"},
+		Targets: []string{"test1"},
 	}
 	err = inspectCmd.Run(ctx, testStdio(&inspectOut), sandbox)
 	require.NoError(t, err)
@@ -722,7 +722,7 @@ func TestGet(t *testing.T) {
 	t.Run("no_args", func(t *testing.T) {
 		var out bytes.Buffer
 		cmd := &ResourceGetCmd[resourcet.TestResource]{
-			Name: []string{},
+			Targets: []string{},
 		}
 		err := cmd.Run(ctx, testStdio(&out), sandbox)
 		require.Error(t, err)
@@ -731,7 +731,7 @@ func TestGet(t *testing.T) {
 	t.Run("multiple", func(t *testing.T) {
 		var out bytes.Buffer
 		cmd := &ResourceGetCmd[resourcet.TestResource]{
-			Name: []string{"test1", "test2"},
+			Targets: []string{"test1", "test2"},
 		}
 		err := cmd.Run(ctx, testStdio(&out), sandbox)
 		require.NoError(t, err)
@@ -746,7 +746,7 @@ func TestGet(t *testing.T) {
 	t.Run("field", func(t *testing.T) {
 		var out bytes.Buffer
 		cmd := &ResourceGetCmd[resourcet.TestResource]{
-			Name: []string{"test1"},
+			Targets: []string{"test1"},
 			FormatOpts: FormatOpts{
 				Field: xkong.GreedyStrings{"id", "url"},
 			},
@@ -759,7 +759,7 @@ func TestGet(t *testing.T) {
 		assert.Contains(t, output, "https://example.com")
 
 		out.Reset()
-		cmd.Name = []string{"test1", "test2"}
+		cmd.Targets = []string{"test1", "test2"}
 		err = cmd.Run(ctx, testStdio(&out), sandbox)
 		require.NoError(t, err)
 
@@ -793,7 +793,7 @@ func TestFieldVerbosity(t *testing.T) {
 		t.Helper()
 		var out bytes.Buffer
 		cmd := &ResourceGetCmd[resourcet.TestResource]{
-			Name: []string{"test1"},
+			Targets: []string{"test1"},
 			FormatOpts: FormatOpts{
 				Field: fields,
 			},
@@ -850,7 +850,7 @@ func TestGetOutput(t *testing.T) {
 		t.Helper()
 		var out bytes.Buffer
 		cmd := &ResourceGetCmd[resourcet.TestResource]{
-			Name: []string{"test1", "test2"},
+			Targets: []string{"test1", "test2"},
 			FormatOpts: FormatOpts{
 				Output: printer,
 			},
@@ -886,7 +886,7 @@ func TestWait(t *testing.T) {
 		ctx := resourcet.WithTestEnv(context.Background(), env)
 
 		cmd := &ResourceWaitCmd[resourcet.TestResource]{
-			Name:     []string{"test1", "test2"},
+			Targets:  []string{"test1", "test2"},
 			Until:    []string{"state==ready"},
 			Timeout:  time.Second,
 			Interval: 10 * time.Millisecond,
@@ -900,7 +900,7 @@ func TestWait(t *testing.T) {
 		ctx := resourcet.WithTestEnv(context.Background(), env)
 
 		cmd := &ResourceWaitCmd[resourcet.TestResource]{
-			Name:     []string{"test1", "test2"},
+			Targets:  []string{"test1", "test2"},
 			Until:    []string{"state==ready"},
 			Timeout:  1 * time.Second,
 			Interval: 10 * time.Millisecond,
@@ -930,7 +930,7 @@ func TestWaitOutput(t *testing.T) {
 		t.Helper()
 		var out bytes.Buffer
 		cmd := &ResourceWaitCmd[resourcet.TestResource]{
-			Name:     []string{"test1", "test2"},
+			Targets:  []string{"test1", "test2"},
 			Until:    []string{"state==ready"},
 			Interval: 10 * time.Millisecond,
 			FormatOpts: FormatOpts{
@@ -1169,7 +1169,7 @@ func TestEditOutput(t *testing.T) {
 		t.Helper()
 		var out bytes.Buffer
 		cmd := &ResourceEditCmd[resourcet.TestResource]{
-			Name: "test-edit",
+			Target: "test-edit",
 			SetArgs: SetArgs{
 				Set: []map[string]string{
 					{"settings.foo": "999"},
@@ -1208,7 +1208,7 @@ func TestEditDryRun(t *testing.T) {
 
 	var out bytes.Buffer
 	cmd := &ResourceEditCmd[resourcet.TestResource]{
-		Name:   "test-edit",
+		Target: "test-edit",
 		DryRun: true,
 		SetArgs: SetArgs{
 			Set: []map[string]string{
@@ -1252,7 +1252,7 @@ func TestEditCmdNoChangesDryRun(t *testing.T) {
 
 	var out bytes.Buffer
 	cmd := &ResourceEditCmd[resourcet.TestResource]{
-		Name:   "test-edit",
+		Target: "test-edit",
 		Cmd:    "cat", // pass through unchanged
 		DryRun: true,
 	}
@@ -1284,7 +1284,7 @@ func TestEditCmdWithChangesDryRun(t *testing.T) {
 
 	var out bytes.Buffer
 	cmd := &ResourceEditCmd[resourcet.TestResource]{
-		Name:   "test-edit",
+		Target: "test-edit",
 		Cmd:    `sed 's/old-value/new-value/'`, // change settings.bar
 		DryRun: true,
 	}
@@ -1381,7 +1381,7 @@ func TestRemoveOutput(t *testing.T) {
 
 		var out bytes.Buffer
 		cmd := &ResourceRemoveCmd[resourcet.TestResource]{
-			Name: []string{"test1", "test2"},
+			Targets: []string{"test1", "test2"},
 			FormatOpts: FormatOpts{
 				Output: printer,
 			},
@@ -1520,7 +1520,7 @@ func TestValueCallback(t *testing.T) {
 
 		var out bytes.Buffer
 		cmd := &ResourceGetCmd[resourcet.TestResource]{
-			Name: []string{"res1"},
+			Targets: []string{"res1"},
 			FormatOpts: FormatOpts{
 				Field: xkong.GreedyStrings{"+lazy"},
 			},

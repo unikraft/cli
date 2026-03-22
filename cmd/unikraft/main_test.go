@@ -46,18 +46,48 @@ import (
 
 const unikraftCmd = "unikraft"
 
-type testCase struct {
-	name     string
-	commands []command
+// testRunner holds shared state for running integration tests.
+type testRunner struct {
+	t            *testing.T
+	cfg          *integration.Config
+	unikraftPath string
+}
+
+// command represents a single command to execute in a test.
+type command struct {
+	args       []string
+	allowErr   bool
+	captureEnv string
+}
+
+// testBuilder provides a fluent interface for configuring and running tests.
+type testBuilder struct {
+	runner   *testRunner
 	online   bool
 	cleaners []cleaner
 	context  map[string]string
 }
 
-type command struct {
-	args       []string
-	allowErr   bool
-	captureEnv string
+// online returns a new testBuilder configured for online tests (requiring config).
+func (r *testRunner) online() *testBuilder {
+	return &testBuilder{runner: r, online: true}
+}
+
+// offline returns a new testBuilder configured for offline tests.
+func (r *testRunner) offline() *testBuilder {
+	return &testBuilder{runner: r, online: false}
+}
+
+// withCleaners adds output cleaners to the test builder.
+func (b *testBuilder) withCleaners(cleaners []cleaner) *testBuilder {
+	b.cleaners = append(b.cleaners, cleaners...)
+	return b
+}
+
+// withContext adds context files to be created in the test directory.
+func (b *testBuilder) withContext(context map[string]string) *testBuilder {
+	b.context = context
+	return b
 }
 
 func TestGolden(t *testing.T) {
@@ -67,48 +97,57 @@ func TestGolden(t *testing.T) {
 	cfg, err := integration.LoadConfig(t)
 	require.NoError(t, err)
 
-	groups := []struct {
-		name  string
-		cases func(*testing.T, *integration.Config) []testCase
+	runner := &testRunner{
+		t:            t,
+		cfg:          cfg,
+		unikraftPath: unikraftPath,
+	}
+
+	tests := []struct {
+		name string
+		fn   func(*testing.T, *testRunner)
 	}{
-		{name: "help", cases: helpTestCases},
-		{name: "auth", cases: authTestCases},
-		{name: "instances", cases: instancesTestCases},
-		{name: "volumes", cases: volumesTestCases},
-		{name: "services", cases: servicesTestCases},
-		{name: "certificates", cases: certificatesTestCases},
-		{name: "images", cases: imagesTestCases},
-		{name: "resources", cases: resourceTestCases},
-		{name: "build", cases: buildTestCases},
-		{name: "config", cases: configTestCases},
+		{"help", helpTests},
+		{"auth", authTests},
+		{"instances", instancesTests},
+		{"volumes", volumesTests},
+		{"services", servicesTests},
+		{"certificates", certificatesTests},
+		{"images", imagesTests},
+		{"resources", resourceTests},
+		{"build", buildTests},
+		{"config", configTests},
 	}
 
 	t.Parallel()
-	for _, group := range groups {
-		t.Run(group.name, func(t *testing.T) {
-			tcs := group.cases(t, cfg)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			for _, tc := range tcs {
-				t.Run(tc.name, func(t *testing.T) {
-					t.Parallel()
-					runTestCase(t, tc, cfg, unikraftPath)
-				})
-			}
+			tt.fn(t, runner)
 		})
 	}
 }
 
-func runTestCase(t *testing.T, tc testCase, cfg *integration.Config, unikraftPath string) {
-	t.Helper()
+// run executes a test case with the given commands using the testRunner directly (for offline tests).
+func (r *testRunner) run(t *testing.T, commands []command) {
+	r.offline().run(t, commands)
+}
 
-	if tc.online && cfg == nil {
+// run executes a test case with the given commands and the builder's configuration.
+func (b *testBuilder) run(t *testing.T, commands []command) {
+	t.Helper()
+	t.Parallel()
+
+	r := b.runner
+
+	if b.online && r.cfg == nil {
 		t.Skip("online test requires config, but no config found")
 	}
 
 	configPath := filepath.Join(t.TempDir(), "config.yaml")
 	var testCfg *integration.Config
-	if cfg != nil {
-		cloned, err := copystructure.Copy(cfg)
+	if r.cfg != nil {
+		cloned, err := copystructure.Copy(r.cfg)
 		require.NoError(t, err)
 		testCfg = cloned.(*integration.Config)
 		testCfg.Config.Path = configPath
@@ -118,7 +157,7 @@ func runTestCase(t *testing.T, tc testCase, cfg *integration.Config, unikraftPat
 	ctx := t.Context()
 	ctx = log.WithLogger(ctx, log.New(t.Output(), log.TextType, log.TraceLevel))
 
-	assert.NotEmpty(t, tc.commands, "no commands specified")
+	assert.NotEmpty(t, commands, "no commands specified")
 
 	sandboxPath := filepath.Join(t.TempDir(), "sandbox.json")
 	t.Cleanup(func() {
@@ -135,7 +174,7 @@ func runTestCase(t *testing.T, tc testCase, cfg *integration.Config, unikraftPat
 	})
 
 	dir := t.TempDir()
-	for name, contents := range tc.context {
+	for name, contents := range b.context {
 		require.NotEmpty(t, name, "context filename cannot be empty")
 		path := filepath.Join(dir, name)
 		require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
@@ -144,7 +183,7 @@ func runTestCase(t *testing.T, tc testCase, cfg *integration.Config, unikraftPat
 
 	expander := &expander{}
 	output := strings.Builder{}
-	for i, command := range tc.commands {
+	for i, command := range commands {
 		require.NotEmpty(t, command.args, "no command specified")
 		args := expander.expandArgs(command.args)
 
@@ -154,8 +193,8 @@ func runTestCase(t *testing.T, tc testCase, cfg *integration.Config, unikraftPat
 
 		var cmd *exec.Cmd
 		if args[0] == unikraftCmd {
-			cmd = exec.CommandContext(ctx, unikraftPath, args[1:]...)
-			cmd.Args[0] = unikraftPath
+			cmd = exec.CommandContext(ctx, r.unikraftPath, args[1:]...)
+			cmd.Args[0] = r.unikraftPath
 		} else {
 			cmd = exec.CommandContext(ctx, args[0], args[1:]...)
 		}
@@ -207,7 +246,7 @@ func runTestCase(t *testing.T, tc testCase, cfg *integration.Config, unikraftPat
 			captureEnv: command.captureEnv,
 		}
 
-		report.cleaners = append(report.cleaners, tc.cleaners...)
+		report.cleaners = append(report.cleaners, b.cleaners...)
 		report.cleaners = append(report.cleaners, expander.cleaners()...)
 
 		if testCfg != nil {

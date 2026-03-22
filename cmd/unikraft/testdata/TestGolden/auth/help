@@ -110,11 +110,11 @@ stdout:
 	Inspect a profile.
 
 	Usage:
-	  unikraft profile get [<name> ...] [flags]
+	  unikraft profile get [<target> ...] [flags]
 
 	Arguments:
-	  [<name> ...]
-	          Names of the profiles to inspect.
+	  [<target> ...]
+	          Target profiles to get.
 
 	Examples:
 	  # Inspect a profile by name
@@ -156,11 +156,11 @@ stdout:
 	List profiles.
 
 	Usage:
-	  unikraft profile list [<name> ...] [flags]
+	  unikraft profile list [<target> ...] [flags]
 
 	Arguments:
-	  [<name> ...]
-	          Names of the profiles to list.
+	  [<target> ...]
+	          Target profiles to list.
 
 	Examples:
 	  # List all profiles
@@ -210,7 +210,7 @@ stdout:
 
 	Arguments:
 	  <name>
-	          Name of the profile to switch to.
+	          Target profile to switch to.
 
 	Global flags:
 	  -h, --help
@@ -289,11 +289,11 @@ stdout:
 	Inspect a metro.
 
 	Usage:
-	  unikraft metros get [<name> ...] [flags]
+	  unikraft metros get [<target> ...] [flags]
 
 	Arguments:
-	  [<name> ...]
-	          Names of the metros to inspect.
+	  [<target> ...]
+	          Target metros to get.
 
 	Examples:
 	  # Inspect a metro by name
@@ -353,11 +353,11 @@ stdout:
 	List metros.
 
 	Usage:
-	  unikraft metros list [<name> ...] [flags]
+	  unikraft metros list [<target> ...] [flags]
 
 	Arguments:
-	  [<name> ...]
-	          Names of the metros to list.
+	  [<target> ...]
+	          Target metros to list.
 
 	Examples:
 	  # List all metros

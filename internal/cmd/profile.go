@@ -98,7 +98,7 @@ func (Profile) Examples() map[cmd.CmdType][]kingkong.Example {
 }
 
 type UseCmd struct {
-	Name string `arg:"" help:"Name of the profile to switch to."`
+	Name string `arg:"" help:"Target profile to switch to."`
 }
 
 func (cmd *UseCmd) Run(ctx context.Context, cfg *config.Config) error {

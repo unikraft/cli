@@ -48,8 +48,6 @@ stdout:
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
 	          [default: true]
-	      --version
-	          Print version information.
 
 $ unikraft certificate get --help
 
@@ -57,11 +55,11 @@ stdout:
 	Inspect a certificate.
 
 	Usage:
-	  unikraft certificates get [<name> ...] [flags]
+	  unikraft certificates get [<target> ...] [flags]
 
 	Arguments:
-	  [<name> ...]
-	          Names of the certificates to inspect.
+	  [<target> ...]
+	          Target certificates to get.
 
 	Examples:
 	  # Get a certificate by name or UUID
@@ -105,8 +103,6 @@ stdout:
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
 	          [default: true]
-	      --version
-	          Print version information.
 
 $ unikraft certificate list --help
 
@@ -114,11 +110,11 @@ stdout:
 	List certificates.
 
 	Usage:
-	  unikraft certificates list [<name> ...] [flags]
+	  unikraft certificates list [<target> ...] [flags]
 
 	Arguments:
-	  [<name> ...]
-	          Names of the certificates to list.
+	  [<target> ...]
+	          Target certificates to list.
 
 	Examples:
 	  # List all certificates
@@ -166,8 +162,6 @@ stdout:
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
 	          [default: true]
-	      --version
-	          Print version information.
 
 $ unikraft certificate wait --help
 
@@ -175,11 +169,11 @@ stdout:
 	Wait for certificates to match a filter.
 
 	Usage:
-	  unikraft certificates wait --until=UNTIL <name> ... [flags]
+	  unikraft certificates wait --until=UNTIL <target> ... [flags]
 
 	Arguments:
-	  <name> ...
-	          Names of the certificates to wait for.
+	  <target> ...
+	          Target certificates to wait for.
 
 	Fields:
 	  metro
@@ -225,8 +219,6 @@ stdout:
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
 	          [default: true]
-	      --version
-	          Print version information.
 
 $ unikraft certificate create --help
 
@@ -295,8 +287,6 @@ stdout:
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
 	          [default: true]
-	      --version
-	          Print version information.
 
 $ unikraft certificate delete --help
 
@@ -304,11 +294,11 @@ stdout:
 	Remove a certificate.
 
 	Usage:
-	  unikraft certificates delete [<name> ...] [flags]
+	  unikraft certificates delete [<target> ...] [flags]
 
 	Arguments:
-	  [<name> ...]
-	          Names of the certificates to remove.
+	  [<target> ...]
+	          Target certificates to remove.
 
 	Examples:
 	  # Delete a certificate by name or UUID
@@ -356,5 +346,3 @@ stdout:
 	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
 	          Toggle anonymous usage analytics.
 	          [default: true]
-	      --version
-	          Print version information.

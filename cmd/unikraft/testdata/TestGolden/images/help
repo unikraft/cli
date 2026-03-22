@@ -45,11 +45,11 @@ stdout:
 	Inspect a image.
 
 	Usage:
-	  unikraft images get [<name> ...] [flags]
+	  unikraft images get [<target> ...] [flags]
 
 	Arguments:
-	  [<name> ...]
-	          Names of the images to inspect.
+	  [<target> ...]
+	          Target images to get.
 
 	Examples:
 	  # Inspect an image by tag
@@ -92,11 +92,11 @@ stdout:
 	List images.
 
 	Usage:
-	  unikraft images list [<name> ...] [flags]
+	  unikraft images list [<target> ...] [flags]
 
 	Arguments:
-	  [<name> ...]
-	          Names of the images to list.
+	  [<target> ...]
+	          Target images to list.
 
 	Examples:
 	  # List all images

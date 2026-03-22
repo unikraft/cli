@@ -4,32 +4,25 @@
 
 package main
 
-import (
-	"testing"
+import "testing"
 
-	"unikraft.com/cli/internal/integration"
-)
+func resourceTests(t *testing.T, r *testRunner) {
+	t.Run("help", func(t *testing.T) {
+		r.run(t, []command{
+			{args: []string{unikraftCmd, "resource", "--help"}},
+			{args: []string{unikraftCmd, "resource", "delete", "--help"}},
+		})
+	})
 
-func resourceTestCases(t *testing.T, cfg *integration.Config) []testCase {
-	t.Helper()
-	if cfg == nil {
-		t.Skip("integration config not found")
+	metroName := ""
+	if r.cfg != nil {
+		metroName = r.cfg.MetroName
 	}
 
-	metroName := cfg.MetroName
-
-	return []testCase{
-		{
-			name: "help",
-			commands: []command{
-				{args: []string{unikraftCmd, "resource", "--help"}},
-				{args: []string{unikraftCmd, "resource", "delete", "--help"}},
-			},
-		},
-		{
-			name:   "volume-flow",
-			online: true,
-			commands: []command{
+	t.Run("volume-flow", func(t *testing.T) {
+		r.
+			online().
+			run(t, []command{
 				{args: []string{unikraftCmd, "resource", "create", "--set", "type=volume", "--set", "name=test-$UNIQ_VOLUME", "--set", "size=10", "--set", "metro=" + metroName}},
 				{args: []string{unikraftCmd, "resource", "get", "volume:" + metroName + "/test-$UNIQ_VOLUME"}},
 				{args: []string{unikraftCmd, "resource", "list"}},
@@ -38,7 +31,6 @@ func resourceTestCases(t *testing.T, cfg *integration.Config) []testCase {
 				{args: []string{unikraftCmd, "volume", "get", "test-$UNIQ_VOLUME"}},
 				{args: []string{unikraftCmd, "resource", "delete", "--all", "--force"}},
 				{args: []string{unikraftCmd, "volume", "ls"}},
-			},
-		},
-	}
+			})
+	})
 }

@@ -4,31 +4,22 @@
 
 package main
 
-import (
-	"testing"
+import "testing"
 
-	"unikraft.com/cli/internal/integration"
-)
-
-func configTestCases(t *testing.T, _ *integration.Config) []testCase {
-	t.Helper()
-
-	return []testCase{
-		{
-			name: "help",
-			commands: []command{
-				{args: []string{unikraftCmd, "config", "--help"}},
-				{args: []string{unikraftCmd, "config", "get", "--help"}},
-			},
-		},
-		{
-			name:   "get",
-			online: true,
-			commands: []command{
+func configTests(t *testing.T, r *testRunner) {
+	t.Run("help", func(t *testing.T) {
+		r.run(t, []command{
+			{args: []string{unikraftCmd, "config", "--help"}},
+			{args: []string{unikraftCmd, "config", "get", "--help"}},
+		})
+	})
+	t.Run("get", func(t *testing.T) {
+		r.
+			online().
+			run(t, []command{
 				{args: []string{unikraftCmd, "config", "get"}},
 				{args: []string{unikraftCmd, "config", "get", "-o", "json"}},
 				{args: []string{unikraftCmd, "config", "get", "-o", "yaml"}},
-			},
-		},
-	}
+			})
+	})
 }
