@@ -170,11 +170,10 @@ type Instance struct {
 		RestartCount int    `mirror:"instance.restart_count"`
 	}
 
-	Autostart   bool            `field:"autostart,invisible,valueless" create:"set"`
-	Replicas    int64           `field:"replicas,invisible,valueless" create:"set"`
-	WaitTimeout types.DurationS `field:"wait-timeout,invisible,valueless" create:"set"`
-	Features    []string        `field:"features,invisible,valueless" create:"set"`
-	Vsock       bool            `field:"vsock,invisible,valueless" create:"set" edit:"set"`
+	Autostart bool     `field:"autostart,invisible,valueless" create:"set"`
+	Replicas  int64    `field:"replicas,invisible,valueless" create:"set"`
+	Features  []string `field:"features,invisible,valueless" create:"set"`
+	Vsock     bool     `field:"vsock,invisible,valueless" create:"set" edit:"set"`
 
 	Stop struct {
 		Reason string     `field:",long"`
@@ -709,7 +708,7 @@ func instancePatchSpec(path string, op patchOp, value any) (platform.UpdateInsta
 }
 
 func (Instance) Create(ctx context.Context, fields []resource.Field) ([]resource.Resource, error) {
-	var req platform.CreateInstanceRequest
+	req := platform.CreateInstanceRequest{}
 	var metro string
 	for key, field := range resource.IterFields(fields) {
 		if field.Create == nil || field.Create.Set == nil {
@@ -831,12 +830,10 @@ func (Instance) Create(ctx context.Context, fields []resource.Field) ([]resource
 		case "autostart":
 			autostart := field.Create.Set.(bool)
 			req.Autostart = &autostart
+			req.TimeoutS = new(int64(-1))
 		case "replicas":
 			replicas := field.Create.Set.(int64)
 			req.Replicas = &replicas
-		case "wait-timeout":
-			timeout := field.Create.Set.(types.DurationS)
-			req.TimeoutS = new(int64(timeout))
 		case "features":
 			features := field.Create.Set.([]string)
 			for _, f := range features {
@@ -1267,8 +1264,9 @@ func startInstances(ctx context.Context, g *group.Group[multimetro.MetroClient],
 		reqs := make([]platform.StartInstancesRequestItem, 0, len(refs))
 		for _, ref := range refs.NameOrUUIDs() {
 			reqs = append(reqs, platform.StartInstancesRequestItem{
-				Name: ref.Name,
-				Uuid: ref.Uuid,
+				Name:     ref.Name,
+				Uuid:     ref.Uuid,
+				TimeoutS: ptr.ToPtr(int64(-1)),
 			})
 		}
 		resp, err := c.StartInstances(ctx, reqs)
