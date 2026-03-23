@@ -74,7 +74,7 @@ stdout:
 	Usage:
 	  unikraft profile <command> [flags]
 
-	Commands:
+	Config:
 	  get, inspect, show
 	          Inspect a profile.
 	  list, ls
@@ -237,7 +237,7 @@ stdout:
 	Usage:
 	  unikraft metros <command> [flags]
 
-	Commands:
+	Resources:
 	  get, inspect, show
 	          Inspect a metro.
 	  list, ls

@@ -6,7 +6,7 @@ stdout:
 	Usage:
 	  unikraft images <command> [flags]
 
-	Commands:
+	Resources:
 	  get, inspect, show
 	          Inspect a image.
 	  list, ls
