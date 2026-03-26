@@ -136,6 +136,17 @@ profiles:
         insecure: false            # skip tls verification (avoid for production use)
 ```
 
+You can also easily migrate your old `UKC_METRO`/`UKC_TOKEN` environment variable setup to a profile:
+
+```sh
+# Linux: ~/.config/unikraft/config.yaml
+# MacOS: ~/Library/Application\ Support/unikraft/config.yaml
+profile: default
+profiles:
+  default:
+    type: legacy
+```
+
 ### 2. Deploy Your First Instance
 
 ```sh

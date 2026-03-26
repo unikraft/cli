@@ -98,7 +98,9 @@ func Load(path string) (*Config, error) {
 		profile.Name = name
 		if err := profile.Validate(); err != nil {
 			validationErrs = errors.Join(validationErrs, jujuerrors.Annotatef(err, "validating profile %q", name))
+			continue
 		}
+		profile.Populate()
 		c.Profiles[name] = profile
 	}
 	if validationErrs != nil {

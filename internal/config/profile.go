@@ -9,6 +9,8 @@ import (
 	"cmp"
 	"fmt"
 	"net/url"
+	"os"
+	"strconv"
 	"strings"
 
 	"github.com/MakeNowJust/heredoc"
@@ -38,8 +40,6 @@ func (e ErrProfileNotFound) Error() string {
 }
 
 // ProfileType represents the type of profile used in the Unikraft CLI.
-// It can be either "local" for local profiles or "cloud" for cloud-based
-// profiles.
 type ProfileType string
 
 const (
@@ -50,6 +50,10 @@ const (
 	// ProfileTypeCloud indicates a cloud profile, which is used for accessing
 	// cloud-based resources and services provided by Unikraft.
 	ProfileTypeCloud ProfileType = "cloud"
+
+	// ProfileTypeLegacy indicates a legacy profile, which is used for backward
+	// compatibility with the kraft CLI.
+	ProfileTypeLegacy ProfileType = "legacy"
 )
 
 // Profile represents a user profile configuration for the Unikraft CLI.
@@ -69,6 +73,33 @@ type Profile struct {
 	Metros []Metro `json:"metros,omitempty" field:",long,embed"`
 }
 
+func (p *Profile) Populate() {
+	if p.Type == ProfileTypeLegacy {
+		np := Profile{
+			Name:  p.Name,
+			Type:  ProfileTypeCloud,
+			Token: os.Getenv("UKC_TOKEN"),
+		}
+
+		endpoint := os.Getenv("UKC_METRO")
+		if endpoint != "" {
+			insecure, _ := strconv.ParseBool(os.Getenv("UKC_ALLOW_INSECURE"))
+			if strings.Contains(endpoint, "://") {
+				endpoint = strings.TrimSuffix(strings.TrimSuffix(endpoint, "/"), "/v1")
+			} else {
+				endpoint = fmt.Sprintf("https://api.%s.unikraft.cloud", endpoint)
+			}
+			metro := Metro{
+				Name:     "default",
+				Endpoint: endpoint,
+				Insecure: insecure,
+			}
+			np.Metros = []Metro{metro}
+		}
+		*p = np
+	}
+}
+
 func (p Profile) Validate() error {
 	if p.Name == "" {
 		return fmt.Errorf("profile name cannot be empty")
@@ -80,6 +111,7 @@ func (p Profile) Validate() error {
 		}
 	case ProfileTypeLocal:
 		return fmt.Errorf("local profiles are not currently supported")
+	case ProfileTypeLegacy:
 	default:
 		return fmt.Errorf("invalid profile type: %s", p.Type)
 	}
