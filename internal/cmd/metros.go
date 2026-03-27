@@ -261,27 +261,27 @@ type metroQuotas struct {
 	Instances struct {
 		Active types.Usage[int64] `field:",long,embed"`
 		Total  types.Usage[int64] `field:",long,embed"`
-	}
+	} `field:",long"`
 	Vcpus struct {
 		Active types.Usage[int64] `field:",long,embed"`
-	}
+	} `field:",long"`
 	Memory struct {
 		Active types.Usage[types.SizeMebibytes] `field:",long,embed"`
-	}
+	} `field:",long"`
 	Services struct {
 		Groups  types.Usage[int64] `field:",long,embed"`
 		Exposed types.Usage[int64] `field:",long,embed"`
-	}
+	} `field:",long"`
 	Volumes struct {
 		Count types.Usage[int64]               `field:",long,embed"`
 		Total types.Usage[types.SizeMebibytes] `field:",long,embed"`
-	}
+	} `field:",long"`
 	Limits struct {
 		Vcpus     types.Range[int64]               `field:",long,embed"`
 		Memory    types.Range[types.SizeMebibytes] `field:",long,embed"`
 		Volume    types.Range[types.SizeMebibytes] `field:",long,embed"`
 		Autoscale types.Range[int64]               `field:",long,embed"`
-	}
+	} `field:",long"`
 
 	httpClient *http.Client
 	endpoint   string

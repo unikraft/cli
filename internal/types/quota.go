@@ -12,8 +12,8 @@ import (
 // Usage represents a used/limit pair for quota tracking.
 // It marshals to text as "used/limit".
 type Usage[T any] struct {
-	Used  T
-	Limit T
+	Used  T `field:",long"`
+	Limit T `field:",long"`
 }
 
 func (u Usage[T]) MarshalText() ([]byte, error) {
@@ -27,8 +27,8 @@ func (u Usage[T]) String() string {
 // Range represents a min/max range for quota limits.
 // It marshals to text as "min...max".
 type Range[T any] struct {
-	Min T
-	Max T
+	Min T `field:",long"`
+	Max T `field:",long"`
 }
 
 func (r Range[T]) MarshalText() ([]byte, error) {
