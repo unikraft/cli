@@ -6,6 +6,7 @@
 package main
 
 import (
+	"fmt"
 	"regexp"
 	"testing"
 )
@@ -31,6 +32,23 @@ func imagesTests(t *testing.T, r *testRunner) {
 			}).
 			run(t, []command{
 				{args: []string{unikraftCmd, "image", "inspect", "nginx:latest"}},
+			})
+	})
+
+	t.Run("copy-inspect-delete", func(t *testing.T) {
+		if r.cfg == nil {
+			t.Skip("online test requires config, but no config found")
+		}
+
+		imageName := r.cfg.Profile.Organization + "/nginx-copy:$UNIQ_IMAGE"
+		imageFull := fmt.Sprintf("%s/%s", "index.unikraft.io", imageName)
+
+		r.
+			online().
+			run(t, []command{
+				{args: []string{unikraftCmd, "image", "copy", "nginx:latest", imageFull}},
+				{args: []string{unikraftCmd, "image", "inspect", imageName}},
+				{args: []string{unikraftCmd, "image", "delete", imageName}},
 			})
 	})
 }

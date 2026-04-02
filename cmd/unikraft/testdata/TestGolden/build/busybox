@@ -42,7 +42,7 @@ stdout:
 	test-<INST> │ == BEGIN status ==
 	test-<INST> │ UNIKRAFT_E2E_OK
 	test-<INST> │ == END status ==
-	test-<INST> │ Application exit with 0x0
+	test-<INST> │ Application exited with 0x0 (exit code: 0)
 	test-<INST> │ [    0.000000] reboot: Restarting system
 
 $ unikraft instance delete test-$UNIQ_INST

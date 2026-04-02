@@ -9,6 +9,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/containerd/containerd/v2/core/remotes/docker"
 	"github.com/distribution/reference"
 	imagespec "unikraft.com/x/image-spec"
 
@@ -30,8 +31,12 @@ func Accessor(ctx context.Context) (*imagespec.Accessor, error) {
 		return nil, err
 	}
 
+	options := resolverOptions(profile)
+	resolver := docker.NewResolver(options)
 	return imagespec.NewAccessor(
-		imagespec.WithResolver(Resolver(profile)),
+		imagespec.WithResolver(resolver),
+		imagespec.WithRegistryHosts(options.Hosts),
+		imagespec.WithRegistryHeaders(options.Headers),
 		imagespec.WithReferenceParser(ParseNormalizedNamed),
 	), nil
 }

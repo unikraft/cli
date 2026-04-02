@@ -9,6 +9,8 @@ stdout:
 	Resources:
 	  get, inspect, show
 	          Inspect a image.
+	  delete, rm, remove
+	          Remove a image.
 	  list, ls
 	          List images.
 	  copy

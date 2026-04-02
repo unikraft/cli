@@ -22,7 +22,7 @@ import (
 	"unikraft.com/cli/internal/version"
 )
 
-func Resolver(profile *config.Profile) remotes.Resolver {
+func resolverOptions(profile *config.Profile) docker.ResolverOptions {
 	headers := http.Header{}
 	headers.Set("User-Agent", version.UserAgent())
 
@@ -75,7 +75,7 @@ func Resolver(profile *config.Profile) remotes.Resolver {
 		docker.WithPlainHTTP(httpHost),
 	}
 
-	dro := docker.ResolverOptions{
+	return docker.ResolverOptions{
 		Headers: headers,
 		Hosts: fallbackHost(
 			insecureHosts(docker.ConfigureDefaultRegistries(opts...), insecureHost),
@@ -91,7 +91,10 @@ func Resolver(profile *config.Profile) remotes.Resolver {
 			}))...),
 		),
 	}
-	return docker.NewResolver(dro)
+}
+
+func Resolver(profile *config.Profile) remotes.Resolver {
+	return docker.NewResolver(resolverOptions(profile))
 }
 
 func fallbackHost(registryHosts ...docker.RegistryHosts) docker.RegistryHosts {

@@ -37,9 +37,9 @@ import (
 type ImagesCmd struct {
 	cmd.ResourceCmd[ImageEntry]
 	cmd.GettableResourceCmd[Image]
+	cmd.DeletableResourceCmd[Image]
 
 	List ImagesListCmd `cmd:"" help:"List images." aliases:"ls"`
-
 	Copy ImagesCopyCmd `cmd:"" help:"Copy images."`
 }
 
@@ -141,6 +141,37 @@ func (Image) Get(ctx context.Context, keys []string) ([]resource.Resource, error
 	return resources, nil
 }
 
+func (Image) Delete(ctx context.Context, targets []resource.Resource) error {
+	access, err := images.Accessor(ctx)
+	if err != nil {
+		return err
+	}
+
+	var errs []error
+	for _, target := range targets {
+		var image Image
+		switch typed := target.(type) {
+		case Image:
+			image = typed
+		case *Image:
+			image = *typed
+		default:
+			errs = append(errs, fmt.Errorf("unexpected resource type %T", target))
+			continue
+		}
+		ref := image.Ref.Reference.String()
+		uri, err := imagespec.GuessURI(ref)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("parsing image reference %q: %w", ref, err))
+			continue
+		}
+		if err := access.Delete(ctx, uri); err != nil {
+			errs = append(errs, fmt.Errorf("deleting image %q: %w", ref, err))
+		}
+	}
+	return errors.Join(errs...)
+}
+
 func (Image) Examples() map[cmd.CmdType][]kingkong.Example {
 	return map[cmd.CmdType][]kingkong.Example{
 		cmd.CmdTypeGet: {
@@ -157,6 +188,12 @@ func (Image) Examples() map[cmd.CmdType][]kingkong.Example {
 			{
 				Description: "Filter images by reference",
 				Commands:    []string{`unikraft image list --filter 'ref~="/nginx"'`},
+			},
+		},
+		cmd.CmdTypeDelete: {
+			{
+				Description: "Delete a remote image",
+				Commands:    []string{"unikraft image delete unikraft.io/official/nginx:latest"},
 			},
 		},
 	}

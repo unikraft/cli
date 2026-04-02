@@ -1,0 +1,15 @@
+$ unikraft image copy nginx:latest index.unikraft.io/test/nginx-copy:$UNIQ_IMAGE
+
+$ unikraft image inspect test/nginx-copy:$UNIQ_IMAGE
+
+stdout:
+	ref:        test/nginx-copy:<IMAGE>
+	digest:     sha256:abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890
+	config:
+	  platform: kraftcloud/x86_64
+	  cmd:      /usr/bin/nginx,-c,/etc/nginx/nginx.conf
+
+$ unikraft image delete test/nginx-copy:$UNIQ_IMAGE
+
+stdout:
+	unikraft.io/test/nginx-copy:<IMAGE>
