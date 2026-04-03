@@ -16,6 +16,7 @@ func volumesTests(t *testing.T, r *testRunner) {
 			{args: []string{unikraftCmd, "volume", "wait", "--help"}},
 			{args: []string{unikraftCmd, "volume", "create", "--help"}},
 			{args: []string{unikraftCmd, "volume", "clone", "--help"}},
+			{args: []string{unikraftCmd, "volume", "import", "--help"}},
 			{args: []string{unikraftCmd, "volume", "edit", "--help"}},
 			{args: []string{unikraftCmd, "volume", "delete", "--help"}},
 		})

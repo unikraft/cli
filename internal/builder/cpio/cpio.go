@@ -345,6 +345,9 @@ var (
 func Copy(ctx context.Context, conn *tls.Conn, auth, path string, force bool, size uint64) (free, total uint64, err error) {
 	var resp okResponse
 
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	// Allow context cancellation to interrupt pending network I/O.
 	_ = conn.SetWriteDeadline(noNetTimeout)
 	_ = conn.SetReadDeadline(noNetTimeout)
@@ -395,6 +398,8 @@ func Copy(ctx context.Context, conn *tls.Conn, auth, path string, force bool, si
 	waitErrCh := make(chan *error, 1)
 	go waitForOKs(conn, auth, resultCh, waitErrCh)
 	defer func() {
+		_ = conn.SetWriteDeadline(immediateNetCancel)
+		_ = conn.SetReadDeadline(immediateNetCancel)
 		if retErr := <-waitErrCh; retErr != nil && *retErr != nil {
 			err = *retErr
 		}

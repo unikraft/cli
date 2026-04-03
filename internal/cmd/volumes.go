@@ -26,6 +26,7 @@ import (
 	"unikraft.com/cloud/sdk/platform"
 	"unikraft.com/cloud/sdk/platform/group"
 	"unikraft.com/x/kingkong"
+	"unikraft.com/x/kraftfile"
 	"unikraft.com/x/log"
 	"unikraft.com/x/ptr"
 
@@ -704,9 +705,21 @@ func (c *VolumeImportCmd) Run(ctx context.Context, stdio config.Stdio, sandbox *
 		return fmt.Errorf("volume %q has no metro information", vol.Name)
 	}
 
+	var importOpts *builder.BuildOpts
+	if c.Source == "" {
+		kf, err := kraftfile.ParseDirectory(c.Workdir, kraftfile.WithSkippedVersionCheck())
+		if err == nil {
+			opts, err := builder.KraftfileToBuildOpts(c.Workdir, kf)
+			if err != nil {
+				return err
+			}
+			importOpts = &opts
+		}
+	}
+
 	// Build an import archive from the data source.
 	log.G(ctx).Trace().Str("source", c.Source).Msg("packaging source as import archive")
-	cpioPath, cpioSize, err := builder.BuildImportRootfs(ctx, c.Workdir, c.Source)
+	cpioPath, cpioSize, err := builder.BuildImportRootfs(ctx, c.Workdir, c.Source, importOpts)
 	if err != nil {
 		return fmt.Errorf("packaging source as import archive: %w", err)
 	}
@@ -717,9 +730,15 @@ func (c *VolumeImportCmd) Run(ctx context.Context, stdio config.Stdio, sandbox *
 	// Verify the data fits in the volume.
 	volSizeBytes := int64(vol.Size) * 1024 * 1024
 	if cpioSize >= volSizeBytes {
-		return fmt.Errorf("volume too small: data is %s, volume capacity is %s",
-			units.BytesSize(float64(cpioSize)),
-			units.BytesSize(float64(volSizeBytes)))
+		if !c.Force {
+			return fmt.Errorf("volume too small: data is %s, volume capacity is %s",
+				units.BytesSize(float64(cpioSize)),
+				units.BytesSize(float64(volSizeBytes)))
+		}
+		log.G(ctx).Warn().
+			Str("data_size", units.BytesSize(float64(cpioSize))).
+			Str("volume_capacity", units.BytesSize(float64(volSizeBytes))).
+			Msg("import archive exceeds volume capacity; proceeding because --force was set")
 	}
 
 	authStr, err := genRandAuth()
@@ -799,11 +818,7 @@ func runVolimport(ctx context.Context, c multimetro.MetroClient, image, volUUID,
 		Autostart:     new(true),
 		TimeoutS:      new(volimportStartTimeoutS),
 		RestartPolicy: new(platform.CreateInstanceRequestRestartPolicyNever),
-		Features:      []platform.CreateInstanceRequestFeatures{
-			// TODO(craciunoiuc): Feature is actually `delete-on-stop`.
-			// Update the SDK and rename accordingly and edit the line below.
-			// platform.CreateInstanceRequestFeaturesDelete_on_stop,
-		},
+		Features:      []platform.CreateInstanceRequestFeatures{platform.CreateInstanceRequestFeatures("delete-on-stop")},
 		Volumes: []platform.CreateInstanceRequestVolume{{
 			Uuid: &volUUID,
 			At:   "/mnt",
