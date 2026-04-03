@@ -8,12 +8,20 @@ package cmd
 import (
 	"cmp"
 	"context"
+	"crypto/rand"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/big"
+	"os"
+	"path/filepath"
 	"slices"
+	"strconv"
+	"strings"
 
 	"github.com/alecthomas/kong"
+	"github.com/docker/go-units"
 
 	"unikraft.com/cloud/sdk/platform"
 	"unikraft.com/cloud/sdk/platform/group"
@@ -21,6 +29,8 @@ import (
 	"unikraft.com/x/log"
 	"unikraft.com/x/ptr"
 
+	"unikraft.com/cli/internal/builder"
+	buildercpio "unikraft.com/cli/internal/builder/cpio"
 	"unikraft.com/cli/internal/config"
 	"unikraft.com/cli/internal/mirror"
 	"unikraft.com/cli/internal/multimetro"
@@ -41,7 +51,8 @@ type VolumesCmd struct {
 	Create VolumeCreateCmd `cmd:"" help:"Create a volume."`
 	Edit   VolumeEditCmd   `cmd:"" help:"Edit a volume."`
 
-	Clone VolumesCloneCmd `cmd:"" help:"Clone a volume."`
+	Clone  VolumesCloneCmd `cmd:"" help:"Clone a volume."`
+	Import VolumeImportCmd `cmd:"" help:"Import data into a volume."`
 }
 
 // VolumeCreateCmd extends the generic resource create command with shortcut
@@ -607,4 +618,250 @@ func volumePatchSpec(path string, _ patchOp, value any) (platform.UpdateVolumesR
 	default:
 		return zero, nil
 	}
+}
+
+const (
+	volimportInternalPort  = uint32(42069)
+	volimportMemoryMB      = int64(128)
+	volimportStopTimeoutMs = int64(1100)
+	volimportStartTimeoutS = int64(3)
+)
+
+// VolumeImportCmd imports data from a local source into a volume by
+// temporarily spinning up a volimport instance, streaming a CPIO archive
+// over TLS, and cleaning up the instance afterwards.
+type VolumeImportCmd struct {
+	Volume  string `arg:"" completion-predictor:"resource-key-volume" help:"Name or UUID of the volume to import into."`
+	Source  string `short:"s" default:"." help:"Data source: local directory or CPIO archive." placeholder:"path"`
+	Port    int    `short:"p" default:"42069" help:"Port to connect to the volume import service on." placeholder:"port"`
+	Image   string `default:"official/utils/volimport:1.0" help:"Volume import image to use." placeholder:"image"`
+	Timeout uint64 `short:"t" default:"10" help:"Inactivity timeout in seconds for the import service." placeholder:"seconds"`
+	Force   bool   `short:"f" help:"Force import even if the data might exceed volume capacity."`
+	Workdir string `short:"w" help:"Working directory used when building the CPIO archive." placeholder:"dir"`
+}
+
+func (VolumeImportCmd) Examples() []kingkong.Example {
+	return []kingkong.Example{
+		{
+			Description: "Import the current directory into a volume",
+			Commands:    []string{"unikraft volume import my-volume"},
+		},
+		{
+			Description: "Import a local directory into a volume",
+			Commands:    []string{"unikraft volume import my-volume --source ./data"},
+		},
+		{
+			Description: "Import a CPIO archive into a volume",
+			Commands:    []string{"unikraft volume import my-volume --source rootfs.cpio"},
+		},
+	}
+}
+
+func (c *VolumeImportCmd) Run(ctx context.Context, stdio config.Stdio, sandbox *resource.Sandbox) error {
+	// Resolve source to an absolute path.
+	if c.Source != "." {
+		abs, err := filepath.Abs(c.Source)
+		if err != nil {
+			return fmt.Errorf("resolving source path: %w", err)
+		}
+		c.Source = abs
+	}
+	if c.Workdir != "" {
+		abs, err := filepath.Abs(c.Workdir)
+		if err != nil {
+			return fmt.Errorf("resolving workdir: %w", err)
+		}
+		c.Workdir = abs
+	}
+	if c.Port < 1024 || c.Port > 65535 {
+		return fmt.Errorf("port must be between 1024 and 65535")
+	}
+
+	// Resolve the target volume.
+	gettable := sandbox.WrapGettable(Volume{})
+	resources, err := gettable.Get(ctx, []string{c.Volume})
+	if err != nil {
+		return err
+	}
+	if len(resources) == 0 {
+		return fmt.Errorf("volume not found: %s", c.Volume)
+	}
+	if len(resources) > 1 {
+		keys := make([]string, 0, len(resources))
+		for _, res := range resources {
+			keys = append(keys, res.Key().String())
+		}
+		return fmt.Errorf("ambiguous volume: %s (found %v)", c.Volume, keys)
+	}
+	vol, ok := resources[0].(Volume)
+	if !ok {
+		return fmt.Errorf("unexpected resource type %T", resources[0])
+	}
+	if vol.UUID == "" {
+		return fmt.Errorf("volume %q is missing a UUID", vol.Name)
+	}
+	if vol.Metro == nil {
+		return fmt.Errorf("volume %q has no metro information", vol.Name)
+	}
+
+	// Build an import archive from the data source.
+	log.G(ctx).Trace().Str("source", c.Source).Msg("packaging source as import archive")
+	cpioPath, cpioSize, err := builder.BuildImportRootfs(ctx, c.Workdir, c.Source)
+	if err != nil {
+		return fmt.Errorf("packaging source as import archive: %w", err)
+	}
+	if cpioPath != c.Source {
+		defer func() { _ = os.Remove(cpioPath) }()
+	}
+
+	// Verify the data fits in the volume.
+	volSizeBytes := int64(vol.Size) * 1024 * 1024
+	if cpioSize >= volSizeBytes {
+		return fmt.Errorf("volume too small: data is %s, volume capacity is %s",
+			units.BytesSize(float64(cpioSize)),
+			units.BytesSize(float64(volSizeBytes)))
+	}
+
+	authStr, err := genRandAuth()
+	if err != nil {
+		return fmt.Errorf("generating authentication token: %w", err)
+	}
+
+	// Spawn a temporary volimport instance in the volume's metro.
+	g, err := multimetro.NewClient(ctx)
+	if err != nil {
+		return err
+	}
+	var instUUID, instFQDN string
+	if err := group.DoMetro(ctx, g, vol.Metro.Name, func(ctx context.Context, mc multimetro.MetroClient) error {
+		var merr error
+		instUUID, instFQDN, merr = runVolimport(ctx, mc, c.Image, vol.UUID, authStr, c.Timeout, c.Port)
+		return merr
+	}); err != nil {
+		return fmt.Errorf("spawning volume data import instance: %w", err)
+	}
+
+	// Open a TLS connection to the instance and stream the CPIO archive.
+	instAddr := instFQDN + ":" + strconv.Itoa(c.Port)
+	log.G(ctx).Info().
+		Str("size", units.BytesSize(float64(cpioSize))).
+		Str("addr", instAddr).
+		Msg("importing data into volume")
+
+	conn, err := tls.Dial("tcp4", instAddr, nil)
+	if err != nil {
+		return fmt.Errorf("connecting to volume import service at %s: %w", instAddr, err)
+	}
+	defer conn.Close()
+
+	freeSpace, totalSpace, err := buildercpio.Copy(ctx, conn, authStr, cpioPath, c.Force, uint64(cpioSize))
+	if err != nil {
+		return fmt.Errorf("importing data: %w", err)
+	}
+
+	log.G(ctx).Info().
+		Str("volume", c.Volume).
+		Str("free", units.BytesSize(float64(freeSpace))).
+		Str("total", units.BytesSize(float64(totalSpace))).
+		Msg("import complete")
+
+	// Wait for the import instance to stop; it auto-deletes via delete-on-stop.
+	return group.DoMetro(ctx, g, vol.Metro.Name, func(ctx context.Context, mc multimetro.MetroClient) error {
+		state := platform.WaitInstanceByUUIDRequestBodyStateStopped
+		_, err := mc.WaitInstanceByUUID(ctx, instUUID, platform.WaitInstanceByUUIDRequestBody{
+			State:     &state,
+			TimeoutMs: new(volimportStopTimeoutMs),
+		})
+		if err != nil && !platform.ErrorContainsOnly(err, platform.APIHTTPErrorNotFound) {
+			return fmt.Errorf("waiting for import instance to stop: %w", err)
+		}
+		return nil
+	})
+}
+
+// runVolimport creates a short-lived Unikraft Cloud instance running the
+// volimport service with the given volume attached at /mnt, and returns the
+// instance UUID and the public FQDN on which the import service listens.
+func runVolimport(ctx context.Context, c multimetro.MetroClient, image, volUUID, authStr string, timeoutS uint64, servicePort int) (instUUID, fqdn string, err error) {
+	args := []string{
+		"volimport",
+		"-p", strconv.FormatUint(uint64(volimportInternalPort), 10),
+		"-a", authStr,
+		"-t", strconv.FormatUint(timeoutS, 10),
+	}
+	destPort := volimportInternalPort
+
+	log.G(ctx).Trace().Msg("creating volume data import instance")
+	resp, err := c.CreateInstance(ctx, platform.CreateInstanceRequest{
+		Image:         new(image),
+		MemoryMb:      new(volimportMemoryMB),
+		Args:          args,
+		Autostart:     new(true),
+		TimeoutS:      new(volimportStartTimeoutS),
+		RestartPolicy: new(platform.CreateInstanceRequestRestartPolicyNever),
+		Features:      []platform.CreateInstanceRequestFeatures{
+			// TODO(craciunoiuc): Feature is actually `delete-on-stop`.
+			// Update the SDK and rename accordingly and edit the line below.
+			// platform.CreateInstanceRequestFeaturesDelete_on_stop,
+		},
+		Volumes: []platform.CreateInstanceRequestVolume{{
+			Uuid: &volUUID,
+			At:   "/mnt",
+		}},
+		ServiceGroup: &platform.CreateInstanceRequestServiceGroup{
+			Services: []platform.Service{{
+				Port:            uint32(servicePort),
+				DestinationPort: &destPort,
+				Handlers:        []platform.ServiceHandlers{platform.ServiceHandlersTls},
+			}},
+		},
+	})
+	if err != nil {
+		return "", "", fmt.Errorf("creating volume data import instance: %w", err)
+	}
+	if len(resp.Data.Instances) == 0 {
+		return "", "", fmt.Errorf("no instance created by the API")
+	}
+
+	inst := resp.Data.Instances[0]
+	instUUID = ptr.ZeroIfNil(inst.Uuid)
+
+	if inst.ServiceGroup == nil || len(inst.ServiceGroup.Domains) == 0 {
+		if instUUID != "" {
+			log.G(ctx).Trace().Str("uuid", instUUID).Msg("deleting instance: no service group domain returned")
+			_, _ = c.DeleteInstanceByUUID(ctx, instUUID)
+		}
+		return "", "", fmt.Errorf("import instance has no service group domain")
+	}
+
+	fqdn = ptr.ZeroIfNil(inst.ServiceGroup.Domains[0].Fqdn)
+	if fqdn == "" {
+		if instUUID != "" {
+			log.G(ctx).Trace().Str("uuid", instUUID).Msg("deleting instance: empty FQDN returned")
+			_, _ = c.DeleteInstanceByUUID(ctx, instUUID)
+		}
+		return "", "", fmt.Errorf("import instance has an empty FQDN")
+	}
+	// Strip trailing dot if present (DNS FQDNs conventionally end with ".").
+	fqdn = strings.TrimSuffix(fqdn, ".")
+
+	return instUUID, fqdn, nil
+}
+
+// genRandAuth generates a 32-character cryptographically random alphanumeric
+// token used to authenticate with the volimport unikernel.
+func genRandAuth() (string, error) {
+	const charset = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+	const length = 32
+	maxIdx := big.NewInt(int64(len(charset)))
+	var buf strings.Builder
+	buf.Grow(length)
+	for range length {
+		idx, err := rand.Int(rand.Reader, maxIdx)
+		if err != nil {
+			return "", err
+		}
+		buf.WriteByte(charset[idx.Int64()])
+	}
+	return buf.String(), nil
 }
