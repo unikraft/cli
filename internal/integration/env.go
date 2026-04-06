@@ -8,11 +8,13 @@ package integration
 import (
 	"bytes"
 	"context"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -137,4 +139,91 @@ func (env *TestEnv) Run(t *testing.T, args []string, opts ...CmdOption) string {
 		require.NoError(t, err, "command %q failed\n%s", strings.Join(args, " "), out)
 	}
 	return out
+}
+
+// BackgroundProcess is a handle to a process started by StartBackground.
+type BackgroundProcess struct {
+	cmd    *exec.Cmd
+	output *bytes.Buffer
+	t      *testing.T
+	once   sync.Once
+}
+
+func (p *BackgroundProcess) stop() {
+	p.once.Do(func() {
+		_ = p.cmd.Cancel()
+		err := p.cmd.Wait()
+		if err != nil && p.output.Len() > 0 {
+			p.t.Logf("background process output:\n%s", p.output.String())
+		}
+	})
+}
+
+// StartBackground starts a command in the background and registers cleanup to
+// stop it when the test ends. If waitAddr is non-empty, it polls that TCP
+// address until it is reachable or the timeout (default 90s) expires.
+// The returned handle can be passed to StopBackground for early termination.
+func (env *TestEnv) StartBackground(t *testing.T, args []string, waitAddr string, timeout time.Duration) *BackgroundProcess {
+	t.Helper()
+	t.Logf("starting background: %s", strings.Join(args, " "))
+
+	var c *exec.Cmd
+	if args[0] == "unikraft" {
+		c = exec.CommandContext(t.Context(), env.unikraftPath, args[1:]...)
+	} else {
+		c = exec.CommandContext(t.Context(), args[0], args[1:]...)
+	}
+
+	c.Env = os.Environ()
+	c.Env = slices.DeleteFunc(c.Env, func(s string) bool {
+		return strings.HasPrefix(s, "UNIKRAFT_")
+	})
+	c.Env = append(c.Env, "NO_COLOR=1")
+	c.Env = append(c.Env, "UNIKRAFT_CONFIG="+env.configPath)
+	c.Env = append(c.Env, "BUILDKIT_PROGRESS=quiet")
+	c.Env = append(c.Env, resource.UnikraftSandboxEnv+"="+env.sandboxPath)
+	c.Cancel = func() error {
+		return c.Process.Signal(os.Interrupt)
+	}
+	c.WaitDelay = 30 * time.Second
+
+	var output bytes.Buffer
+	c.Stdout = &output
+	c.Stderr = &output
+
+	require.NoError(t, c.Start(), "failed to start background command %q", strings.Join(args, " "))
+
+	proc := &BackgroundProcess{cmd: c, output: &output, t: t}
+	t.Cleanup(proc.stop)
+
+	if waitAddr != "" {
+		waitForAddr(t, waitAddr, timeout)
+	}
+
+	return proc
+}
+
+// StopBackground terminates a background process immediately, without waiting
+// for the test to finish.
+func (env *TestEnv) StopBackground(t *testing.T, proc *BackgroundProcess) {
+	t.Helper()
+	t.Logf("stopping background process")
+	proc.stop()
+}
+
+func waitForAddr(t *testing.T, addr string, timeout time.Duration) {
+	t.Helper()
+	if timeout == 0 {
+		timeout = 90 * time.Second
+	}
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		conn, err := net.DialTimeout("tcp", addr, time.Second)
+		if err == nil {
+			conn.Close()
+			return
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+	t.Fatalf("timed out waiting for %s to become reachable", addr)
 }

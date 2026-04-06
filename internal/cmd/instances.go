@@ -20,6 +20,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/MakeNowJust/heredoc"
 	"github.com/alecthomas/kong"
 	"github.com/distribution/reference"
 	"github.com/go-json-experiment/json/jsontext"
@@ -39,6 +40,7 @@ import (
 	"unikraft.com/cli/internal/resource"
 	"unikraft.com/cli/internal/resource/cmd"
 	"unikraft.com/cli/internal/resource/value"
+	"unikraft.com/cli/internal/tunnel"
 	"unikraft.com/cli/internal/types"
 )
 
@@ -58,6 +60,7 @@ type InstancesCmd struct {
 	Stop    InstancesStopCmd    `cmd:"" help:"Stop one or more instances."`
 	Suspend InstancesSuspendCmd `cmd:"" help:"Suspend one or more instances."`
 	Restart InstancesRestartCmd `cmd:"" help:"Restart one or more instances."`
+	Tunnel  InstancesTunnelCmd  `cmd:"" help:"Forward a local port to an unexposed instance."`
 }
 
 // InstanceCreateCmd extends the generic resource create command with shortcut
@@ -1844,4 +1847,74 @@ func suspendInstances(ctx context.Context, g *group.Group[multimetro.MetroClient
 		return suspended, suspended.Refs(), nil
 	})
 	return multimetro.Keys(suspended), err
+}
+
+type InstancesTunnelCmd struct {
+	Targets []string `arg:"" name:"target" min:"1" help:"Forwarding target(s) in the form [LOCAL_PORT:]<INSTANCE>:DEST_PORT[/TYPE]." placeholder:"<target>"`
+
+	TunnelProxyPorts   []string `short:"p" name:"tunnel-proxy-port"   help:"Remote port(s) exposed by the tunnel service. When a single value is given it is used as the starting port for multiple targets." default:"4444" hidden:""`
+	ProxyControlPort   uint     `short:"P" name:"tunnel-control-port" help:"Command-and-control port of the tunnel service." default:"4443" hidden:""`
+	TunnelServiceImage string   `          name:"tunnel-image"        help:"Image to use for the tunnel service." default:"official/utils/tunnel:1.0" hidden:""`
+}
+
+func (InstancesTunnelCmd) Help() string {
+	return heredoc.Docf(`
+		Forward a local port to an unexposed instance through an intermediate
+		TLS tunnel service.
+
+		When you need to access an instance on Unikraft Cloud which is not
+		publicly exposed to the internet, you can use the
+		%[1]sunikraft instance tunnel%[1]s subcommand to forward from a local
+		port to a port which the instance listens on.
+	`, "`")
+}
+
+func (cmd InstancesTunnelCmd) Examples() []kingkong.Example {
+	return []kingkong.Example{
+		{
+			Description: "Forward local port 8080 to instance \"nginx\" port 8080",
+			Commands:    []string{"unikraft instance tunnel nginx:8080"},
+		},
+		{
+			Description: "Forward local port 8333 to instance \"nginx\" port 8080",
+			Commands:    []string{"unikraft instance tunnel 8333:nginx:8080"},
+		},
+		{
+			Description: "Forward multiple ports from multiple instances",
+			Commands:    []string{"unikraft instance tunnel 8080:my-instance1:8080/tcp 8443:my-instance2:8080/tcp"},
+		},
+		{
+			Description: "Forward local port 8080 to instance \"my-instance1\" port 8080 on fra metro using TCP",
+			Commands:    []string{"unikraft instance tunnel 8080:fra/my-instance1:8080/tcp"},
+		},
+		{
+			Description: "Use a custom relay port to avoid collisions",
+			Commands:    []string{"unikraft instance tunnel -p 5500 my-instance:8080"},
+		},
+	}
+}
+
+func (cmd *InstancesTunnelCmd) Run(ctx context.Context, stdio config.Stdio) error {
+	targets, err := tunnel.ParseTargets(cmd.Targets, cmd.TunnelProxyPorts)
+	if err != nil {
+		return fmt.Errorf("could not parse targets: %w", err)
+	}
+
+	tun, err := tunnel.New(ctx, targets)
+	if err != nil {
+		return fmt.Errorf("could not create tunnel: %w", err)
+	}
+
+	g, err := multimetro.NewClient(ctx)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err := tun.Close(context.WithoutCancel(ctx), g); err != nil {
+			log.G(ctx).Error().Err(err).Msg("could not terminate tunnel proxy")
+		}
+	}()
+
+	return tun.Run(ctx, g, cmd.ProxyControlPort, cmd.TunnelServiceImage)
 }

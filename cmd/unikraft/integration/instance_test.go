@@ -825,4 +825,36 @@ cmd: ["cat", "/rom/hello.txt"]
 			// Command still running
 		}
 	})
+
+	t.Run("tunnel", func(t *testing.T) {
+		r := runner(t, true)
+		instName := uniq()
+
+		// Create an nginx instance without a public service.
+		r.Run(t, []string{
+			"unikraft", "instance", "create",
+			"--output", "quiet",
+			"--set", "name=test-" + instName,
+			"--set", "metro=" + r.Config.MetroName,
+			"--set", "image=nginx:latest",
+			"--set", "autostart=true",
+			"--set", "resources.memory=128",
+			"--set", "resources.vcpus=1",
+		})
+		r.Run(t, []string{"unikraft", "instance", "wait", "--until", "state==running", "--timeout", "60s", "test-" + instName})
+
+		// Use metro/instance:port/tcp syntax for the tunnel target.
+		tunnel := r.StartBackground(t,
+			[]string{"unikraft", "instance", "tunnel", "18081:" + r.Config.MetroName + "/test-" + instName + ":8080/tcp"},
+			"127.0.0.1:18081",
+			0,
+		)
+
+		// Verify that we can reach the instance through the tunnel.
+		body := integ.HTTPGet(t, "http://127.0.0.1:18081")
+		assert.Regexp(t, "Thank you for using nginx.", body)
+
+		r.StopBackground(t, tunnel)
+		r.Run(t, []string{"unikraft", "instance", "delete", "test-" + instName})
+	})
 }
