@@ -6,15 +6,22 @@
 package cmd
 
 import (
+	"bytes"
 	"cmp"
 	"context"
+	"crypto/rand"
+	"crypto/tls"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"math/big"
+	"net"
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/alecthomas/kong"
 	"github.com/distribution/reference"
@@ -51,6 +58,7 @@ type InstancesCmd struct {
 	Start   InstancesStartCmd   `cmd:"" help:"Start one or more instances."`
 	Stop    InstancesStopCmd    `cmd:"" help:"Stop one or more instances."`
 	Restart InstancesRestartCmd `cmd:"" help:"Restart one or more instances."`
+	Tunnel  InstancesTunnelCmd  `cmd:"" help:"Forward a local port to an unexposed instance."`
 }
 
 // InstanceCreateCmd extends the generic resource create command with shortcut
@@ -1285,4 +1293,578 @@ func stopInstances(ctx context.Context, g *group.Group[multimetro.MetroClient], 
 		return stopped, stopped.Refs(), nil
 	})
 	return multimetro.Keys(stopped), err
+}
+
+const tunnelDeprecatedImage = "official/utils/tunnel:latest"
+
+type InstancesTunnelCmd struct {
+	Targets []string `arg:"" name:"target" min:"1" help:"Forwarding target(s) in the form [LOCAL_PORT:]<INSTANCE|PRIVATE_IP|PRIVATE_FQDN>:DEST_PORT[/TYPE]."`
+
+	TunnelProxyPorts   []string `short:"p" name:"tunnel-proxy-port"   help:"Remote port(s) exposed by the tunnel service. When a single value is given it is used as the starting port for multiple targets. (default: 4444)"`
+	ProxyControlPort   uint     `short:"P" name:"tunnel-control-port" help:"Command-and-control port of the tunnel service." default:"4443"`
+	TunnelServiceImage string   `          name:"tunnel-image"         help:"Image to use for the tunnel service." default:"official/utils/tunnel:1.0"`
+
+	// parsedProxyPorts holds the validated proxy port numbers.
+	parsedProxyPorts []uint16
+	// instances holds the target instance identifiers; entries are replaced by
+	// their private IPs once resolved.
+	instances []string
+	// localPorts to listen on locally.
+	localPorts []uint16
+	// ctypes holds the connection type ("tcp"/"udp") per target.
+	ctypes []string
+	// instanceProxyPorts holds the port on the instance to forward to.
+	instanceProxyPorts []uint16
+	// exposedProxyPorts holds the port exposed by the tunnel service per target.
+	exposedProxyPorts []uint16
+	// portIterator tracks the next port offset when a single proxy port is given.
+	portIterator uint16
+}
+
+func (cmd InstancesTunnelCmd) Examples() []kingkong.Example {
+	return []kingkong.Example{
+		{
+			Description: "Forward local port 8080 to instance \"nginx\" port 8080",
+			Commands:    []string{"unikraft instance tunnel nginx:8080"},
+		},
+		{
+			Description: "Forward to an instance identified by its private FQDN",
+			Commands:    []string{"unikraft instance tunnel nginx.internal:8080"},
+		},
+		{
+			Description: "Forward local port 8333 to instance \"nginx\" port 8080",
+			Commands:    []string{"unikraft instance tunnel 8333:nginx:8080"},
+		},
+		{
+			Description: "Forward multiple ports from multiple instances",
+			Commands:    []string{"unikraft instance tunnel 8080:my-instance1:8080/tcp 8443:my-instance2:8080/tcp"},
+		},
+		{
+			Description: "Forward local port 8080 to instance \"my-instance1\" port 8080 on fra metro using TCP",
+			Commands:    []string{"unikraft instance tunnel 8080:fra/my-instance1:8080/tcp"},
+		},
+		{
+			Description: "Use a custom relay port to avoid collisions",
+			Commands:    []string{"unikraft instance tunnel -p 5500 my-instance:8080"},
+		},
+	}
+}
+
+func (cmd *InstancesTunnelCmd) Run(ctx context.Context, stdio config.Stdio) error {
+	if cmd.TunnelServiceImage == tunnelDeprecatedImage {
+		return fmt.Errorf("the image %q is deprecated, please use the default image", tunnelDeprecatedImage)
+	}
+
+	// Default to proxy port 4444 if none given.
+	if len(cmd.TunnelProxyPorts) == 0 {
+		cmd.TunnelProxyPorts = []string{"4444"}
+	}
+
+	for _, port := range cmd.TunnelProxyPorts {
+		parsed, err := strconv.ParseUint(port, 10, 16)
+		if err != nil {
+			return fmt.Errorf("%q is not a valid port number", port)
+		}
+		cmd.parsedProxyPorts = append(cmd.parsedProxyPorts, uint16(parsed))
+	}
+
+	if len(cmd.TunnelProxyPorts) > 1 && len(cmd.TunnelProxyPorts) != len(cmd.Targets) {
+		return fmt.Errorf("number of proxy ports (%d) must match the number of forwarding targets (%d)", len(cmd.TunnelProxyPorts), len(cmd.Targets))
+	}
+
+	if err := cmd.tunnelParseArgs(ctx, cmd.Targets); err != nil {
+		return fmt.Errorf("could not parse targets: %w", err)
+	}
+
+	g, err := multimetro.NewClient(ctx)
+	if err != nil {
+		return err
+	}
+
+	rawInstances := slices.Clone(cmd.instances)
+
+	// Resolve instance names/UUIDs to private IPs, inferring the metro when needed.
+	// Targets that are already IP addresses or private FQDNs (*.internal) are left as-is.
+	var namesToResolve []string
+	var indexesToResolve []int
+	var metro string
+	for i, inst := range cmd.instances {
+		if net.ParseIP(inst) == nil && !strings.HasSuffix(inst, ".internal") {
+			namesToResolve = append(namesToResolve, inst)
+			indexesToResolve = append(indexesToResolve, i)
+		}
+	}
+	if len(namesToResolve) > 0 {
+		resolved, err := Instance{}.Get(ctx, namesToResolve)
+		if err != nil {
+			return fmt.Errorf("could not resolve instances: %w", err)
+		}
+		for i, r := range resolved {
+			inst := r.(Instance)
+			metro = inst.key.Metro
+			if len(inst.Instance.NetworkInterfaces) == 0 || inst.Instance.NetworkInterfaces[0].PrivateIp == nil {
+				return fmt.Errorf("instance %q has no private IP", namesToResolve[i])
+			}
+			cmd.instances[indexesToResolve[i]] = *inst.Instance.NetworkInterfaces[0].PrivateIp
+		}
+	}
+
+	if metro == "" {
+		return fmt.Errorf("could not determine target metro: include the metro prefix in the instance name (e.g. fra/my-instance:8080)")
+	}
+
+	authStr, err := tunnelGenRandAuth()
+	if err != nil {
+		return fmt.Errorf("could not generate auth string: %w", err)
+	}
+
+	instArgs := cmd.tunnelFormatProxyArgs(authStr)
+
+	instUUID, sgFQDN, err := cmd.tunnelRunProxy(ctx, g, metro, instArgs)
+	if err != nil {
+		return fmt.Errorf("could not start tunnel proxy: %w", err)
+	}
+
+	defer func() {
+		if err := tunnelTerminateProxy(context.WithoutCancel(ctx), g, metro, instUUID); err != nil {
+			log.G(ctx).Error().Err(err).Msg("could not terminate tunnel proxy")
+		}
+	}()
+
+	// Start the control relay to keep the tunnel connection alive.
+	cr := tunnelRelay{
+		rAddr:  net.JoinHostPort(sgFQDN, strconv.FormatUint(uint64(cmd.ProxyControlPort), 10)),
+		auth:   authStr,
+		stderr: stdio.Stderr,
+	}
+	ready := make(chan struct{}, 1)
+	go func() {
+		if err := cr.controlUp(ctx, ready); err != nil {
+			log.G(ctx).Error().Err(err).Msg("control relay error")
+		}
+	}()
+	// Wait for the control relay to establish its connection before sending traffic.
+	<-ready
+
+	r := tunnelRelay{
+		// TODO(antoineco): allow dual-stack by creating two separate listeners.
+		// Alternatively, we could default to "::" to create a tcp46 socket, but
+		// listening on all addresses is an insecure default.
+		lAddr: net.JoinHostPort("127.0.0.1", strconv.FormatUint(uint64(cmd.localPorts[0]), 10)),
+		rAddr: net.JoinHostPort(sgFQDN, strconv.FormatUint(uint64(cmd.exposedProxyPorts[0]), 10)),
+		// NOTE(craciunoiuc): Only TCP is supported at the moment. This refers to the
+		// local listener; the remote side always uses TLS-over-TCP.
+		ctype:    cmd.ctypes[0],
+		auth:     authStr,
+		name:     instUUID,
+		nameAddr: fmt.Sprintf("%s:%d", rawInstances[0], cmd.instanceProxyPorts[0]),
+		stderr:   stdio.Stderr,
+	}
+
+	for i := range cmd.localPorts {
+		if i == 0 {
+			continue
+		}
+		pr := tunnelRelay{
+			lAddr:    net.JoinHostPort("127.0.0.1", strconv.FormatUint(uint64(cmd.localPorts[i]), 10)),
+			rAddr:    net.JoinHostPort(sgFQDN, strconv.FormatUint(uint64(cmd.exposedProxyPorts[i]), 10)),
+			ctype:    cmd.ctypes[i],
+			auth:     authStr,
+			name:     instUUID,
+			nameAddr: fmt.Sprintf("%s:%d", rawInstances[i], cmd.instanceProxyPorts[i]),
+			stderr:   stdio.Stderr,
+		}
+		go func() {
+			if err := pr.up(ctx); err != nil {
+				log.G(ctx).Error().Err(err).Msg("relay error")
+			}
+		}()
+	}
+
+	return r.up(ctx)
+}
+
+// tunnelGeneratePort returns the next sequential proxy port for single-port mode.
+func (cmd *InstancesTunnelCmd) tunnelGeneratePort(startPort uint16) uint16 {
+	defer func() { cmd.portIterator++ }()
+	return startPort + cmd.portIterator
+}
+
+// tunnelParseArgs parses the positional forwarding target arguments and populates
+// the cmd fields (instances, localPorts, ctypes, instanceProxyPorts, exposedProxyPorts).
+func (cmd *InstancesTunnelCmd) tunnelParseArgs(ctx context.Context, args []string) error {
+	for i, arg := range args {
+		instance, lport, rport, ctype, err := tunnelParsePorts(ctx, arg)
+		if err != nil {
+			return err
+		}
+		cmd.instances = append(cmd.instances, instance)
+		cmd.localPorts = append(cmd.localPorts, lport)
+		cmd.instanceProxyPorts = append(cmd.instanceProxyPorts, rport)
+		cmd.ctypes = append(cmd.ctypes, ctype)
+		if len(cmd.parsedProxyPorts) == 1 {
+			cmd.exposedProxyPorts = append(cmd.exposedProxyPorts, cmd.tunnelGeneratePort(cmd.parsedProxyPorts[0]))
+		} else {
+			cmd.exposedProxyPorts = append(cmd.exposedProxyPorts, cmd.parsedProxyPorts[i])
+		}
+	}
+	return nil
+}
+
+// tunnelFormatProxyArgs formats the arguments to pass to the tunnel service instance.
+func (cmd *InstancesTunnelCmd) tunnelFormatProxyArgs(authStr string) []string {
+	connections := make([]string, 0, len(cmd.instances))
+	for i := range cmd.instances {
+		connections = append(connections, fmt.Sprintf("TCP2%s:%s:%d:%d:%d",
+			strings.ToUpper(cmd.ctypes[i]),
+			cmd.instances[i],
+			cmd.instanceProxyPorts[i],
+			cmd.exposedProxyPorts[i],
+			27,
+		))
+	}
+	return []string{
+		// HEARTBEAT_PORT:CTLR_AUTH_TIMEOUT
+		fmt.Sprintf("%d:%d", cmd.ProxyControlPort, 5),
+		// AUTH_TIMEOUT:AUTH_COOKIE
+		fmt.Sprintf("%d:%s", 5, authStr),
+		// EVS_TIMEOUT
+		"600",
+		// [CONNSTR0|CONNSTR1|...]
+		"[" + strings.Join(connections, "|") + "]",
+	}
+}
+
+// tunnelRunProxy creates the tunnel service instance and returns its UUID and
+// service group FQDN.
+func (cmd *InstancesTunnelCmd) tunnelRunProxy(ctx context.Context, g *group.Group[multimetro.MetroClient], metro string, args []string) (instUUID, sgFQDN string, err error) {
+	services := make([]platform.Service, 0, len(cmd.exposedProxyPorts)+1)
+	for _, port := range cmd.exposedProxyPorts {
+		p := uint32(port)
+		services = append(services, platform.Service{
+			Port:            p,
+			DestinationPort: &p,
+			Handlers:        []platform.ServiceHandlers{platform.ServiceHandlersTls},
+		})
+	}
+	ctrlPort := uint32(cmd.ProxyControlPort)
+	services = append(services, platform.Service{
+		Port:            ctrlPort,
+		DestinationPort: &ctrlPort,
+		Handlers:        []platform.ServiceHandlers{platform.ServiceHandlersTls},
+	})
+
+	image := cmd.TunnelServiceImage
+	memMB := int64(64)
+	autostart := true
+	timeoutS := int64(3)
+	req := platform.CreateInstanceRequest{
+		Image:    &image,
+		MemoryMb: &memMB,
+		Args:     args,
+		ServiceGroup: &platform.CreateInstanceRequestServiceGroup{
+			Services: services,
+		},
+		Autostart: &autostart,
+		TimeoutS:  &timeoutS,
+		Features:  []platform.CreateInstanceRequestFeatures{
+			// TODO(craciunoiuc): Enable back when sdk is updated
+			// platform.CreateInstanceRequestFeaturesDelete_on_stop,
+		},
+	}
+
+	type proxyInfo struct{ uuid, fqdn string }
+	info, err := group.CollectMetro(ctx, g, metro, func(ctx context.Context, c multimetro.MetroClient) (proxyInfo, error) {
+		log.G(ctx).Trace().Msg("creating tunnel proxy instance")
+		resp, err := c.CreateInstance(ctx, req)
+		if err != nil {
+			return proxyInfo{}, fmt.Errorf("creating proxy instance: %w", err)
+		}
+		if resp.Data == nil || len(resp.Data.Instances) == 0 {
+			return proxyInfo{}, fmt.Errorf("no instance returned after creation")
+		}
+		inst := resp.Data.Instances[0]
+		uuid := ptr.ZeroIfNil(inst.Uuid)
+
+		var fqdn string
+		if inst.ServiceGroup != nil && len(inst.ServiceGroup.Domains) > 0 {
+			fqdn = ptr.ZeroIfNil(inst.ServiceGroup.Domains[0].Fqdn)
+		}
+		if fqdn == "" {
+			return proxyInfo{}, fmt.Errorf("tunnel proxy has no service group domain")
+		}
+		return proxyInfo{uuid: uuid, fqdn: fqdn}, nil
+	})
+	if err != nil {
+		return "", "", err
+	}
+	return info.uuid, info.fqdn, nil
+}
+
+// tunnelParsePorts parses a single forwarding target of the form
+// [LOCAL_PORT:]INSTANCE:DEST_PORT[/TYPE] and returns the components.
+func tunnelParsePorts(ctx context.Context, portsArg string) (instance string, lport, rport uint16, ctype string, err error) {
+	var rest string
+	parts := strings.SplitN(portsArg, "/", 3)
+	if len(parts) == 3 {
+		rest = parts[0] + "/" + parts[1]
+		ctype = parts[2]
+	} else if len(parts) == 2 {
+		if strings.EqualFold(parts[1], "tcp") || strings.EqualFold(parts[1], "udp") {
+			// It's missing the metro
+			rest = parts[0]
+			ctype = parts[1]
+		} else {
+			// It's missing the ctype
+			rest = parts[0] + "/" + parts[1]
+			ctype = "tcp"
+		}
+	} else {
+		rest = parts[0]
+		ctype = "tcp"
+	}
+	if strings.ToLower(ctype) != "tcp" {
+		log.G(ctx).Warn().Msg("only TCP connections are supported at the moment")
+	}
+
+	segments := strings.SplitN(rest, ":", 3)
+	switch len(segments) {
+	case 2:
+		// INSTANCE:DEST_PORT — no local port override
+		if _, parseErr := strconv.ParseUint(segments[0], 10, 16); parseErr == nil {
+			return "", 0, 0, "", fmt.Errorf("%q is not a valid instance identifier", segments[0])
+		}
+		rport64, parseErr := strconv.ParseUint(segments[1], 10, 16)
+		if parseErr != nil {
+			return "", 0, 0, "", fmt.Errorf("%q is not a valid port number", segments[1])
+		}
+		return segments[0], uint16(rport64), uint16(rport64), ctype, nil
+	case 3:
+		// LOCAL_PORT:INSTANCE:DEST_PORT
+		lport64, parseErr := strconv.ParseUint(segments[0], 10, 16)
+		if parseErr != nil {
+			return "", 0, 0, "", fmt.Errorf("%q is not a valid port number", segments[0])
+		}
+		rport64, parseErr := strconv.ParseUint(segments[2], 10, 16)
+		if parseErr != nil {
+			return "", 0, 0, "", fmt.Errorf("%q is not a valid port number", segments[2])
+		}
+		return segments[1], uint16(lport64), uint16(rport64), ctype, nil
+	default:
+		return "", 0, 0, "", fmt.Errorf("%q is not a valid forwarding target (expected [LOCAL_PORT:]INSTANCE:DEST_PORT[/TYPE])", portsArg)
+	}
+}
+
+// tunnelGenRandAuth generates a 32-character random alphanumeric string used to
+// authenticate connections to the tunnel service.
+func tunnelGenRandAuth() (string, error) {
+	chars := []byte("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")
+	max := big.NewInt(int64(len(chars)))
+	var sb strings.Builder
+	sb.Grow(32)
+	for range 32 {
+		idx, err := rand.Int(rand.Reader, max)
+		if err != nil {
+			return "", err
+		}
+		sb.WriteByte(chars[idx.Int64()])
+	}
+	return sb.String(), nil
+}
+
+// tunnelTerminateProxy deletes the tunnel proxy instance.
+func tunnelTerminateProxy(ctx context.Context, g *group.Group[multimetro.MetroClient], metro, uuid string) error {
+	return group.DoMetro(ctx, g, metro, func(ctx context.Context, c multimetro.MetroClient) error {
+		log.G(ctx).Trace().Msg("deleting tunnel proxy instance")
+		_, err := c.DeleteInstances(ctx, []platform.NameOrUUID{{Uuid: &uuid}})
+		if err != nil {
+			return fmt.Errorf("deleting proxy instance %q: %w", uuid, err)
+		}
+		return nil
+	})
+}
+
+// tunnelRelay relays connections from a local listener to a remote host over TLS.
+type tunnelRelay struct {
+	lAddr    string
+	rAddr    string
+	ctype    string
+	auth     string
+	name     string
+	nameAddr string
+	stderr   io.Writer
+}
+
+const tunnelHeartbeat = "\xf0\x9f\x91\x8b\xf0\x9f\x90\x92\x00"
+
+var (
+	tunnelNoNetTimeout       = time.Time{}
+	tunnelImmediateNetCancel = time.Unix(1, 0)
+)
+
+// up starts a local listener and relays accepted connections to the remote host.
+func (r *tunnelRelay) up(ctx context.Context) error {
+	l, err := r.listenLocal(ctx)
+	if err != nil {
+		return err
+	}
+	defer l.Close()
+	go func() { <-ctx.Done(); l.Close() }()
+
+	log.G(ctx).Info().Str("from", l.Addr().String()).Str("to", r.nameAddr).Msg("tunnelling")
+	log.G(ctx).Debug().Str("via", r.rAddr).Msg("tunnelling")
+
+	for {
+		conn, err := l.Accept()
+		if err != nil {
+			if errors.Is(err, net.ErrClosed) {
+				return nil
+			}
+			return fmt.Errorf("accepting incoming connection: %w", err)
+		}
+		c := &tunnelConnection{relay: r, conn: conn}
+		go c.handle(ctx, []byte(r.auth), r.name, r.nameAddr)
+	}
+}
+
+// controlUp dials the remote control port, signals ready, then sends periodic
+// heartbeats to keep the tunnel service alive.
+func (r *tunnelRelay) controlUp(ctx context.Context, ready chan struct{}) error {
+	rc, err := r.dialRemote(ctx)
+	if err != nil {
+		return err
+	}
+	defer rc.Close()
+	go func() { <-ctx.Done(); rc.Close() }()
+
+	ready <- struct{}{}
+	close(ready)
+
+	// Send auth and initial heartbeat.
+	_, err = io.CopyN(rc, bytes.NewReader([]byte(r.auth+tunnelHeartbeat)), int64(len(r.auth)+9))
+	if err != nil {
+		return err
+	}
+	// Send a heartbeat every minute to keep the connection alive.
+	for {
+		time.Sleep(time.Minute)
+		_, err := io.CopyN(rc, bytes.NewReader([]byte(tunnelHeartbeat)), 9)
+		if err != nil {
+			return err
+		}
+	}
+}
+
+func (r *tunnelRelay) dialRemote(ctx context.Context) (net.Conn, error) {
+	var d tls.Dialer
+	return d.DialContext(ctx, "tcp4", r.rAddr)
+}
+
+func (r *tunnelRelay) listenLocal(ctx context.Context) (net.Listener, error) {
+	var lc net.ListenConfig
+	return lc.Listen(ctx, r.ctype+"4", r.lAddr)
+}
+
+// tunnelConnection represents an accepted local connection being relayed to a
+// remote host through the tunnel service.
+type tunnelConnection struct {
+	relay *tunnelRelay
+	conn  net.Conn
+}
+
+// handle relays data between the local connection and the remote host.
+func (c *tunnelConnection) handle(ctx context.Context, auth []byte, instance, instanceRaw string) {
+	defer func() {
+		c.conn.Close()
+		log.G(ctx).Info().Str("for", instanceRaw).Msg("closed connection")
+	}()
+
+	rc, err := c.relay.dialRemote(ctx)
+	if err != nil {
+		log.G(ctx).Error().Err(err).Msg("failed to connect to remote host")
+		return
+	}
+	defer rc.Close()
+
+	log.G(ctx).Debug().
+		Str("for", c.conn.RemoteAddr().String()).
+		Str("from", rc.LocalAddr().String()).
+		Str("to", rc.RemoteAddr().String()).
+		Msg("opened connection")
+	log.G(ctx).Info().Str("to", instanceRaw).Msg("accepted connection")
+
+	_ = rc.SetDeadline(tunnelNoNetTimeout)
+	_ = c.conn.SetDeadline(tunnelNoNetTimeout)
+
+	defer func() {
+		_ = c.conn.SetDeadline(tunnelImmediateNetCancel)
+	}()
+
+	if len(auth) > 0 {
+		_, err = rc.Write(auth)
+		if err != nil {
+			log.G(ctx).Error().Err(err).Msg("failed to write auth to remote host")
+			return
+		}
+
+		statusRaw := bytes.NewBuffer(nil)
+		n, err := io.CopyN(statusRaw, rc, 2)
+		if err != nil {
+			log.G(ctx).Error().Err(err).Msg("failed to read auth status from remote host")
+			return
+		}
+		if n != 2 {
+			log.G(ctx).Error().Msg("invalid auth status from remote host")
+			return
+		}
+
+		var status int16
+		if err = binary.Read(statusRaw, binary.LittleEndian, &status); err != nil {
+			log.G(ctx).Error().Err(err).Msg("failed to parse auth status from remote host")
+			return
+		}
+
+		if status == 0 {
+			log.G(ctx).Error().Msg("no available connections to remote host, try again later")
+			return
+		} else if status < 0 {
+			log.G(ctx).Error().Msgf("internal tunnel error (C=%d), to view logs run:", status)
+			fmt.Fprintf(c.relay.stderr, "\n    unikraft instance logs %s\n\n", instance)
+			return
+		}
+	}
+
+	writerDone := make(chan struct{})
+	go func() {
+		defer func() {
+			_ = rc.SetDeadline(tunnelImmediateNetCancel)
+			writerDone <- struct{}{}
+		}()
+		_, err = io.Copy(rc, c.conn)
+		if err != nil && !tunnelIsNetClosedError(err) && !tunnelIsNetTimeoutError(err) {
+			log.G(ctx).Error().Err(err).Msg("failed to copy data from client to remote host")
+		}
+	}()
+
+	_, err = io.Copy(c.conn, rc)
+	if err != nil {
+		if !tunnelIsNetTimeoutError(err) {
+			log.G(ctx).Error().Err(err).Msg("failed to copy data from remote host to client")
+		}
+	} else {
+		// Remote closed the connection cleanly; return to close our side.
+		return
+	}
+
+	<-writerDone
+}
+
+func tunnelIsNetTimeoutError(err error) bool {
+	var neterr net.Error
+	return errors.As(err, &neterr) && neterr.Timeout()
+}
+
+func tunnelIsNetClosedError(err error) bool {
+	return strings.Contains(err.Error(), "use of closed network connection") ||
+		strings.Contains(err.Error(), "connection reset by peer")
 }
