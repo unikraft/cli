@@ -36,11 +36,18 @@ import (
 	"unikraft.com/x/kraftfile"
 )
 
-type Rootfs struct {
-	File *os.File
+// PackagedRootfs holds a rootfs archive for a single platform produced by
+// PackageRootfs, together with the OCI image config extracted during the build.
+type PackagedRootfs struct {
+	Platform ocispec.Platform
+	Config   ocispec.Image
+	File     *os.File
 }
 
-func BuildRootfs(ctx context.Context, c *client.Client, opts BuildOpts) (_ []*imagespec.Image, rerr error) {
+// PackageRootfs builds a Dockerfile into a per-platform rootfs archive using BuildKit.
+// On success the caller owns the returned files and must close / remove them
+// when done; on error all temporary files are cleaned up before returning.
+func PackageRootfs(ctx context.Context, c *client.Client, opts BuildOpts) (_ []*PackagedRootfs, rerr error) {
 	if len(opts.Platform) == 0 {
 		return nil, fmt.Errorf("at least one platform must be specified")
 	}
@@ -52,7 +59,7 @@ func BuildRootfs(ctx context.Context, c *client.Client, opts BuildOpts) (_ []*im
 		return nil, err
 	}
 
-	session := []session.Attachable{
+	sess := []session.Attachable{
 		authprovider.NewDockerAuthProvider(authprovider.DockerAuthProviderConfig{
 			AuthConfigProvider: images.LoadBuildkitAuthConfig(dockerConfig, profile),
 		}),
@@ -63,7 +70,7 @@ func BuildRootfs(ctx context.Context, c *client.Client, opts BuildOpts) (_ []*im
 		attrs["multi-platform"] = "true"
 	}
 	localDirs := map[string]string{}
-	if err := applyBuildOpts(attrs, localDirs, &session, opts); err != nil {
+	if err := applyBuildOpts(attrs, localDirs, &sess, opts); err != nil {
 		return nil, err
 	}
 
@@ -75,7 +82,7 @@ func BuildRootfs(ctx context.Context, c *client.Client, opts BuildOpts) (_ []*im
 
 	solveOpt := client.SolveOpt{
 		Ref:     identity.NewID(),
-		Session: session,
+		Session: sess,
 		Exports: []client.ExportEntry{
 			{
 				Type:      client.ExporterLocal,
@@ -129,7 +136,18 @@ func BuildRootfs(ctx context.Context, c *client.Client, opts BuildOpts) (_ []*im
 		return nil, pw.Err()
 	}
 
-	var imgs []*imagespec.Image
+	var roots []*PackagedRootfs
+
+	defer func() {
+		if rerr != nil {
+			for _, root := range roots {
+				if root.File != nil {
+					root.File.Close()
+					os.Remove(root.File.Name())
+				}
+			}
+		}
+	}()
 
 	for i, p := range opts.Platform {
 		ep := expPlatforms[i]
@@ -144,12 +162,10 @@ func BuildRootfs(ctx context.Context, c *client.Client, opts BuildOpts) (_ []*im
 		if err != nil {
 			return nil, fmt.Errorf("could not create temporary file: %w", err)
 		}
-		defer func() {
-			if rerr != nil && f != nil {
-				f.Close()
-				os.Remove(f.Name())
-			}
-		}()
+
+		// Append before processing so the deferred cleanup above handles
+		// this file on any subsequent error.
+		roots = append(roots, &PackagedRootfs{Platform: p, Config: config, File: f})
 
 		switch opts.Rootfs.Format {
 		case kraftfile.FsTypeCpio:
@@ -190,6 +206,17 @@ func BuildRootfs(ctx context.Context, c *client.Client, opts BuildOpts) (_ []*im
 		if err := f.Sync(); err != nil {
 			return nil, fmt.Errorf("could not sync file: %w", err)
 		}
+	}
+
+	return roots, nil
+}
+
+// ExportRootfs converts packaged rootfs archives into OCI images by applying
+// command, environment, and label overrides from opts.
+func ExportRootfs(_ context.Context, roots []*PackagedRootfs, opts BuildOpts) ([]*imagespec.Image, error) {
+	imgs := make([]*imagespec.Image, 0, len(roots))
+	for _, root := range roots {
+		config := root.Config
 
 		if opts.Cmd != nil {
 			config.Config.Cmd = opts.Cmd
@@ -205,12 +232,32 @@ func BuildRootfs(ctx context.Context, c *client.Client, opts BuildOpts) (_ []*im
 
 		imgs = append(imgs, imagespec.NewImage(
 			imagespec.WithImageConfig(config.Config),
-			imagespec.WithPlatform(p),
-			imagespec.WithInitrd(imagespec.NewTempOSFile(f)),
+			imagespec.WithPlatform(root.Platform),
+			imagespec.WithInitrd(imagespec.NewTempOSFile(root.File)),
 		))
 	}
-
 	return imgs, nil
+}
+
+// BuildRootfs builds OCI images from a Dockerfile for each platform in opts.
+func BuildRootfs(ctx context.Context, c *client.Client, opts BuildOpts) (_ []*imagespec.Image, rerr error) {
+	roots, err := PackageRootfs(ctx, c, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	defer func() {
+		if rerr != nil {
+			for _, root := range roots {
+				if root.File != nil {
+					root.File.Close()
+					os.Remove(root.File.Name())
+				}
+			}
+		}
+	}()
+
+	return ExportRootfs(ctx, roots, opts)
 }
 
 func applyBuildOpts(attrs map[string]string, localDirs map[string]string, sessions *[]session.Attachable, opts BuildOpts) error {
