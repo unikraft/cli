@@ -93,7 +93,92 @@ func (i Image) Raw() any {
 }
 
 func (i Image) Fields() ([]resource.Field, error) {
-	return resource.FieldsFromStruct(i)
+	fields, err := resource.FieldsFromStruct(i)
+	if err != nil {
+		return nil, err
+	}
+
+	// custom fields impl for Image
+
+	meta := i.Image.Metadata()
+	fields = append(fields,
+		resource.Field{
+			Name: "metadata",
+			Subfields: []resource.Field{
+				{
+					Name:      "author",
+					Value:     meta.Author,
+					Verbosity: resource.FieldVerbosityLong,
+				},
+				{
+					Name:      "created",
+					Value:     meta.Created,
+					Verbosity: resource.FieldVerbosityLong,
+				},
+				{
+					Name:      "kraftkit-version",
+					Value:     meta.KraftkitVersion,
+					Verbosity: resource.FieldVerbosityLong,
+				},
+			},
+			Verbosity: resource.FieldVerbosityLong,
+		})
+
+	fromImageSpecFile := func(file imagespec.File) []resource.Field {
+		desc, _ := file.Source()
+		return []resource.Field{
+			{
+				Name:      "digest",
+				Value:     desc.Digest,
+				Verbosity: resource.FieldVerbosityLong,
+			},
+			{
+				Name:      "media-type",
+				Value:     desc.MediaType,
+				Verbosity: resource.FieldVerbosityLong,
+			},
+			{
+				Name:      "annotations",
+				Value:     desc.Annotations,
+				Verbosity: resource.FieldVerbosityLong,
+			},
+			{
+				Name:      "size",
+				Value:     desc.Size,
+				Verbosity: resource.FieldVerbosityLong,
+			},
+		}
+	}
+
+	if f := i.Image.Kernel; f != nil {
+		fields = append(fields, resource.Field{
+			Name:      "kernel",
+			Subfields: fromImageSpecFile(f),
+			Verbosity: resource.FieldVerbosityLong,
+		})
+	}
+	if f := i.Image.KernelDebug; f != nil {
+		fields = append(fields, resource.Field{
+			Name:      "kernel.dbg",
+			Subfields: fromImageSpecFile(f),
+			Verbosity: resource.FieldVerbosityLong,
+		})
+	}
+	if f := i.Image.Initrd; f != nil {
+		fields = append(fields, resource.Field{
+			Name:      "initrd",
+			Subfields: fromImageSpecFile(f),
+			Verbosity: resource.FieldVerbosityLong,
+		})
+	}
+	for idx, f := range i.Image.Roms {
+		fields = append(fields, resource.Field{
+			Name:      fmt.Sprintf("rom-%d", idx),
+			Subfields: fromImageSpecFile(f),
+			Verbosity: resource.FieldVerbosityLong,
+		})
+	}
+	return fields, nil
 }
 
 func (Image) Get(ctx context.Context, keys []string) ([]resource.Resource, error) {
