@@ -49,6 +49,7 @@ type UnikraftCLI struct {
 	Certificates CertificatesCmd `cmd:"" group:"cmd-resources" help:"Manage Unikraft Cloud certificates." aliases:"certificate,certificates,crt,crts,cert,certs" set:"name=certificate" set:"names=certificates"`
 	Images       ImagesCmd       `cmd:"" group:"cmd-resources" help:"Manage Unikraft Cloud images." aliases:"image,images,img,imgs" set:"name=image" set:"names=images"`
 	Resources    AnyResourceCmd  `cmd:"" group:"cmd-resources" hidden:"" help:"Manage any Unikraft Cloud resource." aliases:"resource,resources" set:"name=resource" set:"names=resources"`
+	Proxy        ProxyCmd        `cmd:"" group:"cmd-resources" help:"Manage the Unikraft Cloud proxy." aliases:"proxy,tunnel" set:"name=proxy" set:"names=proxies"`
 
 	Login   login.LoginCmd  `cmd:"" group:"cmd-config" help:"Login to Unikraft Cloud."`
 	Logout  login.LogoutCmd `cmd:"" group:"cmd-config" help:"Logout from Unikraft Cloud."`
