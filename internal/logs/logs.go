@@ -79,13 +79,17 @@ func (r *logsReader) rewind(tail int) (n int64, err error) {
 
 	total := 0
 
-	var chunkOffset int64 = 0
 	chunk := make([]byte, logPageSize)
+	chunkOffset := ptr.ZeroIfNil(r.end)
 	for {
-		chunkOffset -= int64(len(chunk))
+		requestOffset := chunkOffset - logPageSize
+		if r.start != nil && requestOffset <= *r.start {
+			requestOffset = *r.start
+		}
+		chunk := chunk[:chunkOffset-requestOffset]
 
 		var chunkSize int
-		chunkOffset, chunkSize, err = r.readChunk(chunk, chunkOffset)
+		chunkOffset, chunkSize, err = r.readChunk(chunk, requestOffset)
 		if err != nil {
 			return 0, err
 		}
@@ -191,6 +195,10 @@ func (r *logsReader) readChunk(p []byte, off int64) (actualOffset int64, n int, 
 	n, err = base64.StdEncoding.Decode(p, []byte(ptr.ZeroIfNil(data.Output)))
 	if err != nil {
 		return 0, 0, err
+	}
+	dataRangeSize := ptr.ZeroIfNil(dataRange.End) - ptr.ZeroIfNil(dataRange.Start)
+	if int64(n) != dataRangeSize {
+		return 0, 0, fmt.Errorf("expected to read %d bytes but got %d", dataRangeSize, n)
 	}
 	return ptr.ZeroIfNil(dataRange.Start), n, nil
 }
