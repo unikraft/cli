@@ -12,6 +12,7 @@ stdout:
 	  - name:       test
 	    endpoint:   https://api.test.unikraft.internal
 	    country:    xx
+	    insecure:   false
 
 $ unikraft config get -o json
 

@@ -4,7 +4,10 @@
 
 package main
 
-import "testing"
+import (
+	"regexp"
+	"testing"
+)
 
 func configTests(t *testing.T, r *testRunner) {
 	t.Run("help", func(t *testing.T) {
@@ -16,6 +19,16 @@ func configTests(t *testing.T, r *testRunner) {
 	t.Run("get", func(t *testing.T) {
 		r.
 			online().
+			withCleaners([]cleaner{
+				{
+					pattern: regexp.MustCompile(`(?m)^(\s*insecure:\s*)\S+`),
+					repl:    "${1}false",
+				},
+				{
+					pattern: regexp.MustCompile(`(?m)("insecure":\s*)(true|false)`),
+					repl:    "${1}false",
+				},
+			}).
 			run(t, []command{
 				{args: []string{unikraftCmd, "config", "get"}},
 				{args: []string{unikraftCmd, "config", "get", "-o", "json"}},

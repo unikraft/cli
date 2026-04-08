@@ -57,6 +57,7 @@ func populate() (*Config, error) {
 		profile.ControlPlane = ""
 		profile.Metros = profile.Metros[:1]
 		profile.Metros[0].Name = "test"
+		profile.Metros[0].Country = "xx"
 
 		config := &config.Config{
 			DefaultProfile: profile.Name,
