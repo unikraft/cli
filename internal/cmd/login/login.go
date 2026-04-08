@@ -22,6 +22,7 @@ import (
 	"unikraft.com/cli/internal/config"
 	"unikraft.com/cli/internal/httpclient"
 	"unikraft.com/cli/internal/logfmt"
+	"unikraft.com/cli/internal/multimetro"
 )
 
 type LoginCmd struct {
@@ -209,16 +210,15 @@ func (cmd *LoginCmd) generateUniqueProfileName(cfg *config.Config, organization 
 }
 
 func (cmd *LoginCmd) getMetros(ctx context.Context, profile *config.Profile) ([]config.Metro, error) {
-	copts := []controlplane.ClientOption{
+	client, err := multimetro.NewControlClient(
+		ctx,
 		controlplane.WithDefaultEndpoint(profile.ControlPlane),
 		controlplane.WithToken(profile.Token),
+		controlplane.WithHTTPClient(httpclient.GetClient(cmd.AllowInsecure)),
+	)
+	if err != nil {
+		return nil, err
 	}
-	if cmd.AllowInsecure {
-		copts = append(copts, controlplane.WithHTTPClient(httpclient.InsecureHTTPClient))
-	} else {
-		copts = append(copts, controlplane.WithHTTPClient(httpclient.DefaultHTTPClient))
-	}
-	client := controlplane.NewClient(copts...)
 
 	metroResp, err := client.ListMetros(ctx)
 	if err != nil {
@@ -240,15 +240,15 @@ func (cmd *LoginCmd) getMetros(ctx context.Context, profile *config.Profile) ([]
 }
 
 func (cmd *LoginCmd) getAuth(ctx context.Context, profile *config.Profile) (*controlplane.Response[controlplane.CheckAuthorizationResponseData], error) {
-	copts := []controlplane.ClientOption{
+	client, err := multimetro.NewControlClient(
+		ctx,
 		controlplane.WithDefaultEndpoint(profile.ControlPlane),
+		controlplane.WithToken(""),
+		controlplane.WithHTTPClient(httpclient.GetClient(cmd.AllowInsecure)),
+	)
+	if err != nil {
+		return nil, err
 	}
-	if cmd.AllowInsecure {
-		copts = append(copts, controlplane.WithHTTPClient(httpclient.InsecureHTTPClient))
-	} else {
-		copts = append(copts, controlplane.WithHTTPClient(httpclient.DefaultHTTPClient))
-	}
-	client := controlplane.NewClient(copts...)
 
 	req, err := getFingerprint()
 	if err != nil {

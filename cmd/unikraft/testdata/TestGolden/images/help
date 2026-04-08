@@ -15,12 +15,9 @@ stdout:
 	          Copy images.
 
 	Fields:
-	  metro
 	  ref
-	  refs
 	  digest
 	  namespace
-	  dangling
 
 	Global flags:
 	  -h, --help
@@ -106,12 +103,9 @@ stdout:
 	  unikraft image list --filter 'ref~="/nginx"'
 
 	Fields:
-	  metro
 	  ref
-	  refs
 	  digest
 	  namespace
-	  dangling
 
 	Flags:
 	      --filter
@@ -124,8 +118,6 @@ stdout:
 	          Specify which fields to include in the output.
 	  -o, --output
 	          Output format. One of: kv, table, json, yaml, raw, quiet, template.
-	      --dangling
-	          Include dangling images with no tags.
 
 	Global flags:
 	  -h, --help
