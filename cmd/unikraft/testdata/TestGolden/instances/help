@@ -28,6 +28,10 @@ stdout:
 	  restart
 	          Restart one or more instances.
 
+	Instance templates:
+	  template, templates
+	          Manage instance templates.
+
 	Fields:
 	  metro
 	  name
@@ -52,6 +56,7 @@ stdout:
 	  wait-timeout
 	  features
 	  vsock
+	  template
 	  stop, stop.reason, stop.origin, stop.errno, stop.exit-code
 
 	Global flags:
@@ -111,6 +116,7 @@ stdout:
 	  wait-timeout
 	  features
 	  vsock
+	  template
 	  stop, stop.reason, stop.origin, stop.errno, stop.exit-code
 
 	Flags:
@@ -178,6 +184,7 @@ stdout:
 	  wait-timeout
 	  features
 	  vsock
+	  template
 	  stop, stop.reason, stop.origin, stop.errno, stop.exit-code
 
 	Flags:
@@ -245,6 +252,7 @@ stdout:
 	  wait-timeout
 	  features
 	  vsock
+	  template
 	  stop, stop.reason, stop.origin, stop.errno, stop.exit-code
 
 	Flags:
@@ -296,6 +304,12 @@ stdout:
 	  	  --memory 128 \
 	  	  --vcpus 1
 
+	  # Create an instance from a template
+	  unikraft instance create \
+	  	  --name new-instance \
+	  	  --metro fra \
+	  	  --template my-template
+
 	Fields:
 	  metro
 	  name
@@ -320,6 +334,7 @@ stdout:
 	  wait-timeout
 	  features
 	  vsock
+	  template
 	  stop, stop.reason, stop.origin, stop.errno, stop.exit-code
 
 	Flags:
@@ -399,6 +414,8 @@ stdout:
 	          [examples: 1, 3]
 	      --features=<feature>
 	          Instance features.
+	      --template=<name>
+	          Create from instance template.
 
 $ unikraft instance edit --help
 
@@ -440,6 +457,7 @@ stdout:
 	  wait-timeout
 	  features
 	  vsock
+	  template
 	  stop, stop.reason, stop.origin, stop.errno, stop.exit-code
 
 	Flags:
@@ -538,6 +556,7 @@ stdout:
 	  wait-timeout
 	  features
 	  vsock
+	  template
 	  stop, stop.reason, stop.origin, stop.errno, stop.exit-code
 
 	Flags:
@@ -545,6 +564,379 @@ stdout:
 	          Remove all instances. Prompts for confirmation.
 	      --filter
 	          Filter instances to remove (e.g. --filter state==running). Prompts for confirmation.
+	      --force
+	          Do not prompt for confirmation when using --all or --filter.
+	  -f, --field
+	          Specify which fields to include in the output.
+	  -o, --output
+	          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+	Global flags:
+	  -h, --help
+	          Show context-sensitive help.
+	      --config=<file> ($UNIKRAFT_CONFIG)
+	          Path to the configuration file.
+	      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+	          Set the logging level.
+	          [default: info, choices: trace, debug, info, warn, error, fatal]
+	      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+	          Set the log type.
+	          [default: text, choices: text, json]
+	      --profile=<name> ($UNIKRAFT_PROFILE)
+	          Set the current profile.
+	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+	          Toggle anonymous usage analytics.
+	          [default: true]
+
+$ unikraft instance template --help
+
+stdout:
+	Manage instance templates.
+
+	Usage:
+	  unikraft instances template <command>
+
+	Instance templates:
+	  get, inspect, show
+	          Inspect a template.
+	  list, ls
+	          List templates.
+	  delete, rm, remove
+	          Remove a template.
+	  create
+	          Create an instance template.
+	  edit
+	          Edit an instance template.
+
+	Fields:
+	  metro
+	  name
+	  uuid
+	  tags
+	  delete-lock
+	  state
+	  image
+	  runtime, runtime.args, runtime.env
+	  resources, resources.memory, resources.vcpus
+	  volumes, volumes.*
+	  timestamps, timestamps.created
+	  scale-to-zero
+	  restart, restart.policy
+	  instances
+
+	Global flags:
+	  -h, --help
+	          Show context-sensitive help.
+	      --config=<file> ($UNIKRAFT_CONFIG)
+	          Path to the configuration file.
+	      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+	          Set the logging level.
+	          [default: info, choices: trace, debug, info, warn, error, fatal]
+	      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+	          Set the log type.
+	          [default: text, choices: text, json]
+	      --profile=<name> ($UNIKRAFT_PROFILE)
+	          Set the current profile.
+	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+	          Toggle anonymous usage analytics.
+	          [default: true]
+
+$ unikraft instance template get --help
+
+stdout:
+	Inspect a template.
+
+	Usage:
+	  unikraft instances template get [<target> ...] [flags]
+
+	Arguments:
+	  [<target> ...]
+	          Target templates to get.
+
+	Examples:
+	  # Inspect an instance template by name or UUID
+	  unikraft instance template get demo-template
+
+	Fields:
+	  metro
+	  name
+	  uuid
+	  tags
+	  delete-lock
+	  state
+	  image
+	  runtime, runtime.args, runtime.env
+	  resources, resources.memory, resources.vcpus
+	  volumes, volumes.*
+	  timestamps, timestamps.created
+	  scale-to-zero
+	  restart, restart.policy
+	  instances
+
+	Flags:
+	  -w, --watch
+	          Watch for changes and refresh output.
+	  -f, --field
+	          Specify which fields to include in the output.
+	  -o, --output
+	          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+	Global flags:
+	  -h, --help
+	          Show context-sensitive help.
+	      --config=<file> ($UNIKRAFT_CONFIG)
+	          Path to the configuration file.
+	      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+	          Set the logging level.
+	          [default: info, choices: trace, debug, info, warn, error, fatal]
+	      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+	          Set the log type.
+	          [default: text, choices: text, json]
+	      --profile=<name> ($UNIKRAFT_PROFILE)
+	          Set the current profile.
+	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+	          Toggle anonymous usage analytics.
+	          [default: true]
+
+$ unikraft instance template list --help
+
+stdout:
+	List templates.
+
+	Usage:
+	  unikraft instances template list [<target> ...] [flags]
+
+	Arguments:
+	  [<target> ...]
+	          Target templates to list.
+
+	Examples:
+	  # List instance templates across metros
+	  unikraft instance template list
+
+	Fields:
+	  metro
+	  name
+	  uuid
+	  tags
+	  delete-lock
+	  state
+	  image
+	  runtime, runtime.args, runtime.env
+	  resources, resources.memory, resources.vcpus
+	  volumes, volumes.*
+	  timestamps, timestamps.created
+	  scale-to-zero
+	  restart, restart.policy
+	  instances
+
+	Flags:
+	      --filter
+	          Filter output based on a field value (e.g. --filter state==running).
+	  -w, --watch
+	          Watch for changes and refresh output.
+	      --sort
+	          Sort output by field values (e.g. --sort name,-timestamps.created-at). Use - prefix for descending, + for ascending.
+	  -f, --field
+	          Specify which fields to include in the output.
+	  -o, --output
+	          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+	Global flags:
+	  -h, --help
+	          Show context-sensitive help.
+	      --config=<file> ($UNIKRAFT_CONFIG)
+	          Path to the configuration file.
+	      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+	          Set the logging level.
+	          [default: info, choices: trace, debug, info, warn, error, fatal]
+	      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+	          Set the log type.
+	          [default: text, choices: text, json]
+	      --profile=<name> ($UNIKRAFT_PROFILE)
+	          Set the current profile.
+	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+	          Toggle anonymous usage analytics.
+	          [default: true]
+
+$ unikraft instance template create --help
+
+stdout:
+	Create an instance template.
+
+	Usage:
+	  unikraft instances template create [<instance> ...] [flags]
+
+	Arguments:
+	  [<instance> ...]
+	          Instances to convert into templates.
+
+	Examples:
+	  # Convert a stopped instance into a template
+	  unikraft instance template create demo-instance
+
+	Fields:
+	  metro
+	  name
+	  uuid
+	  tags
+	  delete-lock
+	  state
+	  image
+	  runtime, runtime.args, runtime.env
+	  resources, resources.memory, resources.vcpus
+	  volumes, volumes.*
+	  timestamps, timestamps.created
+	  scale-to-zero
+	  restart, restart.policy
+	  instances
+
+	Flags:
+	      --set=<name>=<value>, --set-file=<name>=<filename>
+	          Key-value pairs to set on the template.
+	      --visual
+	          Open an editor to modify fields visually.
+	      --cmd
+	          Run a command to edit fields (receives YAML on stdin, outputs edited YAML on stdout).
+	      --load, --save=<FILE>
+	          Load fields from a YAML file.
+	      --dry-run
+	          Print patches without applying them.
+	  -f, --field
+	          Specify which fields to include in the output.
+	  -o, --output
+	          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+	Global flags:
+	  -h, --help
+	          Show context-sensitive help.
+	      --config=<file> ($UNIKRAFT_CONFIG)
+	          Path to the configuration file.
+	      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+	          Set the logging level.
+	          [default: info, choices: trace, debug, info, warn, error, fatal]
+	      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+	          Set the log type.
+	          [default: text, choices: text, json]
+	      --profile=<name> ($UNIKRAFT_PROFILE)
+	          Set the current profile.
+	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+	          Toggle anonymous usage analytics.
+	          [default: true]
+
+$ unikraft instance template edit --help
+
+stdout:
+	Edit an instance template.
+
+	Usage:
+	  unikraft instances template edit <target> [flags]
+
+	Arguments:
+	  <target>
+	          Target template to edit.
+
+	Examples:
+	  # Update template tags
+	  unikraft instance template edit demo-template --set tags=env-dev
+
+	Fields:
+	  metro
+	  name
+	  uuid
+	  tags
+	  delete-lock
+	  state
+	  image
+	  runtime, runtime.args, runtime.env
+	  resources, resources.memory, resources.vcpus
+	  volumes, volumes.*
+	  timestamps, timestamps.created
+	  scale-to-zero
+	  restart, restart.policy
+	  instances
+
+	Flags:
+	      --set=<name>=<value>, --set-file=<name>=<filename>
+	          Key-value pairs to set on the template.
+	      --add=<name>=<value>, --add-file=<name>=<filename>
+	          Key-value pairs to add to the template.
+	      --del=<name>=<value>, --del-file=<name>=<filename>
+	          Keys to delete from the template.
+	      --visual
+	          Open an editor to modify fields visually.
+	      --cmd
+	          Run a command to edit fields (receives YAML on stdin, outputs edited YAML on stdout).
+	      --load, --save=<FILE>
+	          Load fields from a YAML file.
+	      --dry-run
+	          Print patches without applying them.
+	  -f, --field
+	          Specify which fields to include in the output.
+	  -o, --output
+	          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+	Global flags:
+	  -h, --help
+	          Show context-sensitive help.
+	      --config=<file> ($UNIKRAFT_CONFIG)
+	          Path to the configuration file.
+	      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+	          Set the logging level.
+	          [default: info, choices: trace, debug, info, warn, error, fatal]
+	      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+	          Set the log type.
+	          [default: text, choices: text, json]
+	      --profile=<name> ($UNIKRAFT_PROFILE)
+	          Set the current profile.
+	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+	          Toggle anonymous usage analytics.
+	          [default: true]
+
+	Edit flags:
+	      --tags=<tag>
+	          Template tags.
+	          [examples: env-dev, team-platform]
+	      --delete-lock
+	          Prevent deletion of the template.
+
+$ unikraft instance template delete --help
+
+stdout:
+	Remove a template.
+
+	Usage:
+	  unikraft instances template delete [<target> ...] [flags]
+
+	Arguments:
+	  [<target> ...]
+	          Target templates to remove.
+
+	Examples:
+	  # Delete an instance template
+	  unikraft instance template delete demo-template
+
+	Fields:
+	  metro
+	  name
+	  uuid
+	  tags
+	  delete-lock
+	  state
+	  image
+	  runtime, runtime.args, runtime.env
+	  resources, resources.memory, resources.vcpus
+	  volumes, volumes.*
+	  timestamps, timestamps.created
+	  scale-to-zero
+	  restart, restart.policy
+	  instances
+
+	Flags:
+	      --all
+	          Remove all templates. Prompts for confirmation.
+	      --filter
+	          Filter templates to remove (e.g. --filter state==running). Prompts for confirmation.
 	      --force
 	          Do not prompt for confirmation when using --all or --filter.
 	  -f, --field

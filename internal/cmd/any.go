@@ -64,6 +64,7 @@ func (c *AnyResourceEditCmd) Run(ctx context.Context, stdio config.Stdio, sandbo
 
 var resourceBackends = []resource.Resource{
 	Instance{},
+	InstanceTemplate{},
 	Volume{},
 	ServiceGroup{},
 	Certificate{},

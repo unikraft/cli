@@ -1,0 +1,59 @@
+$ unikraft instance create --output quiet --set name=test-$UNIQ_INST --set metro=test --set image=nginx:latest --set autostart=false --set resources.memory=128 --set resources.vcpus=1
+
+stdout:
+	test/test-<INST>
+
+$ TEMPLATE_NAME=$(unikraft instance template create test-$UNIQ_INST --output 'template={{ .name }}')
+
+$ unikraft instance template list
+
+stdout:
+	METRO  NAME               STATE     IMAGE  ARGS  MEMORY  VCPUS  CREATED
+	test   test-<INST>  template  nginx        128MiB  1      RELATIVE_TIME
+
+$ unikraft instance template inspect $TEMPLATE_NAME
+
+stdout:
+	metro:      test
+	name:       test-<INST>
+	uuid:       12345678-1234-1234-1234-123456789abc
+	state:      template
+	image:      nginx
+	resources:
+	  memory:   128MiB
+	  vcpus:    1
+	timestamps:
+	  created:  RELATIVE_TIME
+
+$ unikraft instance template edit $TEMPLATE_NAME --set tags=env-dev
+
+stdout:
+	  metro:      test
+	  name:       test-<INST>
+	  uuid:       12345678-1234-1234-1234-123456789abc
+	  state:      template
+	  image:      nginx
+	  resources:
+	    memory:   128MiB
+	    vcpus:    1
+	  timestamps:
+	    created:  RELATIVE_TIME
+
+$ unikraft instance template inspect $TEMPLATE_NAME
+
+stdout:
+	metro:      test
+	name:       test-<INST>
+	uuid:       12345678-1234-1234-1234-123456789abc
+	state:      template
+	image:      nginx
+	resources:
+	  memory:   128MiB
+	  vcpus:    1
+	timestamps:
+	  created:  RELATIVE_TIME
+
+$ unikraft instance template delete $TEMPLATE_NAME
+
+stdout:
+	test-<INST>

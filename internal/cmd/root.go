@@ -127,6 +127,7 @@ func NewRootCmd(ctx context.Context, args []string, stdio config.Stdio) (context
 		kongcompletion.WithPredictor("resource-key-profile", cmd.PredictResourceKey[Profile](ctx)),
 		kongcompletion.WithPredictor("resource-key-metro", cmd.PredictResourceKey[Metro](ctx)),
 		kongcompletion.WithPredictor("resource-key-instance", cmd.PredictResourceKey[Instance](ctx)),
+		kongcompletion.WithPredictor("resource-key-template", cmd.PredictResourceKey[InstanceTemplate](ctx)),
 		kongcompletion.WithPredictor("resource-key-volume", cmd.PredictResourceKey[Volume](ctx)),
 		kongcompletion.WithPredictor("resource-key-service", cmd.PredictResourceKey[ServiceGroup](ctx)),
 		kongcompletion.WithPredictor("resource-key-certificate", cmd.PredictResourceKey[Certificate](ctx)),
@@ -333,6 +334,10 @@ func NewParser(cli *UnikraftCLI) (*kong.Kong, error) {
 				Title: kingkong.Underline("Resources") + ":",
 			},
 			{
+				Key:   "cmd-instance-templates",
+				Title: kingkong.Underline("Instance templates") + ":",
+			},
+			{
 				Key:   "cmd-config",
 				Title: kingkong.Underline("Config") + ":",
 			},
@@ -347,6 +352,7 @@ func NewParser(cli *UnikraftCLI) (*kong.Kong, error) {
 
 var SandboxedResources = []resource.Resource{
 	Instance{},
+	InstanceTemplate{},
 	Volume{},
 	ServiceGroup{},
 	Certificate{},
