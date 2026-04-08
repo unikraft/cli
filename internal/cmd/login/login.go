@@ -91,9 +91,20 @@ func (cmd *LoginCmd) Run(ctx context.Context, cfg *config.Config) error {
 		token = *resp.Data.Token
 		organization = cmp.Or(ptr.ZeroIfNil(resp.Data.OrganizationName), cmd.Organization)
 	}
+	tempProfile.Token = token
 
 	if organization == "" {
-		return jujuerrors.New("no organization provided or received from control plane")
+		var err error
+		organization, err = cmd.getOrg(ctx, tempProfile)
+		if err != nil {
+			log.G(ctx).Error().
+				Msg("could not determine organization from control plane, specify organization with --organization flag")
+			return err
+		} else {
+			log.G(ctx).Info().
+				Str("organization", organization).
+				Msg("found organization from control plane")
+		}
 	}
 
 	// Log the organization we're logging into
@@ -208,10 +219,12 @@ func (cmd *LoginCmd) generateUniqueProfileName(cfg *config.Config, organization 
 	}
 }
 
-func (cmd *LoginCmd) getMetros(ctx context.Context, profile *config.Profile) ([]config.Metro, error) {
+func (cmd *LoginCmd) client(profile *config.Profile) controlplane.Client {
 	copts := []controlplane.ClientOption{
 		controlplane.WithDefaultEndpoint(profile.ControlPlane),
-		controlplane.WithToken(profile.Token),
+	}
+	if profile.Token != "" {
+		copts = append(copts, controlplane.WithToken(profile.Token))
 	}
 	if cmd.AllowInsecure {
 		copts = append(copts, controlplane.WithHTTPClient(httpclient.InsecureHTTPClient))
@@ -219,6 +232,11 @@ func (cmd *LoginCmd) getMetros(ctx context.Context, profile *config.Profile) ([]
 		copts = append(copts, controlplane.WithHTTPClient(httpclient.DefaultHTTPClient))
 	}
 	client := controlplane.NewClient(copts...)
+	return client
+}
+
+func (cmd *LoginCmd) getMetros(ctx context.Context, profile *config.Profile) ([]config.Metro, error) {
+	client := cmd.client(profile)
 
 	metroResp, err := client.ListMetros(ctx)
 	if err != nil {
@@ -240,15 +258,7 @@ func (cmd *LoginCmd) getMetros(ctx context.Context, profile *config.Profile) ([]
 }
 
 func (cmd *LoginCmd) getAuth(ctx context.Context, profile *config.Profile) (*controlplane.Response[controlplane.CheckAuthorizationResponseData], error) {
-	copts := []controlplane.ClientOption{
-		controlplane.WithDefaultEndpoint(profile.ControlPlane),
-	}
-	if cmd.AllowInsecure {
-		copts = append(copts, controlplane.WithHTTPClient(httpclient.InsecureHTTPClient))
-	} else {
-		copts = append(copts, controlplane.WithHTTPClient(httpclient.DefaultHTTPClient))
-	}
-	client := controlplane.NewClient(copts...)
+	client := cmd.client(profile)
 
 	req, err := getFingerprint()
 	if err != nil {
@@ -329,4 +339,17 @@ func (cmd *LoginCmd) getAuth(ctx context.Context, profile *config.Profile) (*con
 	}
 
 	return event, nil
+}
+
+func (cmd *LoginCmd) getOrg(ctx context.Context, profile *config.Profile) (string, error) {
+	client := cmd.client(profile)
+
+	resp, err := client.GetAuthorization(ctx)
+	if err != nil {
+		return "", jujuerrors.Annotate(err, "getting authorization")
+	}
+	if resp.Data == nil || resp.Data.OrganizationName == nil {
+		return "", jujuerrors.New("no organization name received from control plane")
+	}
+	return *resp.Data.OrganizationName, nil
 }
