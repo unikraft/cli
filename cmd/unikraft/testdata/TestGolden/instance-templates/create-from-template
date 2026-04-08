@@ -1,0 +1,47 @@
+$ unikraft instance create --output quiet --set name=test-base-$UNIQ_INST --set metro=test --set image=nginx:latest --set autostart=false --set resources.memory=128 --set resources.vcpus=1
+
+stdout:
+	test/test-base-<INST>
+
+$ TEMPLATE_NAME=$(unikraft instance template create test-base-$UNIQ_INST --output 'template={{ .name }}')
+
+$ unikraft instance create --set name=<SERVICE_NAME>-$UNIQ_INST --set metro=test --set template=$TEMPLATE_NAME
+
+stdout:
+	metro:        test
+	name:         <SERVICE_NAME>-<INST>
+	uuid:         12345678-1234-1234-1234-123456789abc
+	state:        stopped
+	image:        nginx
+	resources:
+	  memory:     128MiB
+	  vcpus:      1
+	networks:
+	- uuid:       12345678-1234-1234-1234-123456789abc
+	  private-ip: 10.X.X.X
+	  mac:        aa:bb:cc:dd:ee:ff
+	timestamps:
+	  created:    RELATIVE_TIME
+
+$ unikraft instance inspect <SERVICE_NAME>-$UNIQ_INST
+
+stdout:
+	metro:        test
+	name:         <SERVICE_NAME>-<INST>
+	uuid:         12345678-1234-1234-1234-123456789abc
+	state:        stopped
+	image:        nginx
+	resources:
+	  memory:     128MiB
+	  vcpus:      1
+	networks:
+	- uuid:       12345678-1234-1234-1234-123456789abc
+	  private-ip: 10.X.X.X
+	  mac:        aa:bb:cc:dd:ee:ff
+	timestamps:
+	  created:    RELATIVE_TIME
+
+$ unikraft instance template delete $TEMPLATE_NAME
+
+stdout:
+	test-base-<INST>

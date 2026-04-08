@@ -44,8 +44,9 @@ type InstancesCmd struct {
 	cmd.ListableResourceCmd[Instance]
 	cmd.BulkDeletableResourceCmd[Instance]
 
-	Create InstanceCreateCmd `cmd:"" help:"Create an instance."`
-	Edit   InstanceEditCmd   `cmd:"" help:"Edit an instance."`
+	Create   InstanceCreateCmd    `cmd:"" help:"Create an instance."`
+	Edit     InstanceEditCmd      `cmd:"" help:"Edit an instance."`
+	Template InstanceTemplatesCmd `cmd:"" group:"cmd-templates" help:"Manage instance templates." aliases:"templates" set:"name=instance-template" set:"names=instance-templates"`
 
 	Logs    InstancesLogsCmd    `cmd:"" help:"Fetch and display instance logs."`
 	Start   InstancesStartCmd   `cmd:"" help:"Start one or more instances."`
@@ -86,6 +87,7 @@ type InstanceCreateCmd struct {
 	Autostart *bool    `group:"flag-create" shortcut:"autostart" help:"Start instance automatically."`
 	Replicas  int64    `group:"flag-create" shortcut:"replicas" help:"Number of replicas." placeholder:"n" example:"1,3"`
 	Features  []string `group:"flag-create" shortcut:"features" help:"Instance features." placeholder:"feature"`
+	Template  string   `group:"flag-create" shortcut:"template" help:"Create from instance template." placeholder:"name"`
 }
 
 func (c *InstanceCreateCmd) Run(ctx context.Context, stdio config.Stdio, sandbox *resource.Sandbox, kctx *kong.Context) error {
@@ -130,7 +132,7 @@ type Instance struct {
 
 	State types.InstanceState `mirror:"instance.state" field:",short" edit:"set"`
 
-	Image types.ImageRef[reference.Named] `mirror:"instance.image" field:",short" create:"set,required" edit:"set"`
+	Image types.ImageRef[reference.Named] `mirror:"instance.image" field:",short" create:"set" edit:"set"`
 
 	Runtime struct {
 		Args []string          `mirror:"instance.args" field:",short" create:"set" edit:"set"`
@@ -176,6 +178,7 @@ type Instance struct {
 	WaitTimeout types.DurationS `field:"wait-timeout,invisible,valueless" create:"set"`
 	Features    []string        `field:"features,invisible,valueless" create:"set"`
 	Vsock       bool            `field:"vsock,invisible,valueless" create:"set" edit:"set"`
+	Template    string          `field:"template,invisible,valueless" create:"set"`
 
 	Stop struct {
 		Reason string     `field:",long"`
@@ -595,13 +598,13 @@ func (Instance) Delete(ctx context.Context, targets []resource.Resource) error {
 	}
 	return group.DoRefs(ctx, g, keys.Refs(), func(ctx context.Context, c multimetro.MetroClient, refs group.Refs) (group.Refs, error) {
 		log.G(ctx).Trace().Msg("deleting instances")
-		reqs := make([]platform.DeleteInstanceRequestItem, 0, len(refs))
-		for _, ref := range refs.NameOrUUIDs() {
-			reqs = append(reqs, platform.DeleteInstanceRequestItem{
-				Name:     ref.Name,
+		reqs := make([]platform.DeleteInstanceRequestItem, len(refs))
+		for i, ref := range refs.NameOrUUIDs() {
+			reqs[i] = platform.DeleteInstanceRequestItem{
 				Uuid:     ref.Uuid,
+				Name:     ref.Name,
 				TimeoutS: new(int64(-1)),
-			})
+			}
 		}
 		instances, err := c.DeleteInstances(ctx, reqs)
 		if err != nil && !platform.ErrorContainsOnly(err, platform.APIHTTPErrorNotFound) {
@@ -861,7 +864,23 @@ func (Instance) Create(ctx context.Context, fields []resource.Field) ([]resource
 				req.AdditionalProperties = make(map[string]json.RawMessage)
 			}
 			req.AdditionalProperties["vsock"] = dt
+		case "template":
+			template := field.Create.Set.(string)
+			key := multimetro.ParseKey(template)
+			req.Template = &platform.CreateInstanceRequestTemplate{}
+			if key.UUID != "" {
+				req.Template.Uuid = &key.UUID
+			} else if key.Name != "" {
+				req.Template.Name = &key.Name
+			} else {
+				req.Template.Name = &template
+			}
 		}
+	}
+
+	// Validate that either image or template is provided
+	if req.Image == nil && req.Template == nil {
+		return nil, fmt.Errorf("either --image or --template must be specified")
 	}
 
 	g, err := multimetro.NewClient(ctx)
@@ -930,6 +949,15 @@ func (Instance) Examples() map[cmd.CmdType][]kingkong.Example {
 	  --autostart \
 	  --memory 128 \
 	  --vcpus 1`,
+				},
+			},
+			{
+				Description: "Create an instance from a template",
+				Commands: []string{
+					`unikraft instance create \
+	  --name new-instance \
+	  --metro fra \
+	  --template my-template`,
 				},
 			},
 		},
