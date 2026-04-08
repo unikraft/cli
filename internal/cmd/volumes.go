@@ -116,7 +116,7 @@ func (c *VolumesCloneCmd) Run(ctx context.Context, stdio config.Stdio, sandbox *
 	if err := c.Apply(&spec); err != nil {
 		return err
 	}
-	req := platform.CloneVolumesRequest{}
+	req := platform.CloneVolumesRequestItem{}
 	var unknownFields []string
 	for key, values := range spec.Set {
 		switch key {
@@ -180,7 +180,7 @@ func (c *VolumesCloneCmd) Run(ctx context.Context, stdio config.Stdio, sandbox *
 	}
 	keys, opErr := group.CollectMetro(ctx, g, volume.Metro.Name, func(ctx context.Context, client multimetro.MetroClient) (multimetro.Keys, error) {
 		log.G(ctx).Trace().Msg("cloning volume")
-		resp, err := client.CloneVolumes(ctx, req)
+		resp, err := client.CloneVolumes(ctx, []platform.CloneVolumesRequestItem{req})
 		if err != nil {
 			return nil, err
 		}
@@ -331,7 +331,7 @@ func (Volume) List(ctx context.Context) ([]resource.Resource, error) {
 	}
 	return group.CollectAllSlices(ctx, g, func(ctx context.Context, c multimetro.MetroClient) ([]resource.Resource, error) {
 		log.G(ctx).Trace().Msg("listing volumes")
-		resp, err := c.GetVolumes(ctx, nil, new(true))
+		resp, err := c.GetVolumes(ctx, nil, platform.GetVolumesOpts{Details: new(true)})
 		if err != nil {
 			return nil, err
 		}
@@ -356,7 +356,7 @@ func (Volume) Get(ctx context.Context, keys []string) ([]resource.Resource, erro
 
 	return group.CollectRefsSlices(ctx, g, multimetro.ParseKeys(keys).Refs(), func(ctx context.Context, c multimetro.MetroClient, refs group.Refs) ([]resource.Resource, group.Refs, error) {
 		log.G(ctx).Trace().Msg("getting volumes")
-		resp, err := c.GetVolumes(ctx, refs.NameOrUUIDs(), new(true))
+		resp, err := c.GetVolumes(ctx, refs.NameOrUUIDs(), platform.GetVolumesOpts{Details: new(true)})
 		if err != nil && !platform.ErrorContainsOnly(err, platform.APIHTTPErrorNotFound) {
 			return nil, nil, err
 		}
@@ -453,7 +453,8 @@ func (Volume) Create(ctx context.Context, fields []resource.Field) ([]resource.R
 				metro = field.Create.Set.(string)
 			case "size":
 				size := field.Create.Set.(types.SizeMebibytes)
-				req.SizeMb = uint64(size)
+				sizeMb := uint64(size)
+				req.SizeMb = &sizeMb
 			case "filesystem":
 				filesystem := field.Create.Set.(string)
 				if filesystem != "" {

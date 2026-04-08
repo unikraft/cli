@@ -129,7 +129,7 @@ func (Certificate) List(ctx context.Context) ([]resource.Resource, error) {
 	}
 	return group.CollectAllSlices(ctx, g, func(ctx context.Context, c multimetro.MetroClient) ([]resource.Resource, error) {
 		log.G(ctx).Trace().Msg("listing certificates")
-		resp, err := c.GetCertificates(ctx, nil, new(true))
+		resp, err := c.GetCertificates(ctx, nil, platform.GetCertificatesOpts{Details: new(true)})
 		if err != nil {
 			return nil, err
 		}
@@ -153,7 +153,7 @@ func (Certificate) Get(ctx context.Context, keys []string) ([]resource.Resource,
 	}
 	return group.CollectRefsSlices(ctx, g, multimetro.ParseKeys(keys).Refs(), func(ctx context.Context, c multimetro.MetroClient, refs group.Refs) ([]resource.Resource, group.Refs, error) {
 		log.G(ctx).Trace().Msg("getting certificates")
-		resp, err := c.GetCertificates(ctx, refs.NameOrUUIDs(), new(true))
+		resp, err := c.GetCertificates(ctx, refs.NameOrUUIDs(), platform.GetCertificatesOpts{Details: new(true)})
 		if err != nil && !platform.ErrorContainsOnly(err, platform.APIHTTPErrorNotFound) {
 			return nil, nil, err
 		}
@@ -246,7 +246,7 @@ func (Certificate) Create(ctx context.Context, fields []resource.Field) ([]resou
 			case "metro":
 				metro = field.Create.Set.(string)
 			case "cn":
-				req.Cn = field.Create.Set.(string)
+				req.Cn = new(field.Create.Set.(string)) //nolint:staticcheck // CommonName not on stable yet
 			case "chain":
 				req.Chain = field.Create.Set.(string)
 			case "pkey":

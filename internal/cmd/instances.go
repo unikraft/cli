@@ -469,7 +469,7 @@ func (Instance) List(ctx context.Context) ([]resource.Resource, error) {
 	}
 	return group.CollectAllSlices(ctx, g, func(ctx context.Context, c multimetro.MetroClient) ([]resource.Resource, error) {
 		log.G(ctx).Trace().Msg("listing instances")
-		resp, err := c.GetInstances(ctx, nil, new(true))
+		resp, err := c.GetInstances(ctx, nil, platform.GetInstancesOpts{Details: new(true)})
 		if err != nil {
 			return nil, err
 		}
@@ -497,7 +497,7 @@ func (Instance) Get(ctx context.Context, keys []string) ([]resource.Resource, er
 	}
 	return group.CollectRefsSlices(ctx, g, multimetro.ParseKeys(keys).Refs(), func(ctx context.Context, c multimetro.MetroClient, refs group.Refs) ([]resource.Resource, group.Refs, error) {
 		log.G(ctx).Trace().Msg("getting instances")
-		resp, err := c.GetInstances(ctx, refs.NameOrUUIDs(), new(true))
+		resp, err := c.GetInstances(ctx, refs.NameOrUUIDs(), platform.GetInstancesOpts{Details: new(true)})
 		if err != nil && !platform.ErrorContainsOnly(err, platform.APIHTTPErrorNotFound) {
 			return nil, nil, err
 		}
@@ -570,7 +570,7 @@ func (Instance) Delete(ctx context.Context, targets []resource.Resource) error {
 	}
 	return group.DoRefs(ctx, g, keys.Refs(), func(ctx context.Context, c multimetro.MetroClient, refs group.Refs) (group.Refs, error) {
 		log.G(ctx).Trace().Msg("deleting instances")
-		instances, err := c.DeleteInstances(ctx, refs.NameOrUUIDs())
+		instances, err := c.DeleteInstances(ctx, refs.NameOrUUIDs(), platform.DeleteInstancesOpts{})
 		if err != nil && !platform.ErrorContainsOnly(err, platform.APIHTTPErrorNotFound) {
 			return nil, err
 		}
@@ -741,7 +741,7 @@ func (Instance) Create(ctx context.Context, fields []resource.Field) ([]resource
 					reqVol.Name = &vol.Name
 				}
 				if vol.Size > 0 {
-					reqVol.SizeMb = new(int64(vol.Size))
+					reqVol.SizeMb = new(uint64(vol.Size))
 				}
 				if vol.Readonly {
 					reqVol.Readonly = &vol.Readonly
@@ -1240,7 +1240,14 @@ func (args *StopOpts) toReq(nameOrUUID platform.NameOrUUID) platform.StopInstanc
 func startInstances(ctx context.Context, g *group.Group[multimetro.MetroClient], keys multimetro.Keys) (multimetro.Keys, error) {
 	started, err := group.CollectRefsSlices(ctx, g, keys.Refs(), func(ctx context.Context, c multimetro.MetroClient, refs group.Refs) ([]multimetro.Key, group.Refs, error) {
 		log.G(ctx).Trace().Msg("starting instances")
-		resp, err := c.StartInstances(ctx, refs.NameOrUUIDs())
+		reqs := make([]platform.StartInstancesRequestItem, 0, len(refs))
+		for _, ref := range refs.NameOrUUIDs() {
+			reqs = append(reqs, platform.StartInstancesRequestItem{
+				Name: ref.Name,
+				Uuid: ref.Uuid,
+			})
+		}
+		resp, err := c.StartInstances(ctx, reqs)
 		if err != nil && !platform.ErrorContainsOnly(err, platform.APIHTTPErrorNotFound) {
 			return nil, nil, err
 		}

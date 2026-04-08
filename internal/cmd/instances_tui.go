@@ -63,7 +63,7 @@ func instanceClient(ctx context.Context, ref group.Ref) (platform.Client, error)
 		if len(refs) == 0 {
 			return nil, nil, nil
 		}
-		resp, err := c.GetInstances(ctx, refs.NameOrUUIDs(), new(false))
+		resp, err := c.GetInstances(ctx, refs.NameOrUUIDs(), platform.GetInstancesOpts{Details: new(false)})
 		if err != nil {
 			// Treat errors as "not found" so other metros can still succeed.
 			return nil, nil, nil
