@@ -166,6 +166,17 @@ func (cmd *LoginCmd) Run(ctx context.Context, cfg *config.Config) error {
 // if a profile with the same name already exists but for a different
 // organization.
 func (cmd *LoginCmd) findOrCreateProfile(cfg *config.Config, organization, loginControlPlane string) (*config.Profile, error) {
+	// If we've explicitly specified a profile name, use that
+	if name, ok := cfg.OverriddenCurrentProfile(); ok {
+		if profile, ok := cfg.Profiles[name]; ok {
+			return &profile, nil
+		}
+		return &config.Profile{
+			Type: config.ProfileTypeCloud,
+			Name: name,
+		}, nil
+	}
+
 	// Search existing profiles for one with matching organization and controlplane
 	for name, profile := range cfg.Profiles {
 		if profile.Organization == organization && profile.ControlPlane == loginControlPlane {

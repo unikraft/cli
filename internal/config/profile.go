@@ -208,3 +208,13 @@ func (config *Config) CurrentProfileName() string {
 func (config *Config) OverrideCurrentProfile(name string) {
 	config.selectedProfile = name
 }
+
+func (config *Config) OverriddenCurrentProfile() (string, bool) {
+	if config == nil {
+		return "", false
+	}
+	if config.selectedProfile == "" {
+		return "", false
+	}
+	return config.selectedProfile, true
+}
