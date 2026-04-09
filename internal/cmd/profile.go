@@ -8,12 +8,14 @@ package cmd
 import (
 	"cmp"
 	"context"
+	"maps"
 	"slices"
 
 	jujuerrors "github.com/juju/errors"
 	"unikraft.com/cli/internal/config"
 	"unikraft.com/cli/internal/resource"
 	"unikraft.com/cli/internal/resource/cmd"
+	"unikraft.com/cli/internal/tui/selector"
 	"unikraft.com/x/kingkong"
 	"unikraft.com/x/log"
 )
@@ -98,22 +100,32 @@ func (Profile) Examples() map[cmd.CmdType][]kingkong.Example {
 }
 
 type UseCmd struct {
-	Name string `arg:"" help:"Target profile to switch to."`
+	Name string `arg:"" optional:"" help:"Target profile to switch to."`
 }
 
 func (cmd *UseCmd) Run(ctx context.Context, cfg *config.Config) error {
-	_, ok := cfg.Profiles[cmd.Name]
-	if !ok {
-		return config.ErrProfileNotFound{Name: cmd.Name}
+	name := cmd.Name
+
+	if name == "" {
+		selected, err := selector.SingleWithDefault("select a profile", cfg.DefaultProfile, slices.Sorted(maps.Keys(cfg.Profiles))...)
+		if err != nil {
+			return jujuerrors.Annotate(err, "selecting profile")
+		}
+		name = string(selected)
 	}
-	cfg.DefaultProfile = cmd.Name
+
+	if _, ok := cfg.Profiles[name]; !ok {
+		return config.ErrProfileNotFound{Name: name}
+	}
+	cfg.DefaultProfile = name
 
 	if err := cfg.Save(); err != nil {
 		return jujuerrors.Annotate(err, "saving profile")
 	}
 
-	log.G(ctx).Info().
-		Str("profile", cmd.Name).
-		Msg("switched profile")
+	log.G(ctx).
+		Info().
+		Str("profile", name).
+		Msg("using")
 	return nil
 }

@@ -206,10 +206,10 @@ stdout:
 	Switch between profiles.
 
 	Usage:
-	  unikraft profile use <name>
+	  unikraft profile use [<name>]
 
 	Arguments:
-	  <name>
+	  [<name>]
 	          Target profile to switch to.
 
 	Global flags:
