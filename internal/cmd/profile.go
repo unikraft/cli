@@ -9,11 +9,13 @@ import (
 	"cmp"
 	"context"
 	"slices"
+	"sort"
 
 	jujuerrors "github.com/juju/errors"
 	"unikraft.com/cli/internal/config"
 	"unikraft.com/cli/internal/resource"
 	"unikraft.com/cli/internal/resource/cmd"
+	"unikraft.com/cli/internal/tui/selector"
 	"unikraft.com/x/kingkong"
 	"unikraft.com/x/log"
 )
@@ -98,22 +100,42 @@ func (Profile) Examples() map[cmd.CmdType][]kingkong.Example {
 }
 
 type UseCmd struct {
-	Name string `arg:"" help:"Target profile to switch to."`
+	Name string `arg:"" optional:"" help:"Target profile to switch to."`
 }
 
+// profileName is a simple wrapper to satisfy fmt.Stringer for the single selector.
+type profileName string
+
+func (p profileName) String() string { return string(p) }
+
 func (cmd *UseCmd) Run(ctx context.Context, cfg *config.Config) error {
-	_, ok := cfg.Profiles[cmd.Name]
-	if !ok {
-		return config.ErrProfileNotFound{Name: cmd.Name}
+	name := cmd.Name
+
+	if name == "" {
+		names := make([]profileName, 0, len(cfg.Profiles))
+		for k := range cfg.Profiles {
+			names = append(names, profileName(k))
+		}
+		sort.Slice(names, func(i, j int) bool { return names[i] < names[j] })
+
+		selected, err := selector.Single("Select a profile", names...)
+		if err != nil {
+			return jujuerrors.Annotate(err, "selecting profile")
+		}
+		name = string(selected)
 	}
-	cfg.DefaultProfile = cmd.Name
+
+	if _, ok := cfg.Profiles[name]; !ok {
+		return config.ErrProfileNotFound{Name: name}
+	}
+	cfg.DefaultProfile = name
 
 	if err := cfg.Save(); err != nil {
 		return jujuerrors.Annotate(err, "saving profile")
 	}
 
 	log.G(ctx).Info().
-		Str("profile", cmd.Name).
-		Msg("switched profile")
+		Str("profile", name).
+		Msg("switched")
 	return nil
 }
