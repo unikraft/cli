@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"os"
 	"slices"
-	"time"
 
 	"unikraft.com/cloud/sdk/platform/group"
 	"unikraft.com/x/log"
@@ -132,10 +131,6 @@ func (s *Sandbox) Teardown(ctx context.Context) (rerr error) {
 		if len(targets) == 0 {
 			continue
 		}
-
-		// HACK: this is awful, but the platform can take a moment for things to
-		// get ready :(
-		time.Sleep(500 * time.Millisecond)
 
 		resources, err := r.Get(ctx, targets)
 		if err != nil {

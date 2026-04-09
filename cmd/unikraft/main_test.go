@@ -212,12 +212,6 @@ func (b *testBuilder) run(t *testing.T, commands []command) {
 		cmd.Env = append(cmd.Env, "BUILDKIT_PROGRESS=quiet")
 		cmd.Env = append(cmd.Env, resource.UnikraftSandboxEnv+"="+sandboxPath)
 
-		if i > 0 {
-			// HACK: this is awful, but the platform can take a moment for things to
-			// get ready :(
-			time.Sleep(500 * time.Millisecond)
-		}
-
 		err := cmd.Run()
 		if command.captureEnv != "" {
 			value := strings.TrimSpace(stdout.String())
