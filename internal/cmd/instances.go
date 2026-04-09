@@ -593,7 +593,9 @@ func (Instance) Delete(ctx context.Context, targets []resource.Resource) error {
 	}
 	return group.DoRefs(ctx, g, keys.Refs(), func(ctx context.Context, c multimetro.MetroClient, refs group.Refs) (group.Refs, error) {
 		log.G(ctx).Trace().Msg("deleting instances")
-		instances, err := c.DeleteInstances(ctx, refs.NameOrUUIDs(), platform.DeleteInstancesOpts{})
+		instances, err := c.DeleteInstances(ctx, refs.NameOrUUIDs(), platform.DeleteInstancesOpts{
+			TimeoutS: new(int32(-1)),
+		})
 		if err != nil && !platform.ErrorContainsOnly(err, platform.APIHTTPErrorNotFound) {
 			return nil, err
 		}
