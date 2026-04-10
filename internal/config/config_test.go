@@ -142,3 +142,66 @@ profiles:
 	assert.NotContains(t, content, "metros")
 	assert.Contains(t, content, "type: legacy")
 }
+
+func TestProfile_GetDefaultMetro(t *testing.T) {
+	tests := []struct {
+		name     string
+		profile  Profile
+		expected string
+	}{
+		{
+			name: "explicit default metro",
+			profile: Profile{
+				DefaultMetro: "fra",
+				Metros: []Metro{
+					{Name: "lhr"},
+					{Name: "fra"},
+				},
+			},
+			expected: "fra",
+		},
+		{
+			name: "single configured metro",
+			profile: Profile{
+				Metros: []Metro{
+					{Name: "lhr"},
+				},
+			},
+			expected: "lhr",
+		},
+		{
+			name: "multiple metros without explicit default",
+			profile: Profile{
+				Metros: []Metro{
+					{Name: "lhr"},
+					{Name: "fra"},
+				},
+			},
+			expected: "",
+		},
+		{
+			name:     "no metros",
+			profile:  Profile{},
+			expected: "",
+		},
+		{
+			name: "explicit default takes precedence over single metro",
+			profile: Profile{
+				DefaultMetro: "fra",
+				Metros: []Metro{
+					{Name: "lhr"},
+				},
+			},
+			expected: "fra",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.profile.GetDefaultMetro()
+			if got != tt.expected {
+				t.Errorf("GetDefaultMetro() = %q, want %q", got, tt.expected)
+			}
+		})
+	}
+}

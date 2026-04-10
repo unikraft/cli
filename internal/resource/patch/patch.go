@@ -82,6 +82,10 @@ func PatchedFields(fields []resource.Field, spec PatchSpec) ([]resource.Field, e
 			} else {
 				setForbiddenFields[keyStr] = struct{}{}
 			}
+		} else if spec.Create && original.Set != nil && !value.IsZero(original.Set) {
+			// In create mode, preserve non-zero default value when user doesn't override.
+			// In edit mode, only generate patches for explicitly requested fields.
+			*patch = &resource.Patch{Set: original.Set}
 		}
 		if vs, ok := spec.Add[keyStr]; ok {
 			if original.Add != nil {

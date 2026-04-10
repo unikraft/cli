@@ -218,3 +218,11 @@ func compareReflect(a, b any) (int, bool) {
 
 	return 0, false
 }
+
+// IsZero reports whether v is a zero value for its type.
+func IsZero(v any) bool {
+	if v == nil {
+		return true
+	}
+	return reflect.ValueOf(v).IsZero()
+}

@@ -18,6 +18,7 @@ import (
 
 	"unikraft.com/cli/internal/config"
 	"unikraft.com/cli/internal/resource"
+	"unikraft.com/cli/internal/resource/value"
 )
 
 // EditorFunc is a callback that takes input YAML content and returns edited content.
@@ -226,8 +227,16 @@ func loadFieldPatches(fields []resource.Field, data []byte, create bool) ([]reso
 		deleteNestedValue(obj, key)
 
 		if !found {
-			// Field not in YAML - clear the patch
-			patch.Set = nil
+			// Field not in YAML
+			if create {
+				// Create mode: preserve non-zero defaults
+				if value.IsZero(patch.Set) {
+					patch.Set = nil
+				}
+			} else {
+				// Edit mode: user explicitly removed the field, clear the patch
+				patch.Set = nil
+			}
 			continue
 		}
 
@@ -240,9 +249,19 @@ func loadFieldPatches(fields []resource.Field, data []byte, create bool) ([]reso
 		if originalValue := field.Value; originalValue != nil {
 			convertedOriginal, err := convertValue(originalValue, reflect.TypeOf(patch.Set))
 			if err == nil && reflect.DeepEqual(convertedOriginal, convertedValue) {
-				// Value is same as original - no patch needed
-				patch.Set = nil
-				continue
+				if !create {
+					// Edit mode: unchanged value means no patch
+					patch.Set = nil
+					continue
+				}
+
+				// Create mode: only preserve patch if the unchanged value is non-zero.
+				// If the value is still the type's zero value (e.g. empty string),
+				// clear the patch so required validation still treats it as missing.
+				if value.IsZero(convertedValue) {
+					patch.Set = nil
+					continue
+				}
 			}
 		}
 

@@ -103,6 +103,12 @@ func (c Certificate) Raw() any {
 }
 
 func (c Certificate) Fields(ctx context.Context) ([]resource.Field, error) {
+	// Set default metro if not already set (for create templates)
+	if c.MetroName == "" {
+		if profile, err := config.G(ctx).CurrentProfile(); err == nil {
+			c.MetroName = profile.GetDefaultMetro()
+		}
+	}
 	result, err := resource.FieldsFromStruct(c)
 	if err != nil {
 		return nil, err

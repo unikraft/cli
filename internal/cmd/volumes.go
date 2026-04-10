@@ -272,6 +272,12 @@ func (i Volume) Raw() any {
 }
 
 func (i Volume) Fields(ctx context.Context) ([]resource.Field, error) {
+	// Set default metro if not already set (for create templates)
+	if i.MetroName == "" {
+		if profile, err := config.G(ctx).CurrentProfile(); err == nil {
+			i.MetroName = profile.GetDefaultMetro()
+		}
+	}
 	result, err := resource.FieldsFromStruct(i)
 	if err != nil {
 		return nil, err

@@ -842,13 +842,13 @@ func (cmd *ResourceCreateCmd[R]) RunResources(ctx context.Context, stdio config.
 
 	patchedFields := patch.FilterCreateFields(patched)
 
-	if cmd.DryRun {
-		return nil, PrintPatches(stdio.Stdout, patchedFields, true)
-	}
-
-	// Validate required fields right before applying
+	// Validate required fields before printing/applying
 	if err := patch.ValidateRequired(fields, patched, true); err != nil {
 		return nil, err
+	}
+
+	if cmd.DryRun {
+		return nil, PrintPatches(stdio.Stdout, patchedFields, true)
 	}
 
 	resources, opErr := r.Create(ctx, patchedFields)

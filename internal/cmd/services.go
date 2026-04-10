@@ -256,6 +256,12 @@ func (s ServiceGroup) Raw() any {
 }
 
 func (s ServiceGroup) Fields(ctx context.Context) ([]resource.Field, error) {
+	// Set default metro if not already set (for create templates)
+	if s.MetroName == "" {
+		if profile, err := config.G(ctx).CurrentProfile(); err == nil {
+			s.MetroName = profile.GetDefaultMetro()
+		}
+	}
 	result, err := resource.FieldsFromStruct(s)
 	if err != nil {
 		return nil, err
