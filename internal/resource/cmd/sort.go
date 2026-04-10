@@ -74,7 +74,7 @@ func sortResources(ctx context.Context, resources []resource.Resource, specs []S
 	}
 
 	// Validate all sort paths up-front against the resource's field schema.
-	schemaFields, err := resources[0].Fields()
+	schemaFields, err := resources[0].Fields(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get fields for validation: %w", err)
 	}
@@ -107,7 +107,7 @@ func sortResources(ctx context.Context, resources []resource.Resource, specs []S
 		items[i].res = res
 		items[i].values = make([]any, len(specs))
 
-		fields, err := res.Fields()
+		fields, err := res.Fields(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get fields for resource %s: %w", res.Key(), err)
 		}

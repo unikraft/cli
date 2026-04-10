@@ -102,7 +102,7 @@ func (c Certificate) Raw() any {
 	return c.Certificate
 }
 
-func (c Certificate) Fields() ([]resource.Field, error) {
+func (c Certificate) Fields(ctx context.Context) ([]resource.Field, error) {
 	result, err := resource.FieldsFromStruct(c)
 	if err != nil {
 		return nil, err

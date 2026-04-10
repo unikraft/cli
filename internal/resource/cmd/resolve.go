@@ -17,7 +17,7 @@ type resolvedResource struct {
 	fields []resource.Field
 }
 
-func (r resolvedResource) Fields() ([]resource.Field, error) {
+func (r resolvedResource) Fields(ctx context.Context) ([]resource.Field, error) {
 	return resource.CloneFields(r.fields), nil
 }
 
@@ -45,7 +45,7 @@ func resolveResources(ctx context.Context, resources []resource.Resource, paths 
 }
 
 func resolveResource(ctx context.Context, res resource.Resource, paths []resource.FieldPath) (resource.Resource, error) {
-	fields, err := res.Fields()
+	fields, err := res.Fields(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +85,7 @@ func resolveAllResources(ctx context.Context, resources []resource.Resource) ([]
 }
 
 func resolveAllResource(ctx context.Context, res resource.Resource) (resource.Resource, error) {
-	fields, err := res.Fields()
+	fields, err := res.Fields(ctx)
 	if err != nil {
 		return nil, err
 	}

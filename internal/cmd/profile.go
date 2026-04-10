@@ -48,7 +48,7 @@ func (i Profile) Raw() any {
 	return i
 }
 
-func (i Profile) Fields() ([]resource.Field, error) {
+func (i Profile) Fields(ctx context.Context) ([]resource.Field, error) {
 	return resource.FieldsFromStruct(i)
 }
 

@@ -703,7 +703,7 @@ func TestGet(t *testing.T) {
 	assert.Equal(t, 42, test.Settings.Foo)
 	assert.Equal(t, "hello", test.Settings.Bar)
 
-	fields, err := test.Fields()
+	fields, err := test.Fields(ctx)
 	require.NoError(t, err)
 	assert.NotEmpty(t, fields)
 
@@ -955,7 +955,7 @@ func TestCreate(t *testing.T) {
 	ctx := resourcet.WithTestEnv(context.Background(), env)
 
 	empty := env.NewResource()
-	templateFields, err := empty.Fields()
+	templateFields, err := empty.Fields(ctx)
 	require.NoError(t, err)
 
 	for key, field := range resource.IterFields(templateFields) {
@@ -1228,7 +1228,7 @@ func TestEdit(t *testing.T) {
 	require.Len(t, resources, 1)
 
 	target := resources[0]
-	templateFields, err := target.Fields()
+	templateFields, err := target.Fields(ctx)
 	require.NoError(t, err)
 
 	for key, field := range resource.IterFields(templateFields) {

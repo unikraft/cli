@@ -118,7 +118,7 @@ func (t TestResource) Raw() any {
 	return t
 }
 
-func (t TestResource) Fields() ([]resource.Field, error) {
+func (t TestResource) Fields(ctx context.Context) ([]resource.Field, error) {
 	// Note: ValueCallback receives context and can access TestEnv from there
 	return []resource.Field{
 		{
