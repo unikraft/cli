@@ -17,7 +17,7 @@ stdout:
 	  profiles.*.organization, profiles.*.control-plane, profiles.*.insecure,
 	  profiles.*.metros, profiles.*.metros.*, profiles.*.metros.*.name,
 	  profiles.*.metros.*.endpoint, profiles.*.metros.*.country,
-	  profiles.*.metros.*.insecure
+	  profiles.*.metros.*.insecure, profiles.*.default-metro
 
 	Global flags:
 	  -h, --help
@@ -59,7 +59,7 @@ stdout:
 	  profiles.*.organization, profiles.*.control-plane, profiles.*.insecure,
 	  profiles.*.metros, profiles.*.metros.*, profiles.*.metros.*.name,
 	  profiles.*.metros.*.endpoint, profiles.*.metros.*.country,
-	  profiles.*.metros.*.insecure
+	  profiles.*.metros.*.insecure, profiles.*.default-metro
 
 	Flags:
 	  -w, --watch

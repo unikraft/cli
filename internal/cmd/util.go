@@ -10,8 +10,22 @@ import (
 	"fmt"
 	"maps"
 
+	"unikraft.com/cli/internal/config"
 	"unikraft.com/cli/internal/resource"
 )
+
+// defaultMetro returns the metro if non-empty, otherwise falls back to the
+// default metro from the current profile in the context.
+func defaultMetro(ctx context.Context, metro string) string {
+	if metro != "" {
+		return metro
+	}
+	profile, err := config.G(ctx).CurrentProfile()
+	if err != nil {
+		return ""
+	}
+	return profile.GetDefaultMetro()
+}
 
 func getFromListable(ctx context.Context, listable resource.ListableResource, keys []string) ([]resource.Resource, error) {
 	all, err := listable.List(ctx)

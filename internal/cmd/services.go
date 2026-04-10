@@ -256,6 +256,7 @@ func (s ServiceGroup) Raw() any {
 }
 
 func (s ServiceGroup) Fields(ctx context.Context) ([]resource.Field, error) {
+	s.MetroName = defaultMetro(ctx, s.MetroName)
 	result, err := resource.FieldsFromStruct(s)
 	if err != nil {
 		return nil, err

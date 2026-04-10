@@ -82,6 +82,8 @@ func PatchedFields(fields []resource.Field, spec PatchSpec) ([]resource.Field, e
 			} else {
 				setForbiddenFields[keyStr] = struct{}{}
 			}
+		} else if spec.Create && original.Set != nil && !value.IsZero(original.Set) {
+			*patch = &resource.Patch{Set: original.Set}
 		}
 		if vs, ok := spec.Add[keyStr]; ok {
 			if original.Add != nil {
@@ -93,6 +95,8 @@ func PatchedFields(fields []resource.Field, spec PatchSpec) ([]resource.Field, e
 			} else {
 				addForbiddenFields[keyStr] = struct{}{}
 			}
+		} else if spec.Create && original.Add != nil && !value.IsZero(original.Add) {
+			*patch = &resource.Patch{Add: original.Add}
 		}
 		if vs, ok := spec.Del[keyStr]; ok {
 			if original.Del != nil {
@@ -104,6 +108,8 @@ func PatchedFields(fields []resource.Field, spec PatchSpec) ([]resource.Field, e
 			} else {
 				delForbiddenFields[keyStr] = struct{}{}
 			}
+		} else if spec.Create && original.Del != nil && !value.IsZero(original.Del) {
+			*patch = &resource.Patch{Del: original.Del}
 		}
 	}
 

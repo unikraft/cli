@@ -12,6 +12,14 @@ import (
 	"time"
 )
 
+// IsZero reports whether v is a zero value for its type.
+func IsZero(v any) bool {
+	if v == nil {
+		return true
+	}
+	return reflect.ValueOf(v).IsZero()
+}
+
 // Compare compares two values in a type-aware manner.
 //
 // It returns -1 if a < b, 0 if a == b, and 1 if a > b.

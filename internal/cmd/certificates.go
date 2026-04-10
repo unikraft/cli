@@ -103,6 +103,7 @@ func (c Certificate) Raw() any {
 }
 
 func (c Certificate) Fields(ctx context.Context) ([]resource.Field, error) {
+	c.MetroName = defaultMetro(ctx, c.MetroName)
 	result, err := resource.FieldsFromStruct(c)
 	if err != nil {
 		return nil, err

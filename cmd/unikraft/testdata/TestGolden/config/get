@@ -24,6 +24,7 @@ stdout:
 	    "profiles": {
 	      "default": {
 	        "control-plane": "",
+	        "default-metro": "",
 	        "insecure": false,
 	        "metros": [
 	          {
@@ -50,6 +51,7 @@ stdout:
 	  profiles:
 	    default:
 	      control-plane: ""
+	      default-metro: ""
 	      insecure: false
 	      metros:
 	      - country: xx

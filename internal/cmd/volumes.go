@@ -272,6 +272,7 @@ func (i Volume) Raw() any {
 }
 
 func (i Volume) Fields(ctx context.Context) ([]resource.Field, error) {
+	i.MetroName = defaultMetro(ctx, i.MetroName)
 	result, err := resource.FieldsFromStruct(i)
 	if err != nil {
 		return nil, err

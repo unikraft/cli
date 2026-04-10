@@ -226,7 +226,7 @@ func loadFieldPatches(fields []resource.Field, data []byte, create bool) ([]reso
 		deleteNestedValue(obj, key)
 
 		if !found {
-			// Field not in YAML - clear the patch
+			// Field not in YAML
 			patch.Set = nil
 			continue
 		}
@@ -237,12 +237,15 @@ func loadFieldPatches(fields []resource.Field, data []byte, create bool) ([]reso
 			return nil, fmt.Errorf("failed to convert value for field %s: %w", key, err)
 		}
 
-		if originalValue := field.Value; originalValue != nil {
-			convertedOriginal, err := convertValue(originalValue, reflect.TypeOf(patch.Set))
-			if err == nil && reflect.DeepEqual(convertedOriginal, convertedValue) {
-				// Value is same as original - no patch needed
-				patch.Set = nil
-				continue
+		// In edit mode, skip fields that haven't changed from the original value.
+		// In create mode, there is no prior state, so we always keep the value.
+		if !create {
+			if originalValue := field.Value; originalValue != nil {
+				convertedOriginal, err := convertValue(originalValue, reflect.TypeOf(patch.Set))
+				if err == nil && reflect.DeepEqual(convertedOriginal, convertedValue) {
+					patch.Set = nil
+					continue
+				}
 			}
 		}
 
