@@ -94,7 +94,7 @@ func (i Image) Raw() any {
 	return nil // NOTE: no platform API response associated
 }
 
-func (i Image) Fields() ([]resource.Field, error) {
+func (i Image) Fields(ctx context.Context) ([]resource.Field, error) {
 	return resource.FieldsFromStruct(i)
 }
 
@@ -271,7 +271,7 @@ func (i ImageEntry) Raw() any {
 	return i.Image
 }
 
-func (i ImageEntry) Fields() ([]resource.Field, error) {
+func (i ImageEntry) Fields(ctx context.Context) ([]resource.Field, error) {
 	result, err := resource.FieldsFromStruct(i)
 	if err != nil {
 		return nil, err

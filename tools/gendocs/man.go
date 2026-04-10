@@ -282,7 +282,7 @@ func manPrintFields(buf *bytes.Buffer, node *kong.Node) error {
 	}
 
 	src := target.Underlying()
-	fields, err := src.Fields()
+	fields, err := src.Fields(context.Background())
 	if err != nil {
 		return fmt.Errorf("could not get fields for %s: %w", NodePath(node), err)
 	}

@@ -151,7 +151,7 @@ func (a AnyResource) Key() resource.Key {
 	}
 }
 
-func (a AnyResource) Fields() ([]resource.Field, error) {
+func (a AnyResource) Fields(ctx context.Context) ([]resource.Field, error) {
 	fields, err := resource.FieldsFromStruct(a)
 	if err != nil {
 		return nil, err
@@ -163,7 +163,7 @@ func (a AnyResource) Fields() ([]resource.Field, error) {
 		}
 	}
 	if underlying != nil {
-		underlyingFields, err := underlying.Fields()
+		underlyingFields, err := underlying.Fields(ctx)
 		if err != nil {
 			return nil, err
 		}

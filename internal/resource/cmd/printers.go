@@ -154,7 +154,7 @@ func printKV(ctx context.Context, out io.Writer, specs []string, resources ...re
 	eg := joinerrgroup.Group{}
 	for i, res := range resources {
 		eg.Go(func() error {
-			fields, err := res.Fields()
+			fields, err := res.Fields(ctx)
 			if err != nil {
 				return err
 			}
@@ -262,7 +262,7 @@ func printKVValue(out io.Writer, v any, indent int) error {
 }
 
 func printTable(ctx context.Context, out io.Writer, fieldSpecs []string, base resource.Resource, resources ...resource.Resource) error {
-	headers, err := base.Fields()
+	headers, err := base.Fields(ctx)
 	if err != nil {
 		return err
 	}
@@ -316,7 +316,7 @@ func printTable(ctx context.Context, out io.Writer, fieldSpecs []string, base re
 	}
 
 	for _, res := range resolved {
-		fields, err := res.Fields()
+		fields, err := res.Fields(ctx)
 		if err != nil {
 			return err
 		}
@@ -413,7 +413,7 @@ func printQuiet(ctx context.Context, out io.Writer, specs []string, resources ..
 	eg := joinerrgroup.Group{}
 	for i, res := range resources {
 		eg.Go(func() error {
-			fields, err := res.Fields()
+			fields, err := res.Fields(ctx)
 			if err != nil {
 				return err
 			}
@@ -461,7 +461,7 @@ func printJSON(ctx context.Context, out io.Writer, resources ...resource.Resourc
 
 	input := make([]any, len(resolved))
 	for i, res := range resolved {
-		fields, err := res.Fields()
+		fields, err := res.Fields(ctx)
 		if err != nil {
 			return err
 		}
@@ -483,7 +483,7 @@ func printYAML(ctx context.Context, out io.Writer, resources ...resource.Resourc
 
 	input := make([]any, len(resolved))
 	for i, res := range resolved {
-		fields, err := res.Fields()
+		fields, err := res.Fields(ctx)
 		if err != nil {
 			return err
 		}
@@ -524,7 +524,7 @@ func printTemplate(ctx context.Context, out io.Writer, tmplStr string, resources
 	}
 
 	for _, res := range resolved {
-		fields, err := res.Fields()
+		fields, err := res.Fields(ctx)
 		if err != nil {
 			return err
 		}
@@ -552,7 +552,7 @@ func printDebug(ctx context.Context, out io.Writer, resources ...resource.Resour
 	}
 
 	for _, res := range resolved {
-		fields, err := res.Fields()
+		fields, err := res.Fields(ctx)
 		if err != nil {
 			return err
 		}

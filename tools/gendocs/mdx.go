@@ -104,7 +104,7 @@ func generateMarkdown(ctx context.Context, node *kong.Node, dir string) error {
 
 	if target, ok := node.Target.Interface().(cmd.ResourceCmdInterface); ok {
 		src := target.Underlying()
-		fields, err := src.Fields()
+		fields, err := src.Fields(ctx)
 		if err != nil {
 			return fmt.Errorf("could not get fields for %s: %w", name, err)
 		}

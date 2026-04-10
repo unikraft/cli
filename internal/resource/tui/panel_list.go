@@ -153,7 +153,7 @@ func (p *listPanel) applyResources(resources []resource.Resource) {
 		p.table.SetRows(nil)
 		return
 	}
-	fields, err := p.desc.List.Fields()
+	fields, err := p.desc.List.Fields(p.ctx)
 	if err != nil {
 		p.err = err
 		p.table.SetRows(nil)
@@ -240,7 +240,7 @@ func (p *listPanel) layout() {
 }
 
 func (p *listPanel) renderField(res resource.Resource, path resource.FieldPath) string {
-	fields, err := res.Fields()
+	fields, err := res.Fields(p.ctx)
 	if err != nil {
 		return ""
 	}

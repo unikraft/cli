@@ -27,7 +27,7 @@ type Key interface {
 type Resource interface {
 	Type() Type
 	Key() Key
-	Fields() ([]Field, error)
+	Fields(ctx context.Context) ([]Field, error)
 	Raw() any
 }
 

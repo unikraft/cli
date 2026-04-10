@@ -41,7 +41,7 @@ func (c Config) Raw() any {
 	return c.Config
 }
 
-func (c Config) Fields() ([]resource.Field, error) {
+func (c Config) Fields(ctx context.Context) ([]resource.Field, error) {
 	return resource.FieldsFromStruct(c.Config)
 }
 

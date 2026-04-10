@@ -180,7 +180,7 @@ func (s *Sandbox) add(ctx context.Context, r Resource, visited map[string]struct
 	visited[visitKey] = struct{}{}
 	s.Keys[typeName][key] = struct{}{}
 
-	fields, err := r.Fields()
+	fields, err := r.Fields(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get fields for resource %s: %w", r.Key(), err)
 	}

@@ -39,7 +39,7 @@ func (m mockResource) Key() resource.Key {
 	return mockKey(m.name)
 }
 
-func (m mockResource) Fields() ([]resource.Field, error) {
+func (m mockResource) Fields(ctx context.Context) ([]resource.Field, error) {
 	return nil, nil
 }
 
@@ -386,7 +386,7 @@ func TestEdit_WithTestResource(t *testing.T) {
 	require.Len(t, resources, 1)
 
 	res := resources[0].(resourcet.TestResource)
-	fields, err := res.Fields()
+	fields, err := res.Fields(ctx)
 	require.NoError(t, err)
 
 	// Editor that changes settings
@@ -434,7 +434,7 @@ settings:
 func TestCreate_WithTestResource(t *testing.T) {
 	// Get template fields from empty resource
 	res := resourcet.TestResource{}
-	fields, err := res.Fields()
+	fields, err := res.Fields(context.Background())
 	require.NoError(t, err)
 
 	// Editor that sets creation values

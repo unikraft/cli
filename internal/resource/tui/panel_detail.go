@@ -158,7 +158,7 @@ func (p *detailPanel) View() tea.View {
 }
 
 func (p *detailPanel) renderResource(res resource.Resource) {
-	fields, err := res.Fields()
+	fields, err := res.Fields(p.ctx)
 	if err != nil {
 		p.err = err
 		p.table.SetRows(nil)

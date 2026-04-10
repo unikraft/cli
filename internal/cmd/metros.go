@@ -52,7 +52,7 @@ func (i Metro) Raw() any {
 	return i
 }
 
-func (i Metro) Fields() ([]resource.Field, error) {
+func (i Metro) Fields(ctx context.Context) ([]resource.Field, error) {
 	fields, err := resource.FieldsFromStruct(i)
 	if err != nil {
 		return nil, err
