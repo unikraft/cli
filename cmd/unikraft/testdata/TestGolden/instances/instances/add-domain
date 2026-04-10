@@ -13,7 +13,7 @@ stdout:
 	  uuid:       12345678-1234-1234-1234-123456789abc
 	  name:       <SERVICE_NAME>
 	  domains:
-	  - fqdn:     <SERVICE_NAME>.ukp-staging.unikraft.internal
+	  - fqdn:     <SERVICE_NAME>.unikraft.internal
 	networks:
 	- uuid:       12345678-1234-1234-1234-123456789abc
 	  private-ip: 10.X.X.X
@@ -43,7 +43,7 @@ stdout:
 	  uuid:       12345678-1234-1234-1234-123456789abc
 	  name:       <SERVICE_NAME>
 	  domains:
-	  - fqdn:     <SERVICE_NAME>.ukp-staging.unikraft.internal
+	  - fqdn:     <SERVICE_NAME>.unikraft.internal
 	  - fqdn:     <DOMAIN>.unikraft.internal
 	networks:
 	- uuid:       12345678-1234-1234-1234-123456789abc

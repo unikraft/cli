@@ -275,16 +275,16 @@ func (b *testBuilder) run(t *testing.T, commands []command) {
 				report.cleaners = append(
 					report.cleaners,
 					cleaner{
-						pattern: regexp.MustCompile(regexp.QuoteMeta(metro.Name)),
-						repl:    "test",
-					},
-					cleaner{
 						pattern: regexp.MustCompile(regexp.QuoteMeta(metro.Endpoint)),
-						repl:    "https://api.test.unikraft.internal",
+						repl:    "https://api.unikraft.test",
 					},
 					cleaner{
 						pattern: regexp.MustCompile(regexp.QuoteMeta(metro.Index().Host)),
-						repl:    "index.test.unikraft.internal",
+						repl:    "index.unikraft.test",
+					},
+					cleaner{
+						pattern: regexp.MustCompile(regexp.QuoteMeta(metro.Name)),
+						repl:    "test",
 					},
 				)
 			}
@@ -347,10 +347,10 @@ func (report *report) cleanOutput(s string) string {
 	}
 
 	// apply any necessary cleanup to the output here
-	for _, c := range report.cleaners {
+	for _, c := range cleaners {
 		s = c.pattern.ReplaceAllString(s, c.repl)
 	}
-	for _, c := range cleaners {
+	for _, c := range report.cleaners {
 		s = c.pattern.ReplaceAllString(s, c.repl)
 	}
 
@@ -458,6 +458,11 @@ var cleaners = []cleaner{
 		// temp config paths like "/tmp/TestGolden.../001/config.yaml" change between runs
 		pattern: regexp.MustCompile(`/tmp/TestGolden[^/]+/`),
 		repl:    "/tmp/TestGolden/",
+	},
+	{
+		// auto-generated domain names like "foo.ukp-stable.apw.unikraft.internal"
+		pattern: regexp.MustCompile(`\b\.[a-z0-9.\-]+\.unikraft\.(app|internal)\b`),
+		repl:    ".unikraft.internal",
 	},
 }
 

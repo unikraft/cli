@@ -312,11 +312,6 @@ var instanceCleaners = []cleaner{
 		repl:    "<SERVICE_NAME>",
 	},
 	{
-		// auto-generated domain names like "foo.ukp-stable.apw.unikraft.internal"
-		pattern: regexp.MustCompile(`\b\.[a-z0-9.\-]+\.unikraft\.(app|internal)\b`),
-		repl:    ".unikraft.internal",
-	},
-	{
 		// auto-generated volume names like "vol-0g8gc"
 		pattern: regexp.MustCompile(`\bvol-[a-z0-9]+\b`),
 		repl:    "<INLINE_VOL>",

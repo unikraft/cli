@@ -10,7 +10,7 @@ stdout:
 	  organization: test
 	  metros:
 	  - name:       test
-	    endpoint:   https://api.test.unikraft.internal
+	    endpoint:   https://api.unikraft.internal/
 	    country:    xx
 	    insecure:   false
 
@@ -28,7 +28,7 @@ stdout:
 	        "metros": [
 	          {
 	            "country": "xx",
-	            "endpoint": "https://api.test.unikraft.internal",
+	            "endpoint": "https://api.unikraft.internal/",
 	            "insecure": false,
 	            "name": "test"
 	          }
@@ -53,7 +53,7 @@ stdout:
 	      insecure: false
 	      metros:
 	      - country: xx
-	        endpoint: https://api.test.unikraft.internal
+	        endpoint: https://api.unikraft.internal/
 	        insecure: false
 	        name: test
 	      name: default

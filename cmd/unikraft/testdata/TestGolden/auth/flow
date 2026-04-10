@@ -13,7 +13,7 @@ $ unikraft metro list
 
 stdout:
 	NAME  COUNTRY  ENDPOINT
-	test  xx       https://api.test.unikraft.internal
+	test  xx       https://api.unikraft.internal/
 
 $ unikraft logout
 
