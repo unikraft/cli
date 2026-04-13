@@ -62,6 +62,9 @@ func (c *VolumeCreateCmd) Run(ctx context.Context, stdio config.Stdio, sandbox *
 	if err := cmd.ApplyShortcutFlags(&c.SetArgs, kctx.Flags()); err != nil {
 		return err
 	}
+	if err := defaultMetroFromProfile(ctx, &c.SetArgs); err != nil {
+		return err
+	}
 	return c.ResourceCreateCmd.Run(ctx, stdio, sandbox)
 }
 

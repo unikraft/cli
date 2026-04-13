@@ -102,6 +102,9 @@ func (c *RunCmd) Run(ctx context.Context, stdio config.Stdio, sandbox *resource.
 	if err := resourcecmd.ApplyShortcutFlags(&c.SetArgs, kctx.Flags()); err != nil {
 		return err
 	}
+	if err := defaultMetroFromProfile(ctx, &c.SetArgs); err != nil {
+		return err
+	}
 	// Default autostart to true for run command if not explicitly set by user.
 	// We add this to SetArgs rather than setting the field directly, because
 	// RunResources uses toPatchSpec() which reads from SetArgs.
