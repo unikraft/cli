@@ -50,6 +50,7 @@ type InstancesCmd struct {
 	Logs    InstancesLogsCmd    `cmd:"" help:"Fetch and display instance logs."`
 	Start   InstancesStartCmd   `cmd:"" help:"Start one or more instances."`
 	Stop    InstancesStopCmd    `cmd:"" help:"Stop one or more instances."`
+	Suspend InstancesSuspendCmd `cmd:"" help:"Suspend one or more instances."`
 	Restart InstancesRestartCmd `cmd:"" help:"Restart one or more instances."`
 }
 
@@ -1324,4 +1325,109 @@ func stopInstances(ctx context.Context, g *group.Group[multimetro.MetroClient], 
 		return stopped, stopped.Refs(), nil
 	})
 	return multimetro.Keys(stopped), err
+}
+
+type InstancesSuspendCmd struct {
+	Targets      []string         `arg:"" name:"target" completion-predictor:"resource-key-instance" help:"Target instances to suspend."`
+	DrainTimeout types.DurationMS `help:"Timeout in milliseconds for draining connections before suspending." default:"-1"`
+
+	cmd.FormatOpts
+}
+
+func (cmd InstancesSuspendCmd) Examples() []kingkong.Example {
+	return []kingkong.Example{
+		{
+			Description: "Suspend an instance",
+			Commands: []string{
+				"unikraft instance suspend demo-instance",
+			},
+		},
+		{
+			Description: "Suspend with a drain timeout",
+			Commands: []string{
+				"unikraft instance suspend demo-instance --drain-timeout 30000",
+			},
+		},
+	}
+}
+
+func (c *InstancesSuspendCmd) Run(ctx context.Context, stdio config.Stdio) error {
+	keys := multimetro.ParseKeys(c.Targets)
+	before, opErr := Instance{}.Get(ctx, keys.Strings())
+	if opErr != nil && len(before) == 0 {
+		return opErr
+	}
+	g, err := multimetro.NewClient(ctx)
+	if err != nil {
+		return err
+	}
+	var targetKeys multimetro.Keys
+	for _, res := range before {
+		targetKeys = append(targetKeys, res.(Instance).key)
+	}
+	if len(targetKeys) == 0 {
+		targetKeys = keys
+	}
+	suspended, suspendErr := suspendInstances(ctx, g, targetKeys, c.DrainTimeout)
+	opErr = errors.Join(opErr, suspendErr)
+	if len(suspended) == 0 {
+		return opErr
+	}
+
+	updated, getErr := Instance{}.Get(ctx, suspended.Strings())
+	opErr = errors.Join(opErr, getErr)
+	if getErr != nil && len(updated) == 0 {
+		return opErr
+	}
+
+	keySet := make(map[string]struct{}, len(suspended))
+	for _, k := range suspended {
+		keySet[k.Canonical()] = struct{}{}
+	}
+	before = slices.DeleteFunc(slices.Clone(before), func(r resource.Resource) bool {
+		_, ok := keySet[r.Key().Canonical()]
+		return !ok
+	})
+	updated = slices.DeleteFunc(slices.Clone(updated), func(r resource.Resource) bool {
+		_, ok := keySet[r.Key().Canonical()]
+		return !ok
+	})
+
+	diffErr := cmd.Diff(ctx, stdio.Stdout, c.FormatOpts, Instance{}, before, updated)
+	return errors.Join(opErr, diffErr)
+}
+
+func suspendInstances(ctx context.Context, g *group.Group[multimetro.MetroClient], keys multimetro.Keys, drainTimeout types.DurationMS) (multimetro.Keys, error) {
+	suspended, err := group.CollectRefsSlices(ctx, g, keys.Refs(), func(ctx context.Context, c multimetro.MetroClient, refs group.Refs) ([]multimetro.Key, group.Refs, error) {
+		log.G(ctx).Trace().Msg("suspending instances")
+		reqs := make([]platform.SuspendInstancesRequestItem, 0, len(refs))
+		for _, ref := range refs {
+			req := platform.SuspendInstancesRequestItem{
+				Uuid: ref.NameOrUUID().Uuid,
+				Name: ref.NameOrUUID().Name,
+			}
+			if drainTimeout >= 0 {
+				timeout := uint64(drainTimeout)
+				req.DrainTimeoutMs = &timeout
+			}
+			reqs = append(reqs, req)
+		}
+		resp, err := c.SuspendInstances(ctx, reqs)
+		if err != nil && !platform.ErrorContainsOnly(err, platform.APIHTTPErrorNotFound) {
+			return nil, nil, err
+		}
+		var suspended multimetro.Keys
+		for _, instance := range resp.Data.Instances {
+			if instance.Status == nil || *instance.Status != platform.ResponseStatusSUCCESS {
+				continue
+			}
+			suspended = append(suspended, multimetro.Key{
+				Metro: c.Metro.Name,
+				Name:  *instance.Name,
+				UUID:  *instance.Uuid,
+			})
+		}
+		return suspended, suspended.Refs(), nil
+	})
+	return multimetro.Keys(suspended), err
 }

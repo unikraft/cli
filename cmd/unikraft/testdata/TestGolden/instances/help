@@ -25,6 +25,8 @@ stdout:
 	          Start one or more instances.
 	  stop
 	          Stop one or more instances.
+	  suspend
+	          Suspend one or more instances.
 	  restart
 	          Restart one or more instances.
 
@@ -683,6 +685,51 @@ stdout:
 	          Force stop the instance immediately.
 	      --drain-timeout
 	          Timeout in milliseconds for draining connections before stopping.
+	          [default: -1]
+	  -f, --field
+	          Specify which fields to include in the output.
+	  -o, --output
+	          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+	Global flags:
+	  -h, --help
+	          Show context-sensitive help.
+	      --config=<file> ($UNIKRAFT_CONFIG)
+	          Path to the configuration file.
+	      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+	          Set the logging level.
+	          [default: info, choices: trace, debug, info, warn, error, fatal]
+	      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+	          Set the log type.
+	          [default: text, choices: text, json]
+	      --profile=<name> ($UNIKRAFT_PROFILE)
+	          Set the current profile.
+	      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+	          Toggle anonymous usage analytics.
+	          [default: true]
+
+$ unikraft instance suspend --help
+
+stdout:
+	Suspend one or more instances.
+
+	Usage:
+	  unikraft instances suspend <target> ... [flags]
+
+	Arguments:
+	  <target> ...
+	          Target instances to suspend.
+
+	Examples:
+	  # Suspend an instance
+	  unikraft instance suspend demo-instance
+
+	  # Suspend with a drain timeout
+	  unikraft instance suspend demo-instance --drain-timeout 30000
+
+	Flags:
+	      --drain-timeout
+	          Timeout in milliseconds for draining connections before suspending.
 	          [default: -1]
 	  -f, --field
 	          Specify which fields to include in the output.

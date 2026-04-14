@@ -23,6 +23,7 @@ func instancesTests(t *testing.T, r *testRunner) {
 			{args: []string{unikraftCmd, "instance", "logs", "--help"}},
 			{args: []string{unikraftCmd, "instance", "start", "--help"}},
 			{args: []string{unikraftCmd, "instance", "stop", "--help"}},
+			{args: []string{unikraftCmd, "instance", "suspend", "--help"}},
 			{args: []string{unikraftCmd, "instance", "restart", "--help"}},
 		})
 	})
@@ -264,6 +265,37 @@ func instancesTests(t *testing.T, r *testRunner) {
 				}},
 				// Verify instance is running (autostart worked)
 				{args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}},
+				{args: []string{unikraftCmd, "instance", "delete", "test-$UNIQ_INST"}},
+			})
+	})
+
+	t.Run("suspend", func(t *testing.T) {
+		r.
+			online().
+			withCleaners(instanceCleaners).
+			run(t, []command{
+				// Create a running instance
+				{args: []string{
+					unikraftCmd, "instance", "create",
+					"--output", "quiet",
+					"--set", "name=test-$UNIQ_INST",
+					"--set", "metro=" + metroName,
+					"--set", "image=nginx:latest",
+					"--set", "autostart=true",
+					"--set", "resources.memory=128",
+					"--set", "resources.vcpus=1",
+				}},
+				{args: []string{unikraftCmd, "instance", "wait", "--until", "state==running", "--timeout", "30s", "test-$UNIQ_INST"}},
+
+				// Suspend the instance — it should move to standby
+				{args: []string{unikraftCmd, "instance", "suspend", "test-$UNIQ_INST"}},
+				{args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}},
+
+				// Wake the instance back up with start
+				{args: []string{unikraftCmd, "instance", "start", "test-$UNIQ_INST"}},
+				{args: []string{unikraftCmd, "instance", "wait", "--until", "state==running", "--timeout", "30s", "test-$UNIQ_INST"}},
+				{args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}},
+
 				{args: []string{unikraftCmd, "instance", "delete", "test-$UNIQ_INST"}},
 			})
 	})

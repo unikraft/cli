@@ -43,7 +43,7 @@ require (
 	gotest.tools/v3 v3.5.2
 	mvdan.cc/sh/v3 v3.13.1
 	sigs.k8s.io/yaml v1.6.0
-	unikraft.com/cloud/sdk v0.0.0-20260410093415-4a305de2be28
+	unikraft.com/cloud/sdk v0.0.0-20260414093331-11e5c4de3e7e
 	unikraft.com/x/colors v0.0.0-20260313145522-d793c36d706e
 	unikraft.com/x/fingerprint v0.0.0-20260126094137-ab6e717e5679
 	unikraft.com/x/guesstermwidth v0.0.0-20260304162956-523940cab1de
@@ -52,7 +52,7 @@ require (
 	unikraft.com/x/kingkong v0.0.0-20260331102539-2c733927b46f
 	unikraft.com/x/kraftfile v0.0.0-20260318103446-c2c548a69fc0
 	unikraft.com/x/log v0.0.0-20260126171022-af62c17fcdf7
-	unikraft.com/x/ptr v0.0.0-20260116231133-1da0081544af
+	unikraft.com/x/ptr v0.0.0-20260126094137-ab6e717e5679
 )
 
 require github.com/atotto/clipboard v0.1.4 // indirect
