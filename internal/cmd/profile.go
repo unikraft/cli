@@ -12,6 +12,7 @@ import (
 	"maps"
 	"slices"
 
+	"github.com/MakeNowJust/heredoc"
 	jujuerrors "github.com/juju/errors"
 	"unikraft.com/cli/internal/config"
 	"unikraft.com/cli/internal/resource"
@@ -102,6 +103,15 @@ func (Profile) Examples() map[cmd.CmdType][]kingkong.Example {
 
 type UseCmd struct {
 	Name string `arg:"" optional:"" help:"Target profile to switch to."`
+}
+
+func (UseCmd) Help() string {
+	return heredoc.Doc(`
+		Switch between profiles.
+
+		Calling without an argument will prompt you to select a profile from the
+		list of available profiles.
+	`)
 }
 
 func (cmd *UseCmd) Run(ctx context.Context, cfg *config.Config) error {
