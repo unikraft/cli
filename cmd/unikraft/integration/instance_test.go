@@ -980,4 +980,200 @@ cmd: ["cat", "/marker.txt"]
 			// Command still running
 		}
 	})
+
+	t.Run("branch", func(t *testing.T) {
+		r := runner(t, true)
+		instName := uniq()
+		branchName := uniq()
+		domainName := uniq()
+		domainBranch := uniq()
+		imageTag := uniq()
+		image := r.Config.Profile.Organization + "/counter-e2e:" + imageTag
+
+		dir := t.TempDir()
+		require.NoError(t, applyCounterContext(dir))
+
+		r.Run(t, []string{"unikraft", "build", ".", "--output", image}, integ.WithWorkDir(dir))
+
+		r.Run(t, []string{
+			"unikraft", "instance", "create",
+			"--set", "name=test-" + instName,
+			"--set", "metro=" + r.Config.MetroName,
+			"--set", "image=" + image,
+			"--set", "autostart=true",
+			"--set", "resources.memory=256",
+			"--set", "resources.vcpus=1",
+			"--set", "service.services=443:8080/tls+http",
+			"--set", "service.domains=name=" + domainName,
+		})
+		out := r.Run(t, []string{
+			"unikraft", "instance", "inspect", "test-" + instName,
+			"--output", "template=" + `{{ (index .service.domains 0).fqdn }}`,
+		})
+		fqdn := strings.TrimSpace(out)
+		r.Run(t, []string{"unikraft", "instance", "wait", "--until", "state==running", "--timeout", "30s", "test-" + instName})
+		assert.Contains(t, integ.HTTPGet(t, "https://"+fqdn+"/count"), `"count": 0`)
+
+		// Branch the running instance.
+		r.Run(t, []string{
+			"unikraft", "instance", "create",
+			"--branch", "test-" + instName,
+			"--set", "name=test-branch-" + branchName,
+			"--set", "metro=" + r.Config.MetroName,
+			"--set", "autostart=true",
+			"--set", "service.services=443:8080/tls+http",
+			"--set", "service.domains=name=" + domainBranch,
+		})
+		out = r.Run(t, []string{
+			"unikraft", "instance", "inspect", "test-branch-" + branchName,
+			"--output", "template=" + `{{ (index .service.domains 0).fqdn }}`,
+		})
+		fqdnBranch := strings.TrimSpace(out)
+		r.Run(t, []string{"unikraft", "instance", "wait", "--until", "state==running", "--timeout", "30s", "test-branch-" + branchName})
+		assert.Contains(t, integ.HTTPGet(t, "https://"+fqdnBranch+"/count"), `"count": 0`)
+
+		r.Run(t, []string{"unikraft", "instance", "delete", "test-" + instName, "test-branch-" + branchName})
+		r.Run(t, []string{"unikraft", "image", "delete", image})
+	})
+
+	// branch-state verifies that --branch preserves current in-memory state and
+	// that the original and branched instances are fully independent. It builds
+	// a counter HTTP server, increments to 5, branches, verifies the branched
+	// instance has counter=5, then mutates each independently.
+	t.Run("branch-state", func(t *testing.T) {
+		r := runner(t, true)
+		instName := uniq()
+		branchName := uniq()
+		domainName := uniq()
+		domainBranch := uniq()
+		imageTag := uniq()
+		image := r.Config.Profile.Organization + "/counter-e2e:" + imageTag
+
+		dir := t.TempDir()
+		require.NoError(t, applyCounterContext(dir))
+
+		r.Run(t, []string{"unikraft", "build", ".", "--output", image}, integ.WithWorkDir(dir))
+
+		r.Run(t, []string{
+			"unikraft", "instance", "create",
+			"--set", "name=test-" + instName,
+			"--set", "metro=" + r.Config.MetroName,
+			"--set", "image=" + image,
+			"--set", "autostart=true",
+			"--set", "resources.memory=256",
+			"--set", "resources.vcpus=1",
+			"--set", "service.services=443:8080/tls+http",
+			"--set", "service.domains=name=" + domainName,
+		})
+		out := r.Run(t, []string{
+			"unikraft", "instance", "inspect", "test-" + instName,
+			"--output", "template=" + `{{ (index .service.domains 0).fqdn }}`,
+		})
+		fqdn := strings.TrimSpace(out)
+		r.Run(t, []string{"unikraft", "instance", "wait", "--until", "state==running", "--timeout", "30s", "test-" + instName})
+
+		// Increment counter to 5.
+		for range 5 {
+			integ.HTTPPost(t, "https://"+fqdn+"/increment", "application/json", `{"delta":1}`)
+		}
+		assert.Contains(t, integ.HTTPGet(t, "https://"+fqdn+"/count"), `"count": 5`)
+
+		// Branch the running instance.
+		r.Run(t, []string{
+			"unikraft", "instance", "create",
+			"--branch", "test-" + instName,
+			"--set", "name=test-branch-" + branchName,
+			"--set", "metro=" + r.Config.MetroName,
+			"--set", "autostart=true",
+			"--set", "service.services=443:8080/tls+http",
+			"--set", "service.domains=name=" + domainBranch,
+		})
+		out = r.Run(t, []string{
+			"unikraft", "instance", "inspect", "test-branch-" + branchName,
+			"--output", "template=" + `{{ (index .service.domains 0).fqdn }}`,
+		})
+		fqdnBranch := strings.TrimSpace(out)
+		r.Run(t, []string{"unikraft", "instance", "wait", "--until", "state==running", "--timeout", "30s", "test-branch-" + branchName})
+
+		// Branched counter should also be at 5.
+		assert.Contains(t, integ.HTTPGet(t, "https://"+fqdnBranch+"/count"), `"count": 5`)
+
+		// Increment branched by 10 → 15.
+		integ.HTTPPost(t, "https://"+fqdnBranch+"/increment", "application/json", `{"delta":10}`)
+		assert.Contains(t, integ.HTTPGet(t, "https://"+fqdnBranch+"/count"), `"count": 15`)
+
+		// Original should still be at 5 (unaffected by branch).
+		assert.Contains(t, integ.HTTPGet(t, "https://"+fqdn+"/count"), `"count": 5`)
+
+		// Increment original by 1 → 6.
+		integ.HTTPPost(t, "https://"+fqdn+"/increment", "application/json", `{"delta":1}`)
+		assert.Contains(t, integ.HTTPGet(t, "https://"+fqdn+"/count"), `"count": 6`)
+
+		// Branched should still be at 15 (unaffected by original).
+		assert.Contains(t, integ.HTTPGet(t, "https://"+fqdnBranch+"/count"), `"count": 15`)
+
+		r.Run(t, []string{"unikraft", "instance", "delete", "test-" + instName, "test-branch-" + branchName})
+		r.Run(t, []string{"unikraft", "image", "delete", image})
+	})
+}
+
+// applyCounterContext writes the build context for a minimal Python HTTP counter
+// server into dir. The server maintains an in-memory counter that can be read
+// via GET /count and incremented via POST /increment with a JSON body.
+func applyCounterContext(dir string) error {
+	return fstest.Apply(
+		fstest.CreateFile("Dockerfile", []byte(`
+FROM python:3.12-slim
+COPY server.py /app/server.py
+`), 0o644),
+		fstest.CreateFile("server.py", []byte(`
+import json
+from http.server import HTTPServer, BaseHTTPRequestHandler
+
+counter = 0
+
+class Handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        if self.path == "/count":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"count": counter}).encode())
+        else:
+            self.send_response(404)
+            self.end_headers()
+
+    def do_POST(self):
+        global counter
+        if self.path == "/increment":
+            length = int(self.headers.get("Content-Length", 0))
+            body = json.loads(self.rfile.read(length)) if length else {}
+            delta = body.get("delta", 1)
+            if delta == "reset":
+                counter = 0
+            else:
+                counter += int(delta)
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"count": counter}).encode())
+        else:
+            self.send_response(404)
+            self.end_headers()
+
+    def log_message(self, format, *args):
+        pass  # silence request logging
+
+HTTPServer(("", 8080), Handler).serve_forever()
+`), 0o644),
+		fstest.CreateFile("Kraftfile", []byte(`
+spec: v0.7
+name: counter-e2e
+runtime: base-compat:latest
+rootfs:
+  format: erofs
+  source: ./Dockerfile
+cmd: ["python3", "/app/server.py"]
+`), 0o644),
+	).Apply(dir)
 }

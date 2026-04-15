@@ -94,11 +94,12 @@ type InstanceCreateCmd struct {
 
 	Restart string `group:"flag-create" shortcut:"restart.policy" help:"Restart policy." placeholder:"policy" example:"always,on-failure,never"`
 
-	Autostart    *bool    `group:"flag-create" shortcut:"autostart" help:"Start instance automatically."`
-	Replicas     int64    `group:"flag-create" shortcut:"replicas" help:"Number of replicas." placeholder:"n" example:"1,3"`
-	Features     []string `group:"flag-create" shortcut:"features" help:"Instance features." placeholder:"feature"`
-	Template     string   `group:"flag-create" shortcut:"template" help:"Create from instance template." placeholder:"name"`
-	DeleteOnStop bool     `group:"flag-create" name:"rm" help:"Automatically delete the instance when it stops."`
+	Autostart    *bool          `group:"flag-create" shortcut:"autostart" help:"Start instance automatically."`
+	Replicas     int64          `group:"flag-create" shortcut:"replicas" help:"Number of replicas." placeholder:"n" example:"1,3"`
+	Features     []string       `group:"flag-create" shortcut:"features" help:"Instance features." placeholder:"feature"`
+	Template     string         `group:"flag-create" shortcut:"template" help:"Create from instance template." placeholder:"name"`
+	Branch       multimetro.Key `group:"flag-create" shortcut:"branch" help:"Branch from an existing instance." placeholder:"instance"`
+	DeleteOnStop bool           `group:"flag-create" name:"rm" help:"Automatically delete the instance when it stops."`
 }
 
 func (c *InstanceCreateCmd) Run(ctx context.Context, stdio config.Stdio, sandbox *resource.Sandbox, kctx *kong.Context) error {
@@ -207,6 +208,7 @@ type Instance struct {
 	Features      []string                `field:"features,invisible,valueless" create:"set"`
 	Vsock         bool                    `field:"vsock,invisible,valueless" create:"set" edit:"set"`
 	Template      string                  `field:"template,invisible,valueless" create:"set"`
+	Branch        multimetro.Key          `field:"branch,invisible,valueless" create:"set"`
 
 	Stop struct {
 		Reason string     `field:",long"`
@@ -1193,12 +1195,22 @@ func (Instance) Create(ctx context.Context, fields []resource.Field) ([]resource
 			} else {
 				req.Template.Name = &template
 			}
+		case "branch":
+			branch := field.Create.Set.(multimetro.Key)
+			branchFrom := &platform.NameOrUUID{}
+			if branch.Name != "" {
+				branchFrom.Name = &branch.Name
+			}
+			if branch.UUID != "" {
+				branchFrom.Uuid = &branch.UUID
+			}
+			req.BranchFrom = branchFrom
 		}
 	}
 
-	// Validate that either image or template is provided
-	if req.Image == nil && req.Template == nil {
-		return nil, fmt.Errorf("either --image or --template must be specified")
+	// Validate that either image, template, or branch is provided
+	if req.Image == nil && req.Template == nil && req.BranchFrom == nil {
+		return nil, fmt.Errorf("either --image, --template, or --branch must be specified")
 	}
 
 	if req.Image != nil {

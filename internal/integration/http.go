@@ -13,6 +13,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 
@@ -51,6 +52,44 @@ func HTTPGet(t *testing.T, url string) string {
 		return string(body)
 	}
 	require.NoError(t, lastErr, "HTTP GET %s failed after retries", url)
+	return ""
+}
+
+// HTTPPost sends a POST request with the given body and content type, retrying
+// up to 10 times, and returns the response body. TLS verification is skipped so
+// self-signed certificates work.
+func HTTPPost(t *testing.T, url, contentType, body string) string {
+	t.Helper()
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //#nosec G402 -- test code
+		},
+		Timeout: 10 * time.Second,
+	}
+
+	var lastErr error
+	for range 10 {
+		resp, err := client.Post(url, contentType, strings.NewReader(body)) //#nosec G107 -- test code, URL from test
+		if err != nil {
+			lastErr = err
+			time.Sleep(2 * time.Second)
+			continue
+		}
+		respBody, err := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			lastErr = err
+			time.Sleep(2 * time.Second)
+			continue
+		}
+		if resp.StatusCode >= 400 {
+			lastErr = fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(respBody))
+			time.Sleep(2 * time.Second)
+			continue
+		}
+		return string(respBody)
+	}
+	require.NoError(t, lastErr, "HTTP POST %s failed after retries", url)
 	return ""
 }
 

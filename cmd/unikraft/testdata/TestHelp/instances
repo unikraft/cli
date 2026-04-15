@@ -63,6 +63,7 @@ Fields:
   features
   vsock
   template
+  branch
   stop, stop.reason, stop.origin, stop.errno, stop.exit-code
   delete-lock
 
@@ -130,6 +131,7 @@ Fields:
   features
   vsock
   template
+  branch
   stop, stop.reason, stop.origin, stop.errno, stop.exit-code
   delete-lock
 
@@ -205,6 +207,7 @@ Fields:
   features
   vsock
   template
+  branch
   stop, stop.reason, stop.origin, stop.errno, stop.exit-code
   delete-lock
 
@@ -282,6 +285,7 @@ Fields:
   features
   vsock
   template
+  branch
   stop, stop.reason, stop.origin, stop.errno, stop.exit-code
   delete-lock
 
@@ -369,6 +373,7 @@ Fields:
   features
   vsock
   template
+  branch
   stop, stop.reason, stop.origin, stop.errno, stop.exit-code
   delete-lock
 
@@ -469,6 +474,8 @@ Create flags:
           Instance features.
       --template=<name>
           Create from instance template.
+      --branch=<instance>
+          Branch from an existing instance.
       --rm
           Automatically delete the instance when it stops.
 
@@ -525,6 +532,7 @@ Fields:
   features
   vsock
   template
+  branch
   stop, stop.reason, stop.origin, stop.errno, stop.exit-code
   delete-lock
 
@@ -625,6 +633,8 @@ Create flags:
           Instance features.
       --template=<name>
           Create from instance template.
+      --branch=<instance>
+          Branch from an existing instance.
       --rm
           Automatically delete the instance when it stops.
 
@@ -690,6 +700,7 @@ Fields:
   features
   vsock
   template
+  branch
   stop, stop.reason, stop.origin, stop.errno, stop.exit-code
   delete-lock
 
@@ -811,6 +822,7 @@ Fields:
   features
   vsock
   template
+  branch
   stop, stop.reason, stop.origin, stop.errno, stop.exit-code
   delete-lock
 

@@ -101,6 +101,15 @@ func (k Key) Canonical() string {
 	return s
 }
 
+func (k Key) MarshalText() ([]byte, error) {
+	return []byte(k.String()), nil
+}
+
+func (k *Key) UnmarshalText(text []byte) error {
+	*k = ParseKey(string(text))
+	return nil
+}
+
 func (k Key) Complete(prefix string) (completions []string) {
 	if prefix == "" {
 		return []string{cmp.Or(k.Name, k.UUID)}
