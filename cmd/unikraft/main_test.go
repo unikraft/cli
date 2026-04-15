@@ -112,6 +112,7 @@ func TestGolden(t *testing.T) {
 		{"instances", instancesTests},
 		{"instance-templates", instanceTemplatesTests},
 		{"volumes", volumesTests},
+		{"volume-templates", volumeTemplatesTests},
 		{"services", servicesTests},
 		{"certificates", certificatesTests},
 		{"images", imagesTests},

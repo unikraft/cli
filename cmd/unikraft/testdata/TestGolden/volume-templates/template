@@ -1,0 +1,56 @@
+$ unikraft volume create --output quiet --set name=test-$UNIQ_VOL --set metro=test --set size=10
+
+stdout:
+	test/test-<VOL>
+
+$ TEMPLATE_NAME=$(unikraft volume template create test-$UNIQ_VOL --output 'template={{ .name }}')
+
+$ unikraft volume template list
+
+stdout:
+	METRO  NAME               STATE     SIZE   CREATED
+	test   test-<VOL>  template  10MiB  RELATIVE_TIME
+
+$ unikraft volume template inspect $TEMPLATE_NAME
+
+stdout:
+	metro:      test
+	name:       test-<VOL>
+	uuid:       12345678-1234-1234-1234-123456789abc
+	state:      template
+	size:       10MiB
+	filesystem: virtiofs
+	persistent: true
+	timestamps:
+	  created:  RELATIVE_TIME
+
+$ unikraft volume template edit $TEMPLATE_NAME --set tags=env-dev
+
+stdout:
+	  metro:      test
+	  name:       test-<VOL>
+	  uuid:       12345678-1234-1234-1234-123456789abc
+	  state:      template
+	  size:       10MiB
+	  filesystem: virtiofs
+	  persistent: true
+	  timestamps:
+	    created:  RELATIVE_TIME
+
+$ unikraft volume template inspect $TEMPLATE_NAME
+
+stdout:
+	metro:      test
+	name:       test-<VOL>
+	uuid:       12345678-1234-1234-1234-123456789abc
+	state:      template
+	size:       10MiB
+	filesystem: virtiofs
+	persistent: true
+	timestamps:
+	  created:  RELATIVE_TIME
+
+$ unikraft volume template delete $TEMPLATE_NAME
+
+stdout:
+	test-<VOL>

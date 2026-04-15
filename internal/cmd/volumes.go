@@ -38,8 +38,9 @@ type VolumesCmd struct {
 	cmd.ListableResourceCmd[Volume]
 	cmd.BulkDeletableResourceCmd[Volume]
 
-	Create VolumeCreateCmd `cmd:"" help:"Create a volume."`
-	Edit   VolumeEditCmd   `cmd:"" help:"Edit a volume."`
+	Create   VolumeCreateCmd    `cmd:"" help:"Create a volume."`
+	Edit     VolumeEditCmd      `cmd:"" help:"Edit a volume."`
+	Template VolumeTemplatesCmd `cmd:"" group:"cmd-templates" help:"Manage volume templates." aliases:"templates" set:"name=volume-template" set:"names=volume-templates"`
 
 	Clone VolumesCloneCmd `cmd:"" help:"Clone a volume."`
 }

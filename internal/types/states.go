@@ -106,6 +106,7 @@ func (state VolumeState) validate() error {
 	case platform.VolumeStateMounted:
 	case platform.VolumeStateBusy:
 	case platform.VolumeStateError:
+	case platform.VolumeStateTemplate:
 	default:
 		return fmt.Errorf("unknown volume state: %q", string(state))
 	}
@@ -142,6 +143,8 @@ func (state VolumeState) ansiFg() string {
 		return fgWarning
 	case platform.VolumeStateError:
 		return fgError
+	case platform.VolumeStateTemplate:
+		return fgPrimary
 	}
 	return fgInfo
 }

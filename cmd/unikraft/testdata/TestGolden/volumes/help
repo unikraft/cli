@@ -22,6 +22,10 @@ stdout:
 	  clone
 	          Clone a volume.
 
+	Templates:
+	  template, templates
+	          Manage volume templates.
+
 	Fields:
 	  metro
 	  name

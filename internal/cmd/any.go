@@ -66,6 +66,7 @@ var resourceBackends = []resource.Resource{
 	Instance{},
 	InstanceTemplate{},
 	Volume{},
+	VolumeTemplate{},
 	ServiceGroup{},
 	Certificate{},
 }
