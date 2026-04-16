@@ -8,9 +8,9 @@ package multimetro
 import (
 	"testing"
 
-	"github.com/containerd/containerd/v2/pkg/filters"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"unikraft.com/x/filters"
 
 	"unikraft.com/cli/internal/config"
 )

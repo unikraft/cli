@@ -8,7 +8,7 @@ package resource
 import (
 	"context"
 
-	"github.com/containerd/containerd/v2/pkg/filters"
+	"unikraft.com/x/filters"
 )
 
 type contextKeyFilters struct{}

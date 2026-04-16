@@ -45,6 +45,7 @@ require (
 	sigs.k8s.io/yaml v1.6.0
 	unikraft.com/cloud/sdk v0.0.0-20260416133315-be4aec303a89
 	unikraft.com/x/colors v0.0.0-20260313145522-d793c36d706e
+	unikraft.com/x/filters v0.0.0-00010101000000-000000000000
 	unikraft.com/x/fingerprint v0.0.0-20260126094137-ab6e717e5679
 	unikraft.com/x/guesstermwidth v0.0.0-20260304162956-523940cab1de
 	unikraft.com/x/image-spec v0.0.0-20260402110633-a9f8f467a2b5
@@ -202,3 +203,6 @@ replace github.com/caarlos0/svu/v3 => github.com/jedevc/svu/v3 v3.0.0-2026041414
 
 // HACK: pin to rc.2 due to bug in rc.3, see https://github.com/moby/buildkit/pull/6616
 replace github.com/containerd/platforms => github.com/containerd/platforms v1.0.0-rc.2
+
+// unikraft.com/x/filters PR: https://github.com/unikraft-cloud/x/pull/225
+replace unikraft.com/x/filters => github.com/unikraft-cloud/x/filters v0.0.0-20260416162246-7172ee027ce6
