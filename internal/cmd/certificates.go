@@ -60,9 +60,9 @@ func (c *CertificateCreateCmd) Run(ctx context.Context, stdio config.Stdio, sand
 }
 
 type Certificate struct {
-	MetroName string `mirror:"metro.name" field:"metro,short" create:"set,required"`
-	Name      string `mirror:"certificate.name" field:",short" create:"set"`
-	UUID      string `mirror:"certificate.uuid" field:",long"`
+	MetroName LinkName[Metro] `mirror:"metro.name" field:"metro,short" create:"set,required"`
+	Name      string          `mirror:"certificate.name" field:",short" create:"set"`
+	UUID      string          `mirror:"certificate.uuid" field:",long"`
 
 	CommonName   string `mirror:"certificate.common_name" field:",short"`
 	Subject      string `mirror:"certificate.subject" field:",long"`
@@ -103,23 +103,7 @@ func (c Certificate) Raw() any {
 }
 
 func (c Certificate) Fields() ([]resource.Field, error) {
-	result, err := resource.FieldsFromStruct(c)
-	if err != nil {
-		return nil, err
-	}
-
-	for key, field := range resource.IterFields(result) {
-		if key.String() == "metro" {
-			if c.MetroName != "" {
-				field.Links = append(field.Links, resource.Link{
-					Type: "metro",
-					Key:  c.MetroName,
-				})
-			}
-		}
-	}
-
-	return result, nil
+	return resource.FieldsFromStruct(c)
 }
 
 func (Certificate) List(ctx context.Context) ([]resource.Resource, error) {
@@ -244,7 +228,7 @@ func (Certificate) Create(ctx context.Context, fields []resource.Field) ([]resou
 				name := field.Create.Set.(string)
 				req.Name = &name
 			case "metro":
-				metro = field.Create.Set.(string)
+				metro = string(field.Create.Set.(LinkName[Metro]))
 			case "cn":
 				req.Cn = new(field.Create.Set.(string)) //nolint:staticcheck // CommonName not on stable yet
 			case "chain":

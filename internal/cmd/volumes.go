@@ -223,9 +223,9 @@ func (c *VolumesCloneCmd) Run(ctx context.Context, stdio config.Stdio, sandbox *
 }
 
 type Volume struct {
-	MetroName string `mirror:"metro.name" field:"metro,short" create:"set,required"`
-	Name      string `mirror:"volume.name" field:",short" create:"set"`
-	UUID      string `mirror:"volume.uuid" field:",long"`
+	MetroName LinkName[Metro] `mirror:"metro.name" field:"metro,short" create:"set,required"`
+	Name      string          `mirror:"volume.name" field:",short" create:"set"`
+	UUID      string          `mirror:"volume.uuid" field:",long"`
 
 	Tags []string `mirror:"volume.tags"`
 
@@ -240,14 +240,12 @@ type Volume struct {
 	}
 
 	AttachedTo []struct {
-		Name string `mirror:"name" field:",long"`
-		UUID string `mirror:"uuid" field:",long"`
+		Link[Instance]
 	} `mirror:"volume.attached_to"`
 
 	MountedBy []struct {
-		Name     string `mirror:"name" field:",long"`
-		UUID     string `mirror:"uuid" field:",long"`
-		ReadOnly bool   `mirror:"read_only" field:",long"`
+		Link[Instance]
+		ReadOnly bool `mirror:"read_only" field:",long"`
 	} `mirror:"volume.mounted_by"`
 
 	Volume platform.Volume `field:"-" json:"volume"`
@@ -272,56 +270,7 @@ func (i Volume) Raw() any {
 }
 
 func (i Volume) Fields() ([]resource.Field, error) {
-	result, err := resource.FieldsFromStruct(i)
-	if err != nil {
-		return nil, err
-	}
-
-	for key, field := range resource.IterFields(result) {
-		switch {
-		case key.String() == "metro":
-			if i.MetroName != "" {
-				field.Links = append(field.Links, resource.Link{
-					Type: "metro",
-					Key:  i.MetroName,
-				})
-			}
-		case key.MatchesString("attached-to.*"):
-			// Add link to instance resource
-			nameField, _ := field.Get("name")
-			uuidField, _ := field.Get("uuid")
-			name, _ := nameField.Value.(string)
-			uuid, _ := uuidField.Value.(string)
-			if name != "" || uuid != "" {
-				field.Links = append(field.Links, resource.Link{
-					Type: "instance",
-					Key: multimetro.Key{
-						Metro: i.Metro.Name,
-						Name:  name,
-						UUID:  uuid,
-					}.String(),
-				})
-			}
-		case key.MatchesString("mounted-by.*"):
-			// Add link to instance resource
-			nameField, _ := field.Get("name")
-			uuidField, _ := field.Get("uuid")
-			name, _ := nameField.Value.(string)
-			uuid, _ := uuidField.Value.(string)
-			if name != "" || uuid != "" {
-				field.Links = append(field.Links, resource.Link{
-					Type: "instance",
-					Key: multimetro.Key{
-						Metro: i.Metro.Name,
-						Name:  name,
-						UUID:  uuid,
-					}.String(),
-				})
-			}
-		}
-	}
-
-	return result, nil
+	return resource.FieldsFromStruct(i)
 }
 
 func (Volume) List(ctx context.Context) ([]resource.Resource, error) {
@@ -450,7 +399,7 @@ func (Volume) Create(ctx context.Context, fields []resource.Field) ([]resource.R
 				name := field.Create.Set.(string)
 				req.Name = &name
 			case "metro":
-				metro = field.Create.Set.(string)
+				metro = string(field.Create.Set.(LinkName[Metro]))
 			case "size":
 				size := field.Create.Set.(types.SizeMebibytes)
 				sizeMb := uint64(size)

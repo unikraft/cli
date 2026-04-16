@@ -43,7 +43,7 @@ stdout:
 	  image
 	  runtime, runtime.args, runtime.env
 	  resources, resources.memory, resources.vcpus
-	  service, service.uuid, service.name, service.services, service.domains,
+	  service, service.name, service.uuid, service.services, service.domains,
 	  service.domains.*, service.domains.*.fqdn, service.domains.*.certificate,
 	  service.domains.*.certificate.name, service.domains.*.certificate.uuid,
 	  service.soft-limit, service.hard-limit
@@ -103,7 +103,7 @@ stdout:
 	  image
 	  runtime, runtime.args, runtime.env
 	  resources, resources.memory, resources.vcpus
-	  service, service.uuid, service.name, service.services, service.domains,
+	  service, service.name, service.uuid, service.services, service.domains,
 	  service.domains.*, service.domains.*.fqdn, service.domains.*.certificate,
 	  service.domains.*.certificate.name, service.domains.*.certificate.uuid,
 	  service.soft-limit, service.hard-limit
@@ -171,7 +171,7 @@ stdout:
 	  image
 	  runtime, runtime.args, runtime.env
 	  resources, resources.memory, resources.vcpus
-	  service, service.uuid, service.name, service.services, service.domains,
+	  service, service.name, service.uuid, service.services, service.domains,
 	  service.domains.*, service.domains.*.fqdn, service.domains.*.certificate,
 	  service.domains.*.certificate.name, service.domains.*.certificate.uuid,
 	  service.soft-limit, service.hard-limit
@@ -239,7 +239,7 @@ stdout:
 	  image
 	  runtime, runtime.args, runtime.env
 	  resources, resources.memory, resources.vcpus
-	  service, service.uuid, service.name, service.services, service.domains,
+	  service, service.name, service.uuid, service.services, service.domains,
 	  service.domains.*, service.domains.*.fqdn, service.domains.*.certificate,
 	  service.domains.*.certificate.name, service.domains.*.certificate.uuid,
 	  service.soft-limit, service.hard-limit
@@ -321,7 +321,7 @@ stdout:
 	  image
 	  runtime, runtime.args, runtime.env
 	  resources, resources.memory, resources.vcpus
-	  service, service.uuid, service.name, service.services, service.domains,
+	  service, service.name, service.uuid, service.services, service.domains,
 	  service.domains.*, service.domains.*.fqdn, service.domains.*.certificate,
 	  service.domains.*.certificate.name, service.domains.*.certificate.uuid,
 	  service.soft-limit, service.hard-limit
@@ -444,7 +444,7 @@ stdout:
 	  image
 	  runtime, runtime.args, runtime.env
 	  resources, resources.memory, resources.vcpus
-	  service, service.uuid, service.name, service.services, service.domains,
+	  service, service.name, service.uuid, service.services, service.domains,
 	  service.domains.*, service.domains.*.fqdn, service.domains.*.certificate,
 	  service.domains.*.certificate.name, service.domains.*.certificate.uuid,
 	  service.soft-limit, service.hard-limit
@@ -543,7 +543,7 @@ stdout:
 	  image
 	  runtime, runtime.args, runtime.env
 	  resources, resources.memory, resources.vcpus
-	  service, service.uuid, service.name, service.services, service.domains,
+	  service, service.name, service.uuid, service.services, service.domains,
 	  service.domains.*, service.domains.*.fqdn, service.domains.*.certificate,
 	  service.domains.*.certificate.name, service.domains.*.certificate.uuid,
 	  service.soft-limit, service.hard-limit

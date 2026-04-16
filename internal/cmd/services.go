@@ -88,9 +88,9 @@ func (c *ServiceEditCmd) Run(ctx context.Context, stdio config.Stdio, sandbox *r
 }
 
 type ServiceGroup struct {
-	MetroName string `mirror:"metro.name" field:"metro,short" create:"set,required"`
-	Name      string `mirror:"service_group.name" field:",short" create:"set"`
-	UUID      string `mirror:"service_group.uuid" field:",long"`
+	MetroName LinkName[Metro] `mirror:"metro.name" field:"metro,short" create:"set,required"`
+	Name      string          `mirror:"service_group.name" field:",short" create:"set"`
+	UUID      string          `mirror:"service_group.uuid" field:",long"`
 
 	Persistent bool `mirror:"service_group.persistent" field:",long"`
 	Autoscale  bool `mirror:"service_group.autoscale" field:",short"`
@@ -107,8 +107,7 @@ type ServiceGroup struct {
 	Domains []Domain `mirror:"service_group.domains" field:",embed" create:"set" edit:"set,add,del"`
 
 	Instances []struct {
-		Name string `mirror:"name" field:",long"`
-		UUID string `mirror:"uuid" field:",long"`
+		Link[Instance]
 	} `mirror:"service_group.instances"`
 
 	Services []*Service `mirror:"service_group.services" field:",embed" create:"set,required" edit:"set,add,del"`
@@ -193,8 +192,7 @@ type Domain struct {
 	Name string `name:"name" json:"name,omitempty" field:"-"` // field:"-" excludes from field system, name:"name" allows --set parsing
 
 	Certificate struct {
-		Name string `name:"name" json:"name" mirror:"name" field:",long"`
-		UUID string `name:"uuid" json:"uuid" mirror:"uuid" field:",long"`
+		Link[Certificate]
 	} `name:"certificate" json:"certificate,omitzero" mirror:"certificate"`
 }
 
@@ -256,55 +254,7 @@ func (s ServiceGroup) Raw() any {
 }
 
 func (s ServiceGroup) Fields() ([]resource.Field, error) {
-	result, err := resource.FieldsFromStruct(s)
-	if err != nil {
-		return nil, err
-	}
-
-	for key, field := range resource.IterFields(result) {
-		switch {
-		case key.String() == "metro":
-			if s.MetroName != "" {
-				field.Links = append(field.Links, resource.Link{
-					Type: "metro",
-					Key:  s.MetroName,
-				})
-			}
-		case key.MatchesString("instances.*"):
-			// Add link to instance resource
-			nameField, _ := field.Get("name")
-			uuidField, _ := field.Get("uuid")
-			name, _ := nameField.Value.(string)
-			uuid, _ := uuidField.Value.(string)
-			if name != "" || uuid != "" {
-				field.Links = append(field.Links, resource.Link{
-					Type: "instance",
-					Key: multimetro.Key{
-						Metro: s.Metro.Name,
-						Name:  name,
-						UUID:  uuid,
-					}.String(),
-				})
-			}
-		case key.MatchesString("domains.*.certificate"):
-			nameField, _ := field.Get("name")
-			uuidField, _ := field.Get("uuid")
-			name, _ := nameField.Value.(string)
-			uuid, _ := uuidField.Value.(string)
-			if name != "" || uuid != "" {
-				field.Links = append(field.Links, resource.Link{
-					Type: "certificate",
-					Key: multimetro.Key{
-						Metro: s.Metro.Name,
-						Name:  name,
-						UUID:  uuid,
-					}.String(),
-				})
-			}
-		}
-	}
-
-	return result, nil
+	return resource.FieldsFromStruct(s)
 }
 
 func (ServiceGroup) List(ctx context.Context) ([]resource.Resource, error) {
@@ -418,7 +368,7 @@ func (ServiceGroup) Create(ctx context.Context, fields []resource.Field) ([]reso
 		if field.Create != nil && field.Create.Set != nil {
 			switch key.String() {
 			case "metro":
-				metro = field.Create.Set.(string)
+				metro = string(field.Create.Set.(LinkName[Metro]))
 			case "name":
 				name := field.Create.Set.(string)
 				req.Name = &name

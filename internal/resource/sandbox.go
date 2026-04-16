@@ -186,24 +186,32 @@ func (s *Sandbox) add(ctx context.Context, r Resource, visited map[string]struct
 	}
 	for _, field := range IterFields(fields) {
 		for _, link := range field.Links {
-			if link.Type == "" || link.Key == "" {
+			if link == nil {
+				continue
+			}
+			linkType, linkKey := link.Link()
+			if linkType == "" || linkKey == nil {
+				continue
+			}
+			key := linkKey.String()
+			if key == "" {
 				continue
 			}
 			for _, r := range s.Cleanup {
-				if r.Type().Name != link.Type {
+				if r.Type().Name != linkType {
 					continue
 				}
-				if keys, ok := s.Keys[link.Type]; ok {
-					keys[link.Key] = struct{}{}
+				if keys, ok := s.Keys[linkType]; ok {
+					keys[key] = struct{}{}
 				}
 
 				r, ok := r.(GettableResource)
 				if !ok {
 					continue
 				}
-				linkedResources, err := r.Get(ctx, []string{link.Key})
+				linkedResources, err := r.Get(ctx, []string{key})
 				if err != nil {
-					return fmt.Errorf("failed to get linked resource %s %s: %w", link.Type, link.Key, err)
+					return fmt.Errorf("failed to get linked resource %s %s: %w", linkType, key, err)
 				}
 				for _, linkedResource := range linkedResources {
 					if err := s.add(ctx, linkedResource, visited); err != nil {

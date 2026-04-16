@@ -28,7 +28,7 @@ type detailPanel struct {
 	key      string
 
 	table    table.Model
-	rowLinks []*resource.Link
+	rowLinks []resource.Link
 
 	err     error
 	loading bool
@@ -175,7 +175,7 @@ func (p *detailPanel) renderResource(res resource.Resource) {
 	fields = resource.DedupeFields(fields)
 
 	rows := make([]table.Row, 0)
-	links := make([]*resource.Link, 0)
+	links := make([]resource.Link, 0)
 	if err := appendKVRows(&rows, &links, nil, fields, 0); err != nil {
 		p.err = err
 		p.table.SetRows(nil)
@@ -200,22 +200,30 @@ func (p *detailPanel) openSelected() tea.Cmd {
 	if link == nil {
 		return nil
 	}
+	linkType, linkKey := link.Link()
+	if linkType == "" || linkKey == nil {
+		return nil
+	}
+	key := linkKey.String()
+	if key == "" {
+		return nil
+	}
 	if p.registry == nil {
-		p.err = fmt.Errorf("unknown resource type: %s", link.Type)
+		p.err = fmt.Errorf("unknown resource type: %s", linkType)
 		return nil
 	}
-	desc, ok := p.registry.Resolve(link.Type)
+	desc, ok := p.registry.Resolve(linkType)
 	if !ok {
-		p.err = fmt.Errorf("unknown resource type: %s", link.Type)
+		p.err = fmt.Errorf("unknown resource type: %s", linkType)
 		return nil
 	}
-	panel := NewDetailPanel(p.ctx, p.registry, desc, link.Key)
+	panel := NewDetailPanel(p.ctx, p.registry, desc, key)
 	return func() tea.Msg {
 		return uitui.OpenPanelMsg{Panel: panel, Collapse: false}
 	}
 }
 
-func (p *detailPanel) currentLink() *resource.Link {
+func (p *detailPanel) currentLink() resource.Link {
 	idx := p.table.Cursor()
 	if idx < 0 || idx >= len(p.rowLinks) {
 		return nil
@@ -241,7 +249,7 @@ func (p *detailPanel) layout() {
 	p.configureTable(p.width, p.height, p.focused)
 }
 
-func appendKVRows(rows *[]table.Row, links *[]*resource.Link, parent *resource.Field, fields []resource.Field, indent int) error {
+func appendKVRows(rows *[]table.Row, links *[]resource.Link, parent *resource.Field, fields []resource.Field, indent int) error {
 	linkColor := compat.AdaptiveColor{Light: colors.Slate600, Dark: colors.Slate400}
 	linkSeq := ansi.NewStyle(ansi.AttrItalic, ansi.AttrUnderline).ForegroundColor(compat.Profile.Convert(linkColor)).String()
 	linkReset := ansi.NewStyle(ansi.AttrNoItalic, ansi.AttrNoUnderline).ForegroundColor(nil).String()
@@ -338,12 +346,11 @@ func appendKVRows(rows *[]table.Row, links *[]*resource.Link, parent *resource.F
 	return nil
 }
 
-func firstLink(field resource.Field) *resource.Link {
+func firstLink(field resource.Field) resource.Link {
 	if len(field.Links) == 0 {
 		return nil
 	}
-	link := field.Links[0]
-	return &link
+	return field.Links[0]
 }
 
 func (p *detailPanel) Subpanels() []tea.Model {

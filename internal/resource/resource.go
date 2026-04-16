@@ -7,6 +7,7 @@ package resource
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"reflect"
 
@@ -66,9 +67,8 @@ type DefaultResource interface {
 	Default(ctx context.Context) (Resource, error)
 }
 
-type Link struct {
-	Type string
-	Key  string
+type Link interface {
+	Link() (string, Key)
 }
 
 type Field struct {
@@ -136,6 +136,52 @@ func (f Field) Get(name string) (Field, bool) {
 		}
 	}
 	return Field{}, false
+}
+
+type linkJSON struct {
+	Type string `json:"Type"`
+	Key  string `json:"Key"`
+}
+
+func (f Field) MarshalJSON() ([]byte, error) {
+	links := make([]linkJSON, 0, len(f.Links))
+	for _, link := range f.Links {
+		if link == nil {
+			continue
+		}
+		linkType, linkKey := link.Link()
+		if linkType == "" || linkKey == nil {
+			continue
+		}
+		key := linkKey.String()
+		if key == "" {
+			continue
+		}
+		links = append(links, linkJSON{Type: linkType, Key: key})
+	}
+	return json.Marshal(struct {
+		Name      string         `json:"name"`
+		Value     any            `json:"value,omitempty"`
+		Subfields []Field        `json:"subfields,omitempty"`
+		Elem      *Field         `json:"elem,omitempty"`
+		ElemMap   bool           `json:"elemMap,omitempty"`
+		Links     []linkJSON     `json:"links,omitempty"`
+		Verbosity FieldVerbosity `json:"verbosity"`
+		Hyperlink string         `json:"hyperlink,omitempty"`
+		Create    *Patch         `json:"create,omitempty"`
+		Edit      *Patch         `json:"edit,omitempty"`
+	}{
+		Name:      f.Name,
+		Value:     f.Value,
+		Subfields: f.Subfields,
+		Elem:      f.Elem,
+		ElemMap:   f.ElemMap,
+		Links:     links,
+		Verbosity: f.Verbosity,
+		Hyperlink: f.Hyperlink,
+		Create:    f.Create,
+		Edit:      f.Edit,
+	})
 }
 
 type Patch struct {

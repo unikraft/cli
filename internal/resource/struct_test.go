@@ -521,3 +521,147 @@ func TestFieldsFromStruct_UnexportedFieldsIgnored(t *testing.T) {
 		})
 	}
 }
+
+func TestFieldsFromStruct_AnonymousStructs(t *testing.T) {
+	type Base struct {
+		Metro string `field:",short"`
+		Name  string `field:",short"`
+		UUID  string `field:",long"`
+	}
+	type Resource struct {
+		Base
+		State string `field:",short"`
+	}
+
+	s := Resource{
+		Base: Base{
+			Metro: "staging",
+			Name:  "test-resource",
+			UUID:  "abc-123",
+		},
+		State: "running",
+	}
+	fields, err := FieldsFromStruct(s)
+	require.NoError(t, err)
+	// Base fields should be embedded directly, so we get 4 top-level fields
+	require.Len(t, fields, 4)
+
+	tests := []struct {
+		path  string
+		value any
+	}{
+		{"metro", "staging"},
+		{"name", "test-resource"},
+		{"uuid", "abc-123"},
+		{"state", "running"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.path, func(t *testing.T) {
+			result := GetFieldByPathString(fields, tt.path)
+			require.Len(t, result, 1, "field %q should exist at top level", tt.path)
+			assert.Equal(t, tt.value, result[0].Value)
+		})
+	}
+
+	// Ensure we don't have a "base" nested field
+	baseField := GetFieldByPathString(fields, "base")
+	assert.Empty(t, baseField, "anonymous struct should not create 'base' field")
+}
+
+// mockLink is a test helper that implements the Link interface
+type mockLink struct {
+	linkType string
+	linkKey  string
+}
+
+func (m mockLink) Link() (string, Key) {
+	if m.linkType == "" || m.linkKey == "" {
+		return "", nil
+	}
+	return m.linkType, simpleKey(m.linkKey)
+}
+
+func TestFieldsFromStruct_LinkDetection(t *testing.T) {
+	type Resource struct {
+		Name     string   `field:",short"`
+		Target   mockLink `field:",short"`
+		EmptyRef mockLink `field:",long"`
+	}
+
+	s := Resource{
+		Name:     "my-resource",
+		Target:   mockLink{linkType: "instance", linkKey: "my-instance"},
+		EmptyRef: mockLink{}, // Empty link should not create a link
+	}
+	fields, err := FieldsFromStruct(s)
+	require.NoError(t, err)
+	require.Len(t, fields, 3)
+
+	t.Run("populated link creates Link entry", func(t *testing.T) {
+		result := GetFieldByPathString(fields, "target")
+		require.Len(t, result, 1)
+		require.Len(t, result[0].Links, 1, "populated link should create a Link entry")
+
+		linkType, linkKey := result[0].Links[0].Link()
+		assert.Equal(t, "instance", linkType)
+		assert.Equal(t, "my-instance", linkKey.String())
+	})
+
+	t.Run("empty link does not create Link entry", func(t *testing.T) {
+		result := GetFieldByPathString(fields, "empty-ref")
+		require.Len(t, result, 1)
+		assert.Empty(t, result[0].Links, "empty link should not create a Link entry")
+	})
+
+	t.Run("non-link field has no Links", func(t *testing.T) {
+		result := GetFieldByPathString(fields, "name")
+		require.Len(t, result, 1)
+		assert.Empty(t, result[0].Links, "regular field should not have Links")
+	})
+}
+
+// simpleKey is a helper for tests that implements the Key interface
+type simpleKey string
+
+func (k simpleKey) String() string {
+	return string(k)
+}
+
+func (k simpleKey) Canonical() string {
+	return string(k)
+}
+
+// TestEmbeddableLink is like mockLink but with exported fields for embedding.
+type TestEmbeddableLink struct {
+	mockLink
+	Name string `field:",short"`
+}
+
+func TestFieldsFromStruct_EmbeddedLinkDetection(t *testing.T) {
+	// When a struct embeds a Link type, the link should bubble up to the
+	// containing struct's Field.Links. This is important for fields with
+	// the "embed" tag where the struct is processed for its subfields.
+	type Container struct {
+		Item *TestEmbeddableLink `field:",short,embed"`
+	}
+
+	s := Container{
+		Item: &TestEmbeddableLink{
+			mockLink: mockLink{linkType: "service", linkKey: "svc-123"},
+			Name:     "my-service",
+		},
+	}
+	fields, err := FieldsFromStruct(s)
+	require.NoError(t, err)
+	require.Len(t, fields, 1)
+
+	// The item field should have the link bubbled up from the embedded Link type
+	item := GetFieldByPathString(fields, "item")
+	require.Len(t, item, 1)
+	require.Len(t, item[0].Links, 1, "embedded link should bubble up to containing field")
+
+	linkType, linkKey := item[0].Links[0].Link()
+	assert.Equal(t, "service", linkType)
+	assert.Equal(t, "svc-123", linkKey.String())
+}

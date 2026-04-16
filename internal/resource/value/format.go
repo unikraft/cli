@@ -27,6 +27,19 @@ func Format(value any) (string, error) {
 		}
 		value = unwrapped.Unwrap()
 	}
+
+	if value == nil {
+		return "", nil
+	}
+
+	// Check for nil pointers before checking for interfaces
+	// because a nil pointer to a type that implements an interface
+	// will pass the interface check but panic when calling methods
+	v := reflect.ValueOf(value)
+	if v.Kind() == reflect.Pointer && v.IsNil() {
+		return "", nil
+	}
+
 	if value, ok := value.(fmt.Stringer); ok {
 		return value.String(), nil
 	}
@@ -35,16 +48,8 @@ func Format(value any) (string, error) {
 		return string(dt), err
 	}
 
-	if value == nil {
-		return "", nil
-	}
-
-	v := reflect.ValueOf(value)
 	switch v.Kind() {
 	case reflect.Pointer:
-		if v.IsNil() {
-			return "", nil
-		}
 		return Format(v.Elem().Interface())
 	case reflect.String:
 		return v.String(), nil

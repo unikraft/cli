@@ -59,12 +59,31 @@ func fieldFromStruct(pf *ParsedField, v reflect.Value) (field *Field, err error)
 	}
 
 	var fields []Field
+	var links []Link
 	for i := range t.NumField() {
 		field := t.Field(i)
 		if !field.IsExported() {
 			continue
 		}
 		fieldVal := s.Field(i)
+
+		// Handle anonymous fields by embedding their subfields directly
+		if field.Anonymous {
+			embedded, err := fieldFromStruct(&ParsedField{Embed: true}, fieldVal)
+			if err != nil {
+				return nil, err
+			}
+			if embedded != nil {
+				fields = append(fields, embedded.Subfields...)
+				links = append(links, embedded.Links...)
+			}
+			if link, ok := fieldVal.Interface().(Link); ok {
+				if t, k := link.Link(); t != "" && k != nil && k.String() != "" {
+					links = append(links, link)
+				}
+			}
+			continue
+		}
 
 		parsedField, err := ParseField(field, fieldVal)
 		if err != nil {
@@ -74,63 +93,11 @@ func fieldFromStruct(pf *ParsedField, v reflect.Value) (field *Field, err error)
 			continue
 		}
 
-		var createPatch, editPatch *Patch
-		if parsedField.Create != nil {
-			patch := *parsedField.Create
-			createPatch = &patch
-		}
-		if parsedField.Edit != nil {
-			patch := *parsedField.Edit
-			editPatch = &patch
-		}
-
-		result := Field{
-			Name:      parsedField.Name,
-			Verbosity: parsedField.Verbosity,
-			Value:     fieldVal.Interface(),
-			Create:    createPatch,
-			Edit:      editPatch,
-		}
-
-		newField, err := fieldFromStruct(parsedField, fieldVal)
+		result, err := fieldFromValue(parsedField, fieldVal)
 		if err != nil {
 			return nil, err
 		}
-		if newField != nil {
-			result.Value = newField.Value
-			result.Subfields = newField.Subfields
-			result.Verbosity = cmp.Or(result.Verbosity, newField.Verbosity)
-		}
-
-		newField, err = fieldFromSlice(parsedField, fieldVal)
-		if err != nil {
-			return nil, err
-		}
-		if newField != nil {
-			result.Value = newField.Value
-			result.Elem = newField.Elem
-			result.Subfields = newField.Subfields
-			result.Verbosity = cmp.Or(result.Verbosity, newField.Verbosity)
-		}
-
-		newField, err = fieldFromMap(parsedField, fieldVal)
-		if err != nil {
-			return nil, err
-		}
-		if newField != nil {
-			result.Value = newField.Value
-			result.Elem = newField.Elem
-			result.Subfields = newField.Subfields
-			result.ElemMap = newField.ElemMap
-			result.Verbosity = cmp.Or(result.Verbosity, newField.Verbosity)
-		}
-
-		if parsedField.Valueless {
-			result.Value = nil
-		}
-
-		result.Verbosity = cmp.Or(result.Verbosity, FieldVerbosityHidden)
-		fields = append(fields, result)
+		fields = append(fields, *result)
 	}
 
 	var value any
@@ -142,11 +109,82 @@ func fieldFromStruct(pf *ParsedField, v reflect.Value) (field *Field, err error)
 	for _, f := range fields {
 		verbosity = max(verbosity, f.Verbosity)
 	}
+
 	return &Field{
 		Value:     value,
 		Subfields: fields,
 		Verbosity: verbosity,
+		Links:     links,
 	}, nil
+}
+
+func fieldFromValue(pf *ParsedField, v reflect.Value) (*Field, error) {
+	var createPatch, editPatch *Patch
+	if pf.Create != nil {
+		patch := *pf.Create
+		createPatch = &patch
+	}
+	if pf.Edit != nil {
+		patch := *pf.Edit
+		editPatch = &patch
+	}
+
+	result := Field{
+		Name:      pf.Name,
+		Verbosity: pf.Verbosity,
+		Value:     v.Interface(),
+		Create:    createPatch,
+		Edit:      editPatch,
+	}
+
+	newField, err := fieldFromStruct(pf, v)
+	if err != nil {
+		return nil, err
+	}
+	if newField != nil {
+		result.Value = newField.Value
+		result.Subfields = newField.Subfields
+		result.Verbosity = cmp.Or(result.Verbosity, newField.Verbosity)
+		result.Links = append(result.Links, newField.Links...)
+	}
+
+	newField, err = fieldFromSlice(pf, v)
+	if err != nil {
+		return nil, err
+	}
+	if newField != nil {
+		result.Value = newField.Value
+		result.Elem = newField.Elem
+		result.Subfields = newField.Subfields
+		result.Verbosity = cmp.Or(result.Verbosity, newField.Verbosity)
+	}
+
+	newField, err = fieldFromMap(pf, v)
+	if err != nil {
+		return nil, err
+	}
+	if newField != nil {
+		result.Value = newField.Value
+		result.Elem = newField.Elem
+		result.Subfields = newField.Subfields
+		result.ElemMap = newField.ElemMap
+		result.Verbosity = cmp.Or(result.Verbosity, newField.Verbosity)
+	}
+
+	// Check if this value implements the Link interface
+	// This is the ONE place where we check for links on field values
+	if link, ok := v.Interface().(Link); ok {
+		if t, k := link.Link(); t != "" && k != nil && k.String() != "" {
+			result.Links = append(result.Links, link)
+		}
+	}
+
+	if pf.Valueless {
+		result.Value = nil
+	}
+
+	result.Verbosity = cmp.Or(result.Verbosity, FieldVerbosityHidden)
+	return &result, nil
 }
 
 func fieldFromSlice(pf *ParsedField, v reflect.Value) (field *Field, err error) {

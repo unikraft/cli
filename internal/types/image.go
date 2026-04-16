@@ -9,7 +9,10 @@ import (
 	"strings"
 
 	"github.com/distribution/reference"
+
 	"unikraft.com/cli/internal/images"
+	"unikraft.com/cli/internal/multimetro"
+	"unikraft.com/cli/internal/resource"
 )
 
 // ImageRef is a generic wrapper around a Docker image reference.
@@ -38,4 +41,14 @@ func (ir *ImageRef[T]) UnmarshalText(text []byte) error {
 	ref = reference.TagNameOnly(ref)
 	ir.Reference = ref.(T)
 	return nil
+}
+
+func (ir ImageRef[T]) Link() (string, resource.Key) {
+	var zero T
+	if ir.Reference == zero {
+		return "", nil
+	}
+	return "image", multimetro.Key{
+		Name: ir.Reference.String(),
+	}
 }

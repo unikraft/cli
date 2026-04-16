@@ -74,9 +74,9 @@ func (c *InstanceTemplateEditCmd) Run(ctx context.Context, stdio config.Stdio, s
 }
 
 type InstanceTemplate struct {
-	MetroName string `mirror:"metro.name" field:"metro,short"`
-	Name      string `mirror:"instance.name" field:",short"`
-	UUID      string `mirror:"instance.uuid" field:",long"`
+	MetroName LinkName[Metro] `mirror:"metro.name" field:"metro,short"`
+	Name      string          `mirror:"instance.name" field:",short"`
+	UUID      string          `mirror:"instance.uuid" field:",long"`
 
 	Tags       []string `mirror:"instance.tags" edit:"set,add,del"`
 	DeleteLock bool     `mirror:"instance.delete_lock" field:"delete-lock,hidden" edit:"set"`
@@ -131,49 +131,7 @@ func (i InstanceTemplate) Raw() any {
 }
 
 func (i InstanceTemplate) Fields() ([]resource.Field, error) {
-	result, err := resource.FieldsFromStruct(i)
-	if err != nil {
-		return nil, err
-	}
-
-	for key, field := range resource.IterFields(result) {
-		switch {
-		case key.String() == "metro":
-			if i.MetroName != "" {
-				field.Links = append(field.Links, resource.Link{
-					Type: "metro",
-					Key:  i.MetroName,
-				})
-			}
-		case key.MatchesString("volumes.*"):
-			if i.Metro == nil {
-				break
-			}
-			nameField, _ := field.Get("name")
-			uuidField, _ := field.Get("uuid")
-			name, _ := nameField.Value.(string)
-			uuid, _ := uuidField.Value.(string)
-			if name != "" || uuid != "" {
-				field.Links = append(field.Links, resource.Link{
-					Type: "volume",
-					Key: multimetro.Key{
-						Metro: i.Metro.Name,
-						Name:  name,
-						UUID:  uuid,
-					}.String(),
-				})
-			}
-		case key.String() == "image":
-			if i.Image.Reference != nil {
-				field.Links = append(field.Links, resource.Link{
-					Type: "image",
-					Key:  i.Image.Reference.String(),
-				})
-			}
-		}
-	}
-
-	return result, nil
+	return resource.FieldsFromStruct(i)
 }
 
 func (InstanceTemplate) List(ctx context.Context) ([]resource.Resource, error) {

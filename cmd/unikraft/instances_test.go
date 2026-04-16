@@ -200,7 +200,7 @@ func instancesTests(t *testing.T, r *testRunner) {
 			})
 	})
 
-	t.Run("instances/volume", func(t *testing.T) {
+	t.Run("volume", func(t *testing.T) {
 		r.
 			online().
 			withCleaners(instanceCleaners).
@@ -230,7 +230,7 @@ func instancesTests(t *testing.T, r *testRunner) {
 			})
 	})
 
-	t.Run("instances/volume-inline", func(t *testing.T) {
+	t.Run("volume-inline", func(t *testing.T) {
 		r.
 			online().
 			withCleaners(instanceCleaners).
@@ -253,7 +253,7 @@ func instancesTests(t *testing.T, r *testRunner) {
 			})
 	})
 
-	t.Run("instances/autostart", func(t *testing.T) {
+	t.Run("autostart", func(t *testing.T) {
 		r.
 			online().
 			withCleaners(instanceCleaners).
@@ -306,7 +306,7 @@ func instancesTests(t *testing.T, r *testRunner) {
 			})
 	})
 
-	t.Run("instances/add-domain", func(t *testing.T) {
+	t.Run("add-domain", func(t *testing.T) {
 		r.
 			online().
 			withCleaners(instanceCleaners).
