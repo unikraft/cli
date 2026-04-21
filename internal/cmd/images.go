@@ -17,13 +17,16 @@ import (
 	"github.com/distribution/reference"
 	"github.com/opencontainers/go-digest"
 	"unikraft.com/cloud/sdk/controlplane"
+	"unikraft.com/cloud/sdk/platform"
 	"unikraft.com/cloud/sdk/platform/group"
+	"unikraft.com/x/joinerrgroup"
 	"unikraft.com/x/kingkong"
 	"unikraft.com/x/log"
 	"unikraft.com/x/ptr"
 
 	imagespec "unikraft.com/x/image-spec"
 
+	"unikraft.com/cli/internal/config"
 	"unikraft.com/cli/internal/images"
 	"unikraft.com/cli/internal/multimetro"
 	"unikraft.com/cli/internal/resource"
@@ -41,9 +44,7 @@ type ImagesCmd struct {
 	Copy ImagesCopyCmd `cmd:"" help:"Copy images."`
 }
 
-type ImagesListCmd struct {
-	cmd.ResourceListCmd[ImageEntry]
-}
+type ImagesListCmd = cmd.ResourceListCmd[ImageEntry]
 
 type Image struct {
 	Ref    types.ImageRef[reference.Named] `field:",short"`
@@ -246,8 +247,8 @@ func (Image) Examples() map[cmd.CmdType][]kingkong.Example {
 }
 
 type ImageEntry struct {
-	Ref    types.ImageRef[reference.NamedTagged] `field:",short"`
-	Digest digest.Digest                         `field:",short"`
+	Ref    types.ImageRef[reference.Named] `field:",short"`
+	Digest digest.Digest                   `field:",short"`
 
 	Namespace string
 
@@ -272,11 +273,7 @@ func (i ImageEntry) Raw() any {
 }
 
 func (i ImageEntry) Fields() ([]resource.Field, error) {
-	result, err := resource.FieldsFromStruct(i)
-	if err != nil {
-		return nil, err
-	}
-	return result, nil
+	return resource.FieldsFromStruct(i)
 }
 
 func (ImageEntry) Examples() map[cmd.CmdType][]kingkong.Example {
@@ -289,28 +286,84 @@ func (ImageEntry) List(ctx context.Context) ([]resource.Resource, error) {
 		return nil, err
 	}
 
-	log.G(ctx).Trace().Msg("listing images")
-	resp, err := client.ListImages(ctx, controlplane.ListImagesOpts{Details: new(true)})
+	var controlplaneResults, platformResults []resource.Resource
+
+	eg, ctx := joinerrgroup.WithContext(ctx)
+	eg.Go(func() error {
+		log.G(ctx).Trace().Msg("listing images from controlplane")
+		resp, err := client.ListImages(ctx, controlplane.ListImagesOpts{Details: new(true)})
+		if err != nil {
+			return err
+		}
+		if resp.Data != nil {
+			for _, image := range resp.Data.Images {
+				entries, err := ImageEntry{}.loadFromControlplane(image)
+				if err != nil {
+					return err
+				}
+				for _, entry := range entries {
+					controlplaneResults = append(controlplaneResults, entry)
+				}
+			}
+		}
+		return nil
+	})
+	eg.Go(func() error {
+		var err error
+		platformResults, err = listPlatformImages(ctx)
+		return err
+	})
+	if err := eg.Wait(); err != nil {
+		return nil, err
+	}
+
+	seen := make(map[string]struct{}, len(controlplaneResults))
+	for _, r := range controlplaneResults {
+		seen[r.(ImageEntry).Ref.Reference.String()] = struct{}{}
+	}
+	results := controlplaneResults
+	for _, r := range platformResults {
+		ref := r.(ImageEntry).Ref.Reference.String()
+		if _, ok := seen[ref]; ok {
+			continue
+		}
+		seen[ref] = struct{}{}
+		results = append(results, r)
+	}
+
+	return results, nil
+}
+
+func listPlatformImages(ctx context.Context) ([]resource.Resource, error) {
+	g, err := multimetro.NewClient(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if resp.Data == nil {
-		return nil, nil
-	}
-
-	var results []resource.Resource
-	var errs []error
-	for _, image := range resp.Data.Images {
-		entries, err := ImageEntry{}.load(image)
+	return group.CollectAllSlices(ctx, g, func(ctx context.Context, c multimetro.MetroClient) ([]resource.Resource, error) {
+		// XXX: switch to /v1/image-store
+		log.G(ctx).Trace().Msg("listing images from platform")
+		resp, err := c.GetImages(ctx, nil, platform.GetImagesOpts{})
 		if err != nil {
-			errs = append(errs, err)
-			continue
+			// XXX: filter errors better!
+			log.G(ctx).Trace().Err(err).Msg("skipping platform image listing")
+			return nil, nil
 		}
-		for _, entry := range entries {
-			results = append(results, entry)
+		var results []resource.Resource
+		var errs []error
+		if resp.Data != nil {
+			for _, image := range resp.Data.Images {
+				entries, err := ImageEntry{}.loadFromPlatform(image, &c.Metro)
+				if err != nil {
+					errs = append(errs, err)
+					continue
+				}
+				for _, entry := range entries {
+					results = append(results, entry)
+				}
+			}
 		}
-	}
-	return results, errors.Join(errs...)
+		return results, errors.Join(errs...)
+	})
 }
 
 func (ImageEntry) Get(ctx context.Context, keys []string) ([]resource.Resource, error) {
@@ -329,42 +382,58 @@ func (ImageEntry) Get(ctx context.Context, keys []string) ([]resource.Resource, 
 	}
 
 	log.G(ctx).Trace().Msg("getting images")
-	details := true
-	resp, err := client.ListImages(ctx, controlplane.ListImagesOpts{Details: &details})
+	resp, err := client.ListImages(ctx, controlplane.ListImagesOpts{Details: new(true)})
 	if err != nil {
 		return nil, err
-	}
-	if resp.Data == nil {
-		refs := make(group.Refs, 0, len(normalizedKeys))
-		for _, key := range normalizedKeys {
-			refs = append(refs, group.Ref{Name: key})
-		}
-		return nil, group.ErrRefNotFound{Refs: refs}
 	}
 
 	found := make(map[string]struct{}, len(normalizedKeys))
 	var results []resource.Resource
 	var errs []error
-	for _, image := range resp.Data.Images {
-		entries, err := ImageEntry{}.load(image)
-		if err != nil {
-			errs = append(errs, err)
-			continue
+	if resp.Data != nil {
+		for _, image := range resp.Data.Images {
+			entries, err := ImageEntry{}.loadFromControlplane(image)
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
+			for _, key := range normalizedKeys {
+				if _, ok := found[key]; ok {
+					continue
+				}
+				for _, entry := range entries {
+					matchRef := reference.Named(entry.Ref.Reference)
+					if entry.Canonical != nil {
+						matchRef = entry.Canonical
+					}
+					if xreference.MatchNamed(matchRef, key) {
+						found[key] = struct{}{}
+						results = append(results, entry)
+						break
+					}
+				}
+			}
 		}
+	}
+
+	platformResults, platformErr := listPlatformImages(ctx)
+	if platformErr != nil {
+		errs = append(errs, platformErr)
+	}
+	for _, r := range platformResults {
+		entry := r.(ImageEntry)
 		for _, key := range normalizedKeys {
 			if _, ok := found[key]; ok {
 				continue
 			}
-			for _, entry := range entries {
-				matchRef := reference.Named(entry.Ref.Reference)
-				if entry.Canonical != nil {
-					matchRef = entry.Canonical
-				}
-				if xreference.MatchNamed(matchRef, key) {
-					found[key] = struct{}{}
-					results = append(results, entry)
-					break
-				}
+			matchRef := reference.Named(entry.Ref.Reference)
+			if entry.Canonical != nil {
+				matchRef = entry.Canonical
+			}
+			if xreference.MatchNamed(matchRef, key) {
+				found[key] = struct{}{}
+				results = append(results, r)
+				break
 			}
 		}
 	}
@@ -383,7 +452,7 @@ func (ImageEntry) Get(ctx context.Context, keys []string) ([]resource.Resource, 
 	return results, errors.Join(errors.Join(errs...), missingErr)
 }
 
-func (ImageEntry) load(image controlplane.Image) ([]ImageEntry, error) {
+func (ImageEntry) loadFromControlplane(image controlplane.Image) ([]ImageEntry, error) {
 	name := strings.TrimSpace(ptr.ZeroIfNil(image.Name))
 	if name == "" {
 		return nil, fmt.Errorf("image has no name")
@@ -393,8 +462,8 @@ func (ImageEntry) load(image controlplane.Image) ([]ImageEntry, error) {
 		return nil, fmt.Errorf("could not parse image name %q: %w", name, err)
 	}
 	var baseDigest digest.Digest
-	if baseDigested, ok := base.(reference.Digested); ok {
-		baseDigest = baseDigested.Digest()
+	if d, ok := base.(reference.Digested); ok {
+		baseDigest = d.Digest()
 	}
 	base = reference.TrimNamed(base)
 
@@ -440,30 +509,32 @@ func (ImageEntry) load(image controlplane.Image) ([]ImageEntry, error) {
 	}
 
 	if len(tagged) == 0 {
-		return nil, fmt.Errorf("image has no tags")
+		return nil, nil
 	}
 
-	// move latest to front if present
-	idx := slices.IndexFunc(tagged, func(t reference.NamedTagged) bool {
+	// Move latest to front if present.
+	if idx := slices.IndexFunc(tagged, func(t reference.NamedTagged) bool {
 		return t.Tag() == "latest"
-	})
-	if idx > 0 {
+	}); idx > 0 {
 		latest := tagged[idx]
-		tagged = append(tagged[:idx], tagged[idx+1:]...)
-		tagged = append([]reference.NamedTagged{latest}, tagged...)
+		tagged = slices.Insert(slices.Delete(tagged, idx, idx+1), 0, latest)
+	}
+
+	if len(tagged) == 0 {
+		return nil, nil
 	}
 
 	results := make([]ImageEntry, 0, len(tagged))
 	for _, tag := range tagged {
-		result := ImageEntry{
-			Image: image,
-		}
-
 		tagDigest := tagDigests[tag.Tag()]
 		if tagDigest == "" {
 			tagDigest = baseDigest
 		}
-		result.Digest = tagDigest
+
+		result := ImageEntry{
+			Image:  image,
+			Digest: tagDigest,
+		}
 		if tagDigest != "" {
 			canonical, err := reference.WithDigest(tag, tagDigest)
 			if err != nil {
@@ -471,14 +542,93 @@ func (ImageEntry) load(image controlplane.Image) ([]ImageEntry, error) {
 			}
 			result.Canonical = canonical
 		}
-
 		result.Ref.Reference = tag
 		if ns, _, ok := strings.Cut(reference.Path(tag), "/"); ok {
 			result.Namespace = ns
 		}
 		results = append(results, result)
 	}
+	return results, nil
+}
 
+func (ImageEntry) loadFromPlatform(image platform.Image, metro *config.Metro) ([]ImageEntry, error) {
+	url := strings.TrimSpace(ptr.ZeroIfNil(image.Url))
+	if url == "" {
+		return nil, fmt.Errorf("platform image has no url")
+	}
+	parsed, err := images.ParseNormalizedNamedMetro(metro, url)
+	if err != nil {
+		return nil, fmt.Errorf("could not parse platform image url %q: %w", url, err)
+	}
+
+	var baseDigest digest.Digest
+	if d, ok := parsed.(reference.Digested); ok {
+		baseDigest = d.Digest()
+	}
+
+	base, err := reference.ParseNamed(metro.Index().Host + "/" + reference.Path(parsed))
+	if err != nil {
+		return nil, fmt.Errorf("could not construct platform image ref: %w", err)
+	}
+
+	var tagged []reference.NamedTagged
+	for _, tag := range image.Tags {
+		_, tagVal, ok := strings.Cut(tag, ":")
+		if !ok || strings.HasPrefix(tagVal, "sha256:") {
+			continue
+		}
+		ref, err := reference.WithTag(base, tagVal)
+		if err != nil {
+			return nil, fmt.Errorf("could not parse platform image tag %q: %w", tag, err)
+		}
+		tagged = append(tagged, ref)
+	}
+
+	// Move latest to front if present.
+	if idx := slices.IndexFunc(tagged, func(t reference.NamedTagged) bool {
+		return t.Tag() == "latest"
+	}); idx > 0 {
+		latest := tagged[idx]
+		tagged = slices.Insert(slices.Delete(tagged, idx, idx+1), 0, latest)
+	}
+
+	if len(tagged) == 0 {
+		if baseDigest == "" {
+			return nil, fmt.Errorf("image has no tags and no digest")
+		}
+		canonical, err := reference.WithDigest(base, baseDigest)
+		if err != nil {
+			return nil, fmt.Errorf("could not create canonical image reference: %w", err)
+		}
+		result := ImageEntry{
+			Canonical: canonical,
+			Digest:    baseDigest,
+		}
+		result.Ref.Reference = canonical
+		if ns, _, ok := strings.Cut(reference.Path(canonical), "/"); ok {
+			result.Namespace = ns
+		}
+		return []ImageEntry{result}, nil
+	}
+
+	results := make([]ImageEntry, 0, len(tagged))
+	for _, tag := range tagged {
+		result := ImageEntry{
+			Digest: baseDigest,
+		}
+		if baseDigest != "" {
+			canonical, err := reference.WithDigest(tag, baseDigest)
+			if err != nil {
+				return nil, fmt.Errorf("could not create image canonical reference: %w", err)
+			}
+			result.Canonical = canonical
+		}
+		result.Ref.Reference = tag
+		if ns, _, ok := strings.Cut(reference.Path(tag), "/"); ok {
+			result.Namespace = ns
+		}
+		results = append(results, result)
+	}
 	return results, nil
 }
 
