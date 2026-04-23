@@ -691,9 +691,14 @@ func (c *VolumeImportCmd) Run(ctx context.Context, stdio config.Stdio, sandbox *
 		return fmt.Errorf("unexpected resource type %T", resources[0])
 	}
 
+	sourceType, err := builder.DetectSourceType(c.Source)
+	if err != nil {
+		return fmt.Errorf("detecting source type for %q: %w", c.Source, err)
+	}
 	importOpts := &builder.BuildOpts{
 		Rootfs: builder.RootfsOpts{
 			Path: c.Source,
+			Type: sourceType,
 			// Set format to CPIO as volimport expects a CPIO archive
 			Format: kraftfile.FsTypeCpio,
 		},

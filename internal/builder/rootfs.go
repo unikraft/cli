@@ -57,15 +57,15 @@ func buildImageConfig(opts BuildOpts) ocispec.ImageConfig {
 	return cfg
 }
 
-// DetectRootfsType inspects path and returns the detected RootfsType.
-func DetectRootfsType(path string) (RootfsType, error) {
+// DetectSourceType inspects path and returns the detected RootfsType.
+func DetectSourceType(path string) (kraftfile.SourceType, error) {
 	if path == "" {
 		return "", fmt.Errorf("empty rootfs path")
 	}
 
 	base := filepath.Base(path)
 	if base == "Dockerfile" || slices.Contains(strings.Split(base, "."), "Dockerfile") {
-		return RootfsTypeDockerfile, nil
+		return kraftfile.SourceTypeDockerfile, nil
 	}
 
 	fi, err := os.Stat(path)
@@ -78,13 +78,13 @@ func DetectRootfsType(path string) (RootfsType, error) {
 
 	switch {
 	case fi.IsDir():
-		return RootfsTypeDir, nil
+		return kraftfile.SourceTypeDirectory, nil
 	case fi.Mode().IsRegular(), fi.Mode()&os.ModeSymlink != 0:
 		if gocpio.IsValidPath(path) {
-			return RootfsTypeCpio, nil
+			return kraftfile.SourceTypeCpio, nil
 		}
 		if goerofs.IsValidPath(path) {
-			return RootfsTypeErofs, nil
+			return kraftfile.SourceTypeErofs, nil
 		}
 		return "", fmt.Errorf("could not detect file rootfs type %q", path)
 	default:
@@ -93,30 +93,28 @@ func DetectRootfsType(path string) (RootfsType, error) {
 }
 
 // BuildRootfs builds a rootfs for each platform in opts.Platform from the
-// source at opts.Rootfs.Path. The source is detected in this order:
-//
-//  1. A pre-packaged rootfs file - returned as-is.
-//  2. A directory - walked and archived.
-//  3. Anything else - treated as a Dockerfile context and built with BuildKit.
+// source at opts.Rootfs.Path.
 func BuildRootfs(ctx context.Context, opts BuildOpts) (_ []*imagespec.Image, rerr error) {
 	if len(opts.Platform) == 0 {
 		return nil, fmt.Errorf("at least one platform must be specified")
 	}
 
-	if opts.Rootfs.Type == "" {
-		typ, err := DetectRootfsType(opts.Rootfs.Path)
-		if err != nil {
-			return nil, err
-		}
-		opts.Rootfs.Type = typ
-	}
-
 	switch opts.Rootfs.Type {
-	case RootfsTypeCpio, RootfsTypeErofs:
+	case kraftfile.SourceTypeCpio, kraftfile.SourceTypeErofs:
+		if opts.Rootfs.Format != "" {
+			expected := map[kraftfile.SourceType]kraftfile.FsType{
+				kraftfile.SourceTypeCpio:  kraftfile.FsTypeCpio,
+				kraftfile.SourceTypeErofs: kraftfile.FsTypeErofs,
+			}
+			if exp, ok := expected[opts.Rootfs.Type]; ok && opts.Rootfs.Format != exp {
+				// TODO: maybe we could be smart and convert this
+				return nil, fmt.Errorf("unsupported rootfs format mismatch: source is %s but requested format is %s", opts.Rootfs.Type, opts.Rootfs.Format)
+			}
+		}
 		return buildRootfsPackaged(ctx, opts)
-	case RootfsTypeDir:
+	case kraftfile.SourceTypeDirectory:
 		return buildRootfsDirectory(ctx, opts)
-	case RootfsTypeDockerfile:
+	case kraftfile.SourceTypeDockerfile:
 		if f, err := os.Stat(opts.Rootfs.Path); err != nil {
 			if os.IsNotExist(err) {
 				return nil, fmt.Errorf("dockerfile does not exist")
@@ -127,7 +125,7 @@ func BuildRootfs(ctx context.Context, opts BuildOpts) (_ []*imagespec.Image, rer
 		}
 		return buildRootfsDockerfile(ctx, opts)
 	default:
-		return nil, fmt.Errorf("unknown rootfs type %q", opts.Rootfs.Type)
+		return nil, fmt.Errorf("unsupported rootfs type %q", opts.Rootfs.Type)
 	}
 }
 

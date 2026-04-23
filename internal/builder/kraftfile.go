@@ -53,21 +53,17 @@ func KraftfileToBuildOpts(dir string, kf *kraftfile.Kraftfile) (BuildOpts, error
 		})
 	}
 
-	// FIXME: import detection logic from kraftkit initrd/detect.go
-
 	if kf.Rootfs != nil {
+		opts.Rootfs.Path = kf.Rootfs.Source
 		opts.Rootfs.Format = kf.Rootfs.Format
-		sourcePath := filepath.Join(dir, kf.Rootfs.Source)
-		typ, err := DetectRootfsType(sourcePath)
-		if err != nil {
-			return BuildOpts{}, fmt.Errorf("detecting rootfs type for %q: %w", kf.Rootfs.Source, err)
-		}
-		opts.Rootfs.Type = typ
-		switch typ {
-		case RootfsTypeDockerfile:
-			opts.Rootfs.Path = filepath.Dir(sourcePath)
-		default:
-			opts.Rootfs.Path = sourcePath
+		opts.Rootfs.Type = kf.Rootfs.Type
+		if opts.Rootfs.Type == "" {
+			sourcePath := filepath.Join(dir, kf.Rootfs.Source)
+			typ, err := DetectSourceType(sourcePath)
+			if err != nil {
+				return BuildOpts{}, fmt.Errorf("detecting rootfs type for %q: %w", kf.Rootfs.Source, err)
+			}
+			opts.Rootfs.Type = typ
 		}
 	}
 

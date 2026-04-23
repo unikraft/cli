@@ -31,7 +31,7 @@ type BuildOpts struct {
 
 type RootfsOpts struct {
 	Path string
-	Type RootfsType
+	Type kraftfile.SourceType
 
 	// Output params
 	Format     kraftfile.FsType
@@ -47,15 +47,6 @@ type RootfsOpts struct {
 
 	NoCache bool
 }
-
-type RootfsType string
-
-const (
-	RootfsTypeDockerfile RootfsType = "dockerfile"
-	RootfsTypeCpio       RootfsType = "cpio"
-	RootfsTypeErofs      RootfsType = "erofs"
-	RootfsTypeDir        RootfsType = "dir"
-)
 
 // Build a unikraft image based on the provided build options.
 func Build(ctx context.Context, opts BuildOpts) ([]*imagespec.Image, error) {

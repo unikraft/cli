@@ -40,6 +40,7 @@ EOF
 		Runtime: "unikraft.io/unikraft.org/base",
 		Rootfs: RootfsOpts{
 			Format: kraftfile.FsTypeCpio,
+			Type:   kraftfile.SourceTypeDockerfile,
 			Path:   rootfsPath,
 		},
 		Platform: []ocispec.Platform{{OS: "fc", Architecture: "x86_64"}},
@@ -64,6 +65,7 @@ EOF
 		Runtime: "unikraft.io/unikraft.org/base",
 		Rootfs: RootfsOpts{
 			Format: kraftfile.FsTypeErofs,
+			Type:   kraftfile.SourceTypeDockerfile,
 			Path:   rootfsPath,
 		},
 		Platform: []ocispec.Platform{{OS: "fc", Architecture: "x86_64"}},
@@ -92,6 +94,7 @@ RUN ln -s /etc/passwd /another-test-link
 		Runtime: "unikraft.io/unikraft.org/base",
 		Rootfs: RootfsOpts{
 			Format: kraftfile.FsTypeCpio,
+			Type:   kraftfile.SourceTypeDockerfile,
 			Path:   rootfsPath,
 		},
 		Platform: []ocispec.Platform{{OS: "fc", Architecture: "x86_64"}},
@@ -163,6 +166,7 @@ EOF
 		Runtime: "unikraft.io/unikraft.org/base",
 		Rootfs: RootfsOpts{
 			Format: kraftfile.FsTypeCpio,
+			Type:   kraftfile.SourceTypeDockerfile,
 			Path:   rootfsPath,
 		},
 		Platform: []ocispec.Platform{
@@ -191,6 +195,7 @@ RUN --mount=type=secret,id=api_key cat /run/secrets/api_key | grep -q s3cr3t
 		Runtime: "unikraft.io/unikraft.org/base",
 		Rootfs: RootfsOpts{
 			Format:  kraftfile.FsTypeCpio,
+			Type:    kraftfile.SourceTypeDockerfile,
 			Path:    rootfsPath,
 			Secrets: secrets,
 		},
@@ -214,6 +219,7 @@ CMD ["/dockerfile-cmd"]
 		Runtime: "unikraft.io/unikraft.org/base",
 		Rootfs: RootfsOpts{
 			Format: kraftfile.FsTypeCpio,
+			Type:   kraftfile.SourceTypeDockerfile,
 			Path:   rootfsPath,
 		},
 		Platform: []ocispec.Platform{{OS: "fc", Architecture: "x86_64"}},
