@@ -3,37 +3,21 @@
 // Licensed under the BSD-3-Clause License (the "License").
 // You may not use this file except in compliance with the License.
 
-package cpio
+package buildfs
 
 import (
 	"context"
 	"fmt"
 	"io"
 	"io/fs"
-	"os"
-	"path/filepath"
-	"strings"
 
+	"github.com/unikraft/go-archivefs"
 	"github.com/unikraft/go-cpio"
 	"unikraft.com/x/log"
 )
 
-type createOptions struct {
-	allRoot bool
-}
-
-type CpioCreateOption func(*createOptions)
-
-// WithAllRoot toggles whether all files permissions should be set to root:root
-// instead of the original file permissions.
-func WithAllRoot(allRoot bool) CpioCreateOption {
-	return func(co *createOptions) {
-		co.allRoot = allRoot
-	}
-}
-
-// CreateFSFromDirectory creates a CPIO filesystem from an existing directory.
-func CreateFSFromDirectory(ctx context.Context, w io.Writer, source string, opts ...CpioCreateOption) error {
+// CreateCPIO creates a CPIO filesystem from the given fs.FS.
+func CreateCPIO(ctx context.Context, w io.Writer, fsys fs.FS, opts ...CreateOption) error {
 	c := createOptions{}
 	for _, opt := range opts {
 		opt(&c)
@@ -49,16 +33,15 @@ func CreateFSFromDirectory(ctx context.Context, w io.Writer, source string, opts
 	hardlinks := map[hardlinkKey]string{}
 
 	// Recursively walk and serialize to the output
-	if err := filepath.WalkDir(source, func(path string, d fs.DirEntry, err error) error {
+	if err := fs.WalkDir(fsys, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return fmt.Errorf("received error before parsing path: %w", err)
 		}
 
-		internal := strings.TrimPrefix(path, filepath.Clean(source))
-		if internal == "" {
-			return nil // Do not archive empty paths
+		if path == "." {
+			return nil // Do not archive the root itself
 		}
-		internal = "." + filepath.ToSlash(internal)
+		internal := "./" + path
 
 		info, err := d.Info()
 		if err != nil {
@@ -74,7 +57,7 @@ func CreateFSFromDirectory(ctx context.Context, w io.Writer, source string, opts
 			}
 
 			// Populate platform specific information
-			FileInfoToCPIOHeader(info, header)
+			fileInfoToCPIOHeader(info, header)
 
 			if err := cw.WriteHeader(header); err != nil {
 				return fmt.Errorf("could not write CPIO header: %w", err)
@@ -95,7 +78,7 @@ func CreateFSFromDirectory(ctx context.Context, w io.Writer, source string, opts
 		}
 
 		// Populate platform specific information
-		FileInfoToCPIOHeader(info, header)
+		fileInfoToCPIOHeader(info, header)
 
 		if c.allRoot {
 			header.Uid = 0
@@ -116,14 +99,14 @@ func CreateFSFromDirectory(ctx context.Context, w io.Writer, source string, opts
 				hardlinks[key] = internal
 			}
 
-			data, err = os.ReadFile(path)
+			data, err = fs.ReadFile(fsys, path)
 			if err != nil {
 				return fmt.Errorf("could not read file: %w", err)
 			}
 			header.Size = int64(len(data))
 
 		case info.Mode()&fs.ModeSymlink != 0:
-			targetLink, err := os.Readlink(path)
+			targetLink, err := fs.ReadLink(fsys, path)
 			if err != nil {
 				return fmt.Errorf("could not read symlink: %w", err)
 			}
@@ -153,4 +136,12 @@ func CreateFSFromDirectory(ctx context.Context, w io.Writer, source string, opts
 	}
 
 	return nil
+}
+
+func fileInfoToCPIOHeader(info fs.FileInfo, header *cpio.Header) {
+	sys := info.Sys()
+	header.Uid = archivefs.GetUID(sys)
+	header.Guid = archivefs.GetGID(sys)
+	header.Inode = int64(archivefs.GetIno(sys))
+	header.Links = int(archivefs.GetNlink(sys))
 }

@@ -20,8 +20,7 @@ import (
 	imagespec "unikraft.com/x/image-spec"
 	"unikraft.com/x/log"
 
-	cpiobuilder "unikraft.com/cli/internal/builder/cpio"
-	erofsbuilder "unikraft.com/cli/internal/builder/erofs"
+	"unikraft.com/cli/internal/builder/buildfs"
 	"unikraft.com/cli/internal/buildkit"
 	"unikraft.com/cli/internal/config"
 	"unikraft.com/cli/internal/integration"
@@ -239,6 +238,47 @@ EOF
 	files := readErofsInitrd(t, imgs[0])
 	require.Contains(t, files, "hello.txt")
 	require.Equal(t, "hello\n", files["hello.txt"])
+}
+
+func TestRootfsDockerfileWithDeviceNodeIntegration(t *testing.T) {
+	ctx := rootfsIntegrationContext(t)
+	// Build an image that contains a device node. The local exporter
+	// used during solve must not fail with "failed to create device"
+	// when unpacking the result. See TOOL-791.
+	dockerfile := `
+FROM busybox:latest
+RUN mknod /testdevice c 1 3
+
+COPY <<'EOF' /hello.txt
+hello
+EOF
+`
+	rootfsPath := writeDockerfile(t, dockerfile)
+
+	for _, format := range []kraftfile.FsType{kraftfile.FsTypeCpio, kraftfile.FsTypeErofs} {
+		t.Run(string(format), func(t *testing.T) {
+			imgs := runBuildRootfsIntegration(t, ctx, BuildOpts{
+				Rootfs: RootfsOpts{
+					Format: format,
+					Path:   rootfsPath,
+					Type:   kraftfile.SourceTypeDockerfile,
+				},
+				Platform: []ocispec.Platform{{OS: "fc", Architecture: "x86_64"}},
+			})
+			require.Len(t, imgs, 1)
+
+			switch format {
+			case kraftfile.FsTypeCpio:
+				files := readCpioInitrd(t, imgs[0])
+				require.Contains(t, files, "./hello.txt")
+				require.Equal(t, "hello\n", files["./hello.txt"])
+			case kraftfile.FsTypeErofs:
+				files := readErofsInitrd(t, imgs[0])
+				require.Contains(t, files, "hello.txt")
+				require.Equal(t, "hello\n", files["hello.txt"])
+			}
+		})
+	}
 }
 
 func TestRootfsMultiPlatform(t *testing.T) {
@@ -464,6 +504,9 @@ func readErofsDir(t *testing.T, fsys *goerofs.Filesystem, dir string, files map[
 			readErofsDir(t, fsys, name, files)
 			continue
 		}
+		if !entry.Type().IsRegular() {
+			continue
+		}
 		f, err := fsys.Open(name)
 		require.NoError(t, err)
 		data, err := io.ReadAll(f)
@@ -495,7 +538,7 @@ func writeTestCpioFile(t *testing.T) string {
 
 	ctx := context.Background()
 	ctx = log.WithLogger(ctx, log.New(t.Output(), log.TextType, log.InfoLevel))
-	require.NoError(t, cpiobuilder.CreateFSFromDirectory(ctx, f, srcDir))
+	require.NoError(t, buildfs.CreateCPIO(ctx, f, os.DirFS(srcDir)))
 	return cpioPath
 }
 
@@ -509,8 +552,7 @@ func writeTestErofsFile(t *testing.T) string {
 	require.NoError(t, err)
 	defer f.Close()
 
-	ctx := context.Background()
-	require.NoError(t, erofsbuilder.CreateFSFromDirectory(ctx, f, srcDir))
+	require.NoError(t, buildfs.CreateEROFS(f, os.DirFS(srcDir)))
 	return erofsPath
 }
 

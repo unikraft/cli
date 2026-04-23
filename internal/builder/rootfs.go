@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"slices"
@@ -30,8 +31,7 @@ import (
 
 	goerofs "github.com/unikraft/go-archivefs/erofs"
 	gocpio "github.com/unikraft/go-cpio"
-	"unikraft.com/cli/internal/builder/cpio"
-	"unikraft.com/cli/internal/builder/erofs"
+	"unikraft.com/cli/internal/builder/buildfs"
 	"unikraft.com/cli/internal/buildkit"
 	"unikraft.com/cli/internal/config"
 	"unikraft.com/cli/internal/images"
@@ -179,7 +179,7 @@ func buildRootfsDirectory(ctx context.Context, opts BuildOpts) (_ []*imagespec.I
 			}
 		}()
 
-		if err := packageRootfs(ctx, format, f, opts.Rootfs.Path, opts); err != nil {
+		if err := packageRootfs(ctx, format, f, os.DirFS(opts.Rootfs.Path), opts); err != nil {
 			return nil, err
 		}
 
@@ -212,19 +212,22 @@ func buildRootfsDockerfile(ctx context.Context, opts BuildOpts) (_ []*imagespec.
 		return nil, err
 	}
 
-	localDest, err := os.MkdirTemp("", "unikraft-buildkit-*")
+	tarDest, err := os.CreateTemp("", "unikraft-buildkit-*.tar")
 	if err != nil {
-		return nil, fmt.Errorf("could not create temporary directory: %w", err)
+		return nil, fmt.Errorf("could not create temporary file: %w", err)
 	}
-	defer os.RemoveAll(localDest)
+	tarDestPath := tarDest.Name()
+	defer os.Remove(tarDestPath)
 
 	solveOpt := client.SolveOpt{
 		Ref:     identity.NewID(),
 		Session: session,
 		Exports: []client.ExportEntry{
 			{
-				Type:      client.ExporterLocal,
-				OutputDir: localDest,
+				Type: client.ExporterTar,
+				Output: func(map[string]string) (io.WriteCloser, error) {
+					return tarDest, nil
+				},
 			},
 		},
 		LocalDirs:     localDirs,
@@ -282,19 +285,27 @@ func buildRootfsDockerfile(ctx context.Context, opts BuildOpts) (_ []*imagespec.
 		return nil, pw.Err()
 	}
 
+	// Reopen the tarball for reading.
+	tarFile, err := os.Open(tarDestPath)
+	if err != nil {
+		return nil, fmt.Errorf("could not reopen tarball: %w", err)
+	}
+	defer tarFile.Close()
+
+	srcFS, err := buildfs.TarballFS(tarFile)
+	if err != nil {
+		return nil, fmt.Errorf("could not open tarball as filesystem: %w", err)
+	}
+
 	var imgs []*imagespec.Image
 
 	for i, p := range opts.Platform {
 		ep := expPlatforms[i]
 		config := configs[i]
 
-		path := localDest
 		_ = ep
 		// HACK: only valid with multi-platform enabled
-		// path := filepath.Join(
-		// 	localDest,
-		// 	strings.ReplaceAll(ep.ID, "/", "_"),
-		// )
+		// srcFS would need to be scoped to the platform subdirectory
 
 		f, err := os.CreateTemp("", "unikraft-rootfs-*."+string(opts.Rootfs.Format))
 		if err != nil {
@@ -307,7 +318,7 @@ func buildRootfsDockerfile(ctx context.Context, opts BuildOpts) (_ []*imagespec.
 			}
 		}()
 
-		if err := packageRootfs(ctx, opts.Rootfs.Format, f, path, opts); err != nil {
+		if err := packageRootfs(ctx, opts.Rootfs.Format, f, srcFS, opts); err != nil {
 			return nil, err
 		}
 
@@ -333,7 +344,7 @@ func buildRootfsDockerfile(ctx context.Context, opts BuildOpts) (_ []*imagespec.
 	return imgs, nil
 }
 
-func packageRootfs(ctx context.Context, format kraftfile.FsType, rootfs *os.File, path string, opts BuildOpts) error {
+func packageRootfs(ctx context.Context, format kraftfile.FsType, rootfs *os.File, srcFS fs.FS, opts BuildOpts) error {
 	switch format {
 	case kraftfile.FsTypeCpio:
 		var gw *gzip.Writer
@@ -343,8 +354,8 @@ func packageRootfs(ctx context.Context, format kraftfile.FsType, rootfs *os.File
 			w = gw
 		}
 
-		if err := cpio.CreateFSFromDirectory(ctx, w, path,
-			cpio.WithAllRoot(!opts.Rootfs.KeepOwners),
+		if err := buildfs.CreateCPIO(ctx, w, srcFS,
+			buildfs.WithAllRoot(!opts.Rootfs.KeepOwners),
 		); err != nil {
 			return fmt.Errorf("could not create CPIO archive: %w", err)
 		}
@@ -359,8 +370,8 @@ func packageRootfs(ctx context.Context, format kraftfile.FsType, rootfs *os.File
 			log.G(ctx).Warn().Msg("compression is not supported for EROFS, ignoring compress option")
 		}
 
-		if err := erofs.CreateFSFromDirectory(ctx, rootfs, path,
-			erofs.WithAllRoot(!opts.Rootfs.KeepOwners),
+		if err := buildfs.CreateEROFS(rootfs, srcFS,
+			buildfs.WithAllRoot(!opts.Rootfs.KeepOwners),
 		); err != nil {
 			return fmt.Errorf("could not create EroFS archive: %w", err)
 		}

@@ -203,3 +203,5 @@ replace github.com/caarlos0/svu/v3 => github.com/jedevc/svu/v3 v3.0.0-2026041414
 
 // HACK: pin to rc.2 due to bug in rc.3, see https://github.com/moby/buildkit/pull/6616
 replace github.com/containerd/platforms => github.com/containerd/platforms v1.0.0-rc.2
+
+replace github.com/unikraft/go-archivefs => ../archivefs
