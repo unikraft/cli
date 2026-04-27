@@ -151,25 +151,6 @@ func TestRootfsDirectory(t *testing.T) {
 	require.Equal(t, "nested\n", files["subdir/nested.txt"])
 }
 
-func TestRootfsDirectoryDefaultFormat(t *testing.T) {
-	dir := writeTestDirectory(t)
-
-	// Format intentionally left empty to test default (erofs).
-	imgs := runBuildRootfs(t, BuildOpts{
-		Rootfs: RootfsOpts{
-			Path: dir,
-			Type: kraftfile.SourceTypeDirectory,
-		},
-		Platform: []ocispec.Platform{{OS: "fc", Architecture: "x86_64"}},
-	})
-	require.Len(t, imgs, 1)
-
-	// Default format is EROFS; verify contents are readable as EROFS.
-	files := readErofsInitrd(t, imgs[0])
-	require.Contains(t, files, "hello.txt")
-	require.Equal(t, "hello\n", files["hello.txt"])
-}
-
 func TestRootfsDirectoryCpioFormat(t *testing.T) {
 	dir := writeTestDirectory(t)
 

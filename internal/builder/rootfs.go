@@ -161,14 +161,9 @@ func buildRootfsPackaged(_ context.Context, opts BuildOpts) (_ []*imagespec.Imag
 func buildRootfsDirectory(ctx context.Context, opts BuildOpts) (_ []*imagespec.Image, rerr error) {
 	cfg := buildImageConfig(opts)
 
-	format := opts.Rootfs.Format
-	if format == "" {
-		format = kraftfile.FsTypeErofs
-	}
-
 	var imgs []*imagespec.Image
 	for _, p := range opts.Platform {
-		f, err := os.CreateTemp("", "unikraft-rootfs-*."+string(format))
+		f, err := os.CreateTemp("", "unikraft-rootfs-*."+string(opts.Rootfs.Format))
 		if err != nil {
 			return nil, fmt.Errorf("could not create temporary file: %w", err)
 		}
@@ -179,7 +174,7 @@ func buildRootfsDirectory(ctx context.Context, opts BuildOpts) (_ []*imagespec.I
 			}
 		}()
 
-		if err := packageRootfs(ctx, format, f, opts.Rootfs.Path, opts); err != nil {
+		if err := packageRootfs(ctx, opts.Rootfs.Format, f, opts.Rootfs.Path, opts); err != nil {
 			return nil, err
 		}
 
