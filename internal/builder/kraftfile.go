@@ -53,6 +53,31 @@ func KraftfileToBuildOpts(dir string, kf *kraftfile.Kraftfile) (BuildOpts, error
 		})
 	}
 
+	for _, rom := range kf.Roms {
+		romPath := filepath.Join(dir, rom.Source)
+		// XXX: fix this in kraftfile
+		// ROMs must be erofs format. The kraftfile library defaults FS.Format
+		// to cpio, so override it to erofs for ROMs unless explicitly set to
+		// something else by the user (which would be an error caught later).
+		romFormat := rom.Format
+		if romFormat == "" || romFormat == kraftfile.FsTypeCpio {
+			romFormat = kraftfile.FsTypeErofs
+		}
+		romOpt := RomOpts{
+			Path:   romPath,
+			Format: romFormat,
+			Type:   rom.Type,
+		}
+		if romOpt.Type == "" {
+			typ, err := DetectSourceType(romPath)
+			if err != nil {
+				return BuildOpts{}, fmt.Errorf("detecting rom type for %q: %w", rom.Source, err)
+			}
+			romOpt.Type = typ
+		}
+		opts.Roms = append(opts.Roms, romOpt)
+	}
+
 	if kf.Rootfs != nil {
 		opts.Rootfs.Path = filepath.Join(dir, kf.Rootfs.Source)
 		opts.Rootfs.Format = kf.Rootfs.Format

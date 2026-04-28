@@ -103,6 +103,45 @@ func DetectSourceType(path string) (kraftfile.SourceType, error) {
 	}
 }
 
+func BuildRoms(ctx context.Context, opts BuildOpts) (_ []imagespec.File, rerr error) {
+	// Use a single dummy platform since ROMs are platform-independent.
+	dummyPlatform := []ocispec.Platform{{Architecture: "x86_64", OS: "kraftcloud"}}
+
+	var romFiles []imagespec.File
+	for _, rom := range opts.Roms {
+		format := rom.Format
+		if format == "" {
+			format = kraftfile.FsTypeErofs
+		}
+
+		romBuildOpts := BuildOpts{
+			Rootfs: RootfsOpts{
+				Path:   rom.Path,
+				Type:   rom.Type,
+				Format: format,
+			},
+			Platform: dummyPlatform,
+		}
+
+		imgs, err := BuildRootfs(ctx, romBuildOpts)
+		if err != nil {
+			return nil, fmt.Errorf("building rom from %q: %w", rom.Path, err)
+		}
+		if len(imgs) == 0 || imgs[0].Initrd == nil {
+			return nil, fmt.Errorf("rom build from %q produced no output", rom.Path)
+		}
+
+		romFile := imgs[0].Initrd
+		imgs[0].Initrd = nil // detach so Close doesn't close it
+		for _, img := range imgs {
+			img.Close()
+		}
+
+		romFiles = append(romFiles, romFile)
+	}
+	return romFiles, nil
+}
+
 // BuildRootfs builds a rootfs for each platform in opts.Platform from the
 // source at opts.Rootfs.Path.
 func BuildRootfs(ctx context.Context, opts BuildOpts) (_ []*imagespec.Image, rerr error) {
@@ -398,6 +437,7 @@ func buildRootfsDockerfile(ctx context.Context, opts BuildOpts) (_ []*imagespec.
 }
 
 func packageRootfs(ctx context.Context, format kraftfile.FsType, rootfs *os.File, srcFS fs.FS, opts BuildOpts) error {
+	log.G(ctx).Debug().Str("format", string(format)).Msg("packaging rootfs")
 	switch format {
 	case kraftfile.FsTypeCpio:
 		var gw *gzip.Writer

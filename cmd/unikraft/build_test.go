@@ -27,6 +27,46 @@ func buildTests(t *testing.T, r *testRunner) {
 		// busybox := fmt.Sprintf("%s/%s/busybox-e2e:$UNIQ_IMAGE", cfg.Metro.Index().Host, cfg.Profile.Organization)
 	}
 
+	t.Run("rom", func(t *testing.T) {
+		var romImage, baseImage string
+		if r.cfg != nil {
+			romImage = fmt.Sprintf("%s/rom-e2e:$UNIQ_IMAGE", r.cfg.Profile.Organization)
+			baseImage = fmt.Sprintf("%s/busybox-rom-e2e:$UNIQ_IMAGE", r.cfg.Profile.Organization)
+		}
+
+		r.
+			online().
+			withCleaners(buildCleaners).
+			withContext(map[string]string{
+				// Base image context: busybox with cat.
+				"base/Dockerfile": `FROM busybox:latest`,
+				"base/Kraftfile": `
+spec: v0.7
+name: busybox-rom-e2e
+runtime: base-compat:latest
+rootfs:
+  source: ./Dockerfile
+cmd: ["cat", "/rom/hello.txt"]
+`,
+				// ROM-only image context: just a directory with a text file.
+				"rom/myrom/hello.txt": "Hello from ROM!\n",
+				"rom/Kraftfile": `
+spec: v0.7
+name: rom-e2e
+roms:
+  - ./myrom
+`,
+			}).
+			run(t, []command{
+				{args: []string{unikraftCmd, "build", "base", "--output", baseImage}},
+				{args: []string{unikraftCmd, "build", "rom", "--output", romImage}},
+				{args: []string{unikraftCmd, "run", "--name", "test-$UNIQ_INST", "--metro", metroName, "--output", "quiet", "--image", baseImage, "--rom", romImage + ":/rom:myrom"}},
+				{args: []string{unikraftCmd, "instance", "wait", "--until", "state==stopped", "--timeout", "10s", "test-$UNIQ_INST"}},
+				{args: []string{unikraftCmd, "instance", "logs", "test-$UNIQ_INST"}},
+				{args: []string{unikraftCmd, "instance", "delete", "test-$UNIQ_INST"}},
+			})
+	})
+
 	t.Run("busybox", func(t *testing.T) {
 		for _, format := range []string{"cpio", "erofs"} {
 			t.Run(format, func(t *testing.T) {

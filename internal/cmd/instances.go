@@ -76,6 +76,7 @@ type InstanceCreateCmd struct {
 	Vcpus  int                 `group:"flag-create" shortcut:"resources.vcpus" help:"Number of vCPUs." placeholder:"n" example:"1,2,4"`
 
 	Volume []InstanceVolume `group:"flag-create" shortcut:"volumes" short:"v" help:"Attach volume." placeholder:"<name>:<path>[:<options>]" example:"my-vol:/data,cache:/tmp:ro,data:/mnt:size=10GiB"`
+	Rom    []InstanceRom    `group:"flag-create" shortcut:"roms" help:"Attach ROM." placeholder:"<image>:<at>[:<name>]" example:"myuser/my-rom:latest:/rom0:my-rom"`
 
 	Service InstanceService `group:"flag-create" shortcut:"service" help:"Service group name or key." placeholder:"name"`
 	Publish []Service       `group:"flag-create" shortcut:"service.services" short:"p" help:"Publish port." placeholder:"<src>:<dest>[/<handlers>]" example:"443:8080/http+tls,80:8080/http"`
@@ -147,6 +148,7 @@ type Instance struct {
 
 	Service *InstanceService  `mirror:"instance.service_group" field:",embed" create:"set"`
 	Volumes []*InstanceVolume `mirror:"instance.volumes" field:",embed" create:"set"`
+	Roms    []*InstanceRom    `mirror:"instance.roms" field:",embed" create:"set"`
 
 	Networks []struct {
 		UUID      string `mirror:"uuid" field:",long"`
@@ -327,6 +329,75 @@ func (v *InstanceVolume) UnmarshalText(data []byte) error {
 	v.Readonly = readonly
 	v.Size = size
 
+	return nil
+}
+
+// InstanceRom represents a ROM blob attached to an instance.
+// Text format: <image>:<at>[:<name>] or just <image>
+type InstanceRom struct {
+	// XXX: name is confusing, investigate...
+	Name  string `name:"name" mirror:"name" json:"name,omitempty" field:",long"`
+	Image string `name:"image" mirror:"image" json:"image" field:",long"`
+	At    string `name:"at" mirror:"at" json:"at,omitempty" field:",long"`
+}
+
+func (r *InstanceRom) MarshalText() ([]byte, error) {
+	s := r.Image
+	if r.At != "" {
+		s += ":" + r.At
+		if r.Name != "" {
+			s += ":" + r.Name
+		}
+	}
+	return []byte(s), nil
+}
+
+func (r *InstanceRom) MarshalJSON() ([]byte, error) {
+	type romJSON InstanceRom
+	return json.Marshal((*romJSON)(r))
+}
+
+func (r *InstanceRom) UnmarshalJSON(data []byte) error {
+	if len(data) != 0 && data[0] == '"' {
+		var text string
+		if err := json.Unmarshal(data, &text); err != nil {
+			return err
+		}
+		return r.UnmarshalText([]byte(text))
+	}
+	type romJSON InstanceRom
+	return json.Unmarshal(data, (*romJSON)(r))
+}
+
+func (r *InstanceRom) UnmarshalText(data []byte) error {
+	str := string(data)
+	if str == "" {
+		return fmt.Errorf("invalid rom format, expected IMAGE[:AT[:NAME]], got %q", str)
+	}
+
+	// The image reference may contain colons (e.g. "user/repo:tag"), so we
+	// look for the mount path which starts with "/" to split image from the
+	// rest. Format: IMAGE[:/PATH[:NAME]]
+	var image, at, name string
+	if idx := strings.Index(str, ":/"); idx >= 0 {
+		image = str[:idx]
+		rest := str[idx+1:] // starts with "/"
+		if colonIdx := strings.LastIndex(rest, ":"); colonIdx >= 0 {
+			at = rest[:colonIdx]
+			name = rest[colonIdx+1:]
+		} else {
+			at = rest
+		}
+	} else {
+		image = str
+	}
+
+	if image == "" {
+		return fmt.Errorf("invalid rom format, expected IMAGE[:AT[:NAME]], got %q", str)
+	}
+	r.Image = image
+	r.At = at
+	r.Name = name
 	return nil
 }
 
@@ -784,6 +855,23 @@ func (Instance) Create(ctx context.Context, fields []resource.Field) ([]resource
 					reqVol.Readonly = &vol.Readonly
 				}
 				req.Volumes = append(req.Volumes, reqVol)
+			}
+		case "roms":
+			for _, rom := range field.Create.Set.([]*InstanceRom) {
+				reqRom := platform.CreateInstanceRequestRom{
+					Image: rom.Image,
+				}
+				if rom.Name != "" {
+					reqRom.Name = &rom.Name
+				}
+				if rom.At != "" {
+					atJSON, _ := json.Marshal(rom.At)
+					if reqRom.AdditionalProperties == nil {
+						reqRom.AdditionalProperties = make(map[string]json.RawMessage)
+					}
+					reqRom.AdditionalProperties["at"] = atJSON
+				}
+				req.Roms = append(req.Roms, reqRom)
 			}
 		case "service":
 			svc := field.Create.Set.(*InstanceService)
