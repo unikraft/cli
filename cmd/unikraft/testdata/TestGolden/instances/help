@@ -425,6 +425,8 @@ stdout:
 	          Instance features.
 	      --template=<name>
 	          Create from instance template.
+	      --rm
+	          Automatically delete the instance when it stops.
 
 $ unikraft instance edit --help
 

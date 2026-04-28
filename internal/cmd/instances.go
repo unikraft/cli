@@ -89,11 +89,15 @@ type InstanceCreateCmd struct {
 	Replicas  int64    `group:"flag-create" shortcut:"replicas" help:"Number of replicas." placeholder:"n" example:"1,3"`
 	Features  []string `group:"flag-create" shortcut:"features" help:"Instance features." placeholder:"feature"`
 	Template  string   `group:"flag-create" shortcut:"template" help:"Create from instance template." placeholder:"name"`
+	Rm        bool     `group:"flag-create" help:"Automatically delete the instance when it stops."`
 }
 
 func (c *InstanceCreateCmd) Run(ctx context.Context, stdio config.Stdio, sandbox *resource.Sandbox, kctx *kong.Context) error {
 	if err := cmd.ApplyShortcutFlags(&c.SetArgs, kctx.Flags()); err != nil {
 		return err
+	}
+	if c.Rm {
+		c.Set = append(c.Set, map[string]string{"features": string(platform.CreateInstanceRequestFeaturesDelete_on_stop)})
 	}
 	return c.ResourceCreateCmd.Run(ctx, stdio, sandbox)
 }
@@ -1183,9 +1187,17 @@ func (c *InstancesStopCmd) Run(ctx context.Context, stdio config.Stdio) error {
 	}
 
 	updated, getErr := Instance{}.Get(ctx, stopped.Strings())
-	opErr = errors.Join(opErr, getErr)
+	// If the stopped instances are not found (e.g. removed by
+	// delete-on-stop), show a diff against an empty "after" state
+	// instead of returning an error.
 	if getErr != nil && len(updated) == 0 {
-		return opErr
+		var refErr group.ErrRefNotFound
+		if !errors.As(getErr, &refErr) {
+			opErr = errors.Join(opErr, getErr)
+			return opErr
+		}
+	} else {
+		opErr = errors.Join(opErr, getErr)
 	}
 
 	keySet := make(map[string]struct{}, len(stopped))
@@ -1252,14 +1264,27 @@ func (c *InstancesRestartCmd) Run(ctx context.Context, stdio config.Stdio) error
 
 	started, startErr := startInstances(ctx, g, stopped)
 	opErr = errors.Join(opErr, startErr)
+	// If all stopped instances were removed (e.g. by delete-on-stop)
+	// before they could be restarted, show a diff reflecting the
+	// deletion instead of returning a confusing error.
 	if len(started) == 0 {
-		return opErr
+		var refErr group.ErrRefNotFound
+		if startErr == nil || !errors.As(startErr, &refErr) {
+			return opErr
+		}
 	}
 
 	updated, getErr := Instance{}.Get(ctx, started.Strings())
-	opErr = errors.Join(opErr, getErr)
+	// Same as above: tolerate not-found when delete-on-stop already
+	// removed the instances.
 	if getErr != nil && len(updated) == 0 {
-		return opErr
+		var refErr group.ErrRefNotFound
+		if !errors.As(getErr, &refErr) {
+			opErr = errors.Join(opErr, getErr)
+			return opErr
+		}
+	} else {
+		opErr = errors.Join(opErr, getErr)
 	}
 
 	keySet := make(map[string]struct{}, len(started))

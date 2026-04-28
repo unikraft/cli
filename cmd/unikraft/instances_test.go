@@ -306,6 +306,33 @@ func instancesTests(t *testing.T, r *testRunner) {
 			})
 	})
 
+	t.Run("rm", func(t *testing.T) {
+		r.
+			online().
+			withCleaners(instanceCleaners).
+			run(t, []command{
+				// Create a running instance with --rm so it is auto-deleted
+				// when stopped.
+				{args: []string{
+					unikraftCmd, "instance", "create",
+					"--output", "quiet",
+					"--rm",
+					"--set", "name=test-$UNIQ_INST",
+					"--set", "metro=" + metroName,
+					"--set", "image=nginx:latest",
+					"--set", "autostart=true",
+					"--set", "resources.memory=128",
+					"--set", "resources.vcpus=1",
+				}},
+				{args: []string{unikraftCmd, "instance", "wait", "--until", "state==running", "--timeout", "30s", "test-$UNIQ_INST"}},
+				// Stop the instance — delete-on-stop removes it and the
+				// diff should show everything being deleted.
+				{args: []string{unikraftCmd, "instance", "stop", "test-$UNIQ_INST"}},
+				// Verify the instance no longer exists.
+				{args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}, allowErr: true},
+			})
+	})
+
 	t.Run("add-domain", func(t *testing.T) {
 		r.
 			online().
