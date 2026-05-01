@@ -64,6 +64,11 @@ func Build(ctx context.Context, opts BuildOpts) ([]*imagespec.Image, error) {
 		opts.Platform = append(opts.Platform, kernel.Image.Platform)
 	}
 
+	// Apply the rootfs format default: if no explicit format override was set
+	if opts.Rootfs.Path != "" && opts.Rootfs.Format == "" {
+		opts.Rootfs.Format = detectFormatFromKernelFeatures(kernels)
+	}
+
 	meta := imagespec.ImageMetadata{
 		Created: new(time.Now()),
 	}
@@ -133,4 +138,18 @@ func Build(ctx context.Context, opts BuildOpts) ([]*imagespec.Image, error) {
 	}
 
 	return images, nil
+}
+
+func detectFormatFromKernelFeatures(kernels []*imagespec.Image) kraftfile.FsType {
+	for _, kernel := range kernels {
+		if kernel.Image == nil {
+			continue
+		}
+		for _, feature := range kernel.Image.OSFeatures {
+			if feature == "CONFIG_LIBUKFS_EROFS=y" || feature == "CONFIG_EROFS_FS=y" {
+				return kraftfile.FsTypeErofs
+			}
+		}
+	}
+	return kraftfile.FsTypeCpio
 }
