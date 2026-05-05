@@ -39,9 +39,8 @@ stdout:
 	  quota-policy
 	  persistent
 	  timestamps, timestamps.created
-	  attached-to, attached-to.*, attached-to.*.name, attached-to.*.uuid
-	  mounted-by, mounted-by.*, mounted-by.*.name, mounted-by.*.uuid, mounted-
-	  by.*.read-only
+	  attached-to, attached-to.*
+	  mounted-by, mounted-by.*
 
 	Global flags:
 	  -h, --help
@@ -87,9 +86,8 @@ stdout:
 	  quota-policy
 	  persistent
 	  timestamps, timestamps.created
-	  attached-to, attached-to.*, attached-to.*.name, attached-to.*.uuid
-	  mounted-by, mounted-by.*, mounted-by.*.name, mounted-by.*.uuid, mounted-
-	  by.*.read-only
+	  attached-to, attached-to.*
+	  mounted-by, mounted-by.*
 
 	Flags:
 	  -w, --watch=<duration>
@@ -143,9 +141,8 @@ stdout:
 	  quota-policy
 	  persistent
 	  timestamps, timestamps.created
-	  attached-to, attached-to.*, attached-to.*.name, attached-to.*.uuid
-	  mounted-by, mounted-by.*, mounted-by.*.name, mounted-by.*.uuid, mounted-
-	  by.*.read-only
+	  attached-to, attached-to.*
+	  mounted-by, mounted-by.*
 
 	Flags:
 	      --filter
@@ -201,9 +198,8 @@ stdout:
 	  quota-policy
 	  persistent
 	  timestamps, timestamps.created
-	  attached-to, attached-to.*, attached-to.*.name, attached-to.*.uuid
-	  mounted-by, mounted-by.*, mounted-by.*.name, mounted-by.*.uuid, mounted-
-	  by.*.read-only
+	  attached-to, attached-to.*
+	  mounted-by, mounted-by.*
 
 	Flags:
 	      --until, --filter
@@ -263,9 +259,8 @@ stdout:
 	  quota-policy
 	  persistent
 	  timestamps, timestamps.created
-	  attached-to, attached-to.*, attached-to.*.name, attached-to.*.uuid
-	  mounted-by, mounted-by.*, mounted-by.*.name, mounted-by.*.uuid, mounted-
-	  by.*.read-only
+	  attached-to, attached-to.*
+	  mounted-by, mounted-by.*
 
 	Flags:
 	      --set=<name>=<value>, --set-file=<name>=<filename>
@@ -439,9 +434,8 @@ stdout:
 	  quota-policy
 	  persistent
 	  timestamps, timestamps.created
-	  attached-to, attached-to.*, attached-to.*.name, attached-to.*.uuid
-	  mounted-by, mounted-by.*, mounted-by.*.name, mounted-by.*.uuid, mounted-
-	  by.*.read-only
+	  attached-to, attached-to.*
+	  mounted-by, mounted-by.*
 
 	Flags:
 	      --set=<name>=<value>, --set-file=<name>=<filename>
@@ -515,9 +509,8 @@ stdout:
 	  quota-policy
 	  persistent
 	  timestamps, timestamps.created
-	  attached-to, attached-to.*, attached-to.*.name, attached-to.*.uuid
-	  mounted-by, mounted-by.*, mounted-by.*.name, mounted-by.*.uuid, mounted-
-	  by.*.read-only
+	  attached-to, attached-to.*
+	  mounted-by, mounted-by.*
 
 	Flags:
 	      --all

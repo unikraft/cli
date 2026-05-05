@@ -253,6 +253,47 @@ func instancesTests(t *testing.T, r *testRunner) {
 			})
 	})
 
+	t.Run("shortcut-service-volume", func(t *testing.T) {
+		r.
+			online().
+			withCleaners(instanceCleaners).
+			run(t, []command{
+				// Create a service group first
+				{args: []string{
+					unikraftCmd, "service", "create",
+					"--output", "quiet",
+					"--set", "name=test-$UNIQ_SVC",
+					"--set", "metro=" + metroName,
+					"--set", "services=443:8080/tls+http",
+				}},
+				// Create a volume
+				{args: []string{
+					unikraftCmd, "volume", "create",
+					"--output", "quiet",
+					"--set", "name=test-$UNIQ_VOL",
+					"--set", "size=20",
+					"--set", "metro=" + metroName,
+				}},
+				// Create an instance using shortcut flags --service and -v
+				// to connect to the existing service and volume
+				{args: []string{
+					unikraftCmd, "instance", "create",
+					"--set", "name=test-$UNIQ_INST",
+					"--set", "metro=" + metroName,
+					"--set", "image=nginx:latest",
+					"--set", "autostart=true",
+					"--set", "resources.memory=128",
+					"--set", "resources.vcpus=1",
+					"--service", "test-$UNIQ_SVC",
+					"-v", "test-$UNIQ_VOL:/mnt",
+				}},
+				{args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}},
+				{args: []string{unikraftCmd, "instance", "delete", "test-$UNIQ_INST"}},
+				{args: []string{unikraftCmd, "volume", "delete", "test-$UNIQ_VOL"}},
+				{args: []string{unikraftCmd, "service", "delete", "test-$UNIQ_SVC"}},
+			})
+	})
+
 	t.Run("autostart", func(t *testing.T) {
 		r.
 			online().

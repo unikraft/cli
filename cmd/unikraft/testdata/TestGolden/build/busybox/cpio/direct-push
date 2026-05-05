@@ -98,6 +98,10 @@ exit code: 1
 
 $ unikraft image ls index.unikraft.test/test/busybox-e2e:$UNIQ_IMAGE -okv
 
-stdout:
-	ref:    index.unikraft.test/test/busybox-e2e:<IMAGE>
-	digest: sha256:abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890
+stderr:
+	│  
+	│ error:
+	│   references not found: [index.unikraft.test/test/busybox-e2e:<IMAGE>]
+	│
+
+exit code: 1

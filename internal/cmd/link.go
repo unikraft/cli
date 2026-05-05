@@ -39,6 +39,12 @@ func (l Link[T]) Link() (string, resource.Key) {
 	}
 }
 
+// MarshalText implements encoding.TextMarshaler.
+// It returns the name, matching the round-trip with UnmarshalText.
+func (l Link[T]) MarshalText() ([]byte, error) {
+	return []byte(l.Name), nil
+}
+
 // UnmarshalText implements encoding.TextUnmarshaler.
 // When parsing from text, the value is stored as the name.
 func (l *Link[T]) UnmarshalText(text []byte) error {

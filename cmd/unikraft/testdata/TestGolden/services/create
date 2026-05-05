@@ -17,9 +17,7 @@ stdout:
 	  created:     RELATIVE_TIME
 	domains:
 	- fqdn:        <DOMAIN_A>.unikraft.example
-	  certificate:
-	    name:      <DOMAIN_A>.unikraft.example-xxxxx
-	    uuid:      12345678-1234-1234-1234-123456789abc
+	  certificate: <DOMAIN_A>.unikraft.example-xxxxx
 	services:
 	- 443:8080/tls+http
 	- 80:443/http+redirect
@@ -38,9 +36,7 @@ stdout:
 	  created:     RELATIVE_TIME
 	domains:
 	- fqdn:        <DOMAIN_B>.unikraft.example
-	  certificate:
-	    name:      <DOMAIN_B>.unikraft.example-xxxxx
-	    uuid:      12345678-1234-1234-1234-123456789abc
+	  certificate: <DOMAIN_B>.unikraft.example-xxxxx
 	services:
 	- 443:8080/tls+http
 	- 80:443/http+redirect
@@ -66,9 +62,7 @@ stdout:
 	  created:     RELATIVE_TIME
 	domains:
 	- fqdn:        <DOMAIN_A>.unikraft.example
-	  certificate:
-	    name:      <DOMAIN_A>.unikraft.example-xxxxx
-	    uuid:      12345678-1234-1234-1234-123456789abc
+	  certificate: <DOMAIN_A>.unikraft.example-xxxxx
 	services:
 	- 443:8080/tls+http
 	- 80:443/http+redirect
@@ -84,9 +78,7 @@ stdout:
 	  created:     RELATIVE_TIME
 	domains:
 	- fqdn:        <DOMAIN_B>.unikraft.example
-	  certificate:
-	    name:      <DOMAIN_B>.unikraft.example-xxxxx
-	    uuid:      12345678-1234-1234-1234-123456789abc
+	  certificate: <DOMAIN_B>.unikraft.example-xxxxx
 	services:
 	- 443:8080/tls+http
 	- 80:443/http+redirect

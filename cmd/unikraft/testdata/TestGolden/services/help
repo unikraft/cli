@@ -28,9 +28,8 @@ stdout:
 	  autoscale
 	  limits, limits.soft, limits.hard
 	  timestamps, timestamps.created
-	  domains, domains.*, domains.*.fqdn, domains.*.certificate,
-	  domains.*.certificate.name, domains.*.certificate.uuid
-	  instances, instances.*, instances.*.name, instances.*.uuid
+	  domains, domains.*, domains.*.fqdn, domains.*.certificate
+	  instances, instances.*
 	  services, services.*
 
 	Global flags:
@@ -74,9 +73,8 @@ stdout:
 	  autoscale
 	  limits, limits.soft, limits.hard
 	  timestamps, timestamps.created
-	  domains, domains.*, domains.*.fqdn, domains.*.certificate,
-	  domains.*.certificate.name, domains.*.certificate.uuid
-	  instances, instances.*, instances.*.name, instances.*.uuid
+	  domains, domains.*, domains.*.fqdn, domains.*.certificate
+	  instances, instances.*
 	  services, services.*
 
 	Flags:
@@ -128,9 +126,8 @@ stdout:
 	  autoscale
 	  limits, limits.soft, limits.hard
 	  timestamps, timestamps.created
-	  domains, domains.*, domains.*.fqdn, domains.*.certificate,
-	  domains.*.certificate.name, domains.*.certificate.uuid
-	  instances, instances.*, instances.*.name, instances.*.uuid
+	  domains, domains.*, domains.*.fqdn, domains.*.certificate
+	  instances, instances.*
 	  services, services.*
 
 	Flags:
@@ -184,9 +181,8 @@ stdout:
 	  autoscale
 	  limits, limits.soft, limits.hard
 	  timestamps, timestamps.created
-	  domains, domains.*, domains.*.fqdn, domains.*.certificate,
-	  domains.*.certificate.name, domains.*.certificate.uuid
-	  instances, instances.*, instances.*.name, instances.*.uuid
+	  domains, domains.*, domains.*.fqdn, domains.*.certificate
+	  instances, instances.*
 	  services, services.*
 
 	Flags:
@@ -245,9 +241,8 @@ stdout:
 	  autoscale
 	  limits, limits.soft, limits.hard
 	  timestamps, timestamps.created
-	  domains, domains.*, domains.*.fqdn, domains.*.certificate,
-	  domains.*.certificate.name, domains.*.certificate.uuid
-	  instances, instances.*, instances.*.name, instances.*.uuid
+	  domains, domains.*, domains.*.fqdn, domains.*.certificate
+	  instances, instances.*
 	  services, services.*
 
 	Flags:
@@ -326,9 +321,8 @@ stdout:
 	  autoscale
 	  limits, limits.soft, limits.hard
 	  timestamps, timestamps.created
-	  domains, domains.*, domains.*.fqdn, domains.*.certificate,
-	  domains.*.certificate.name, domains.*.certificate.uuid
-	  instances, instances.*, instances.*.name, instances.*.uuid
+	  domains, domains.*, domains.*.fqdn, domains.*.certificate
+	  instances, instances.*
 	  services, services.*
 
 	Flags:
@@ -406,9 +400,8 @@ stdout:
 	  autoscale
 	  limits, limits.soft, limits.hard
 	  timestamps, timestamps.created
-	  domains, domains.*, domains.*.fqdn, domains.*.certificate,
-	  domains.*.certificate.name, domains.*.certificate.uuid
-	  instances, instances.*, instances.*.name, instances.*.uuid
+	  domains, domains.*, domains.*.fqdn, domains.*.certificate
+	  instances, instances.*
 	  services, services.*
 
 	Flags:

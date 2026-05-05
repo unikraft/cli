@@ -20,11 +20,7 @@ stdout:
 	resources:
 	  memory:     256MiB
 	  vcpus:      1
-	service:
-	  name:       <SERVICE_NAME>
-	  uuid:       12345678-1234-1234-1234-123456789abc
-	  domains:
-	  - fqdn:     <DOMAIN>.unikraft.internal
+	service:      <SERVICE_NAME>
 	volumes:
 	- test-<VOL>:/wwwroot
 	networks:
@@ -47,11 +43,7 @@ stdout:
 	resources:
 	  memory:     256MiB
 	  vcpus:      1
-	service:
-	  name:       <SERVICE_NAME>
-	  uuid:       12345678-1234-1234-1234-123456789abc
-	  domains:
-	  - fqdn:     <DOMAIN>.unikraft.internal
+	service:      <SERVICE_NAME>
 	volumes:
 	- test-<VOL>:/wwwroot
 	networks:

@@ -1,7 +1,7 @@
 $ unikraft instance list
 
 stdout:
-	METRO  NAME  STATE  IMAGE  ARGS  MEMORY  VCPUS  FQDN  CREATED
+	METRO  NAME  STATE  IMAGE  ARGS  MEMORY  VCPUS  SERVICE  CREATED
 
 $ unikraft instance create --set name=test-$UNIQ_INST --set metro=test --set image=nginx:latest --set runtime.env=A=1,B=2,C=3 --set autostart=true --set resources.memory=128 --set resources.vcpus=1
 
@@ -29,8 +29,8 @@ stdout:
 $ unikraft instance list
 
 stdout:
-	METRO  NAME               STATE    IMAGE  ARGS  MEMORY  VCPUS  FQDN  CREATED
-	test   test-<INST>  running  nginx        128MiB  1            RELATIVE_TIME
+	METRO  NAME               STATE    IMAGE  ARGS  MEMORY  VCPUS  SERVICE  CREATED
+	test   test-<INST>  running  nginx        128MiB  1               RELATIVE_TIME
 
 $ unikraft instance inspect test-$UNIQ_INST
 
@@ -63,4 +63,4 @@ stdout:
 $ unikraft instance list
 
 stdout:
-	METRO  NAME  STATE  IMAGE  ARGS  MEMORY  VCPUS  FQDN  CREATED
+	METRO  NAME  STATE  IMAGE  ARGS  MEMORY  VCPUS  SERVICE  CREATED
