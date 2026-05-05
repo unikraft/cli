@@ -761,6 +761,9 @@ func (Instance) Create(ctx context.Context, fields []resource.Field) ([]resource
 			}
 		case "volumes":
 			for _, vol := range field.Create.Set.([]*InstanceVolume) {
+				if vol.Metro != "" && vol.Metro != metro {
+					return nil, fmt.Errorf("cannot create instance: metro mismatch between volume (%q) and instance (%q)", vol.Metro, metro)
+				}
 				reqVol := platform.CreateInstanceRequestVolume{
 					At: vol.At,
 				}
