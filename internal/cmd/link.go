@@ -40,15 +40,24 @@ func (l Link[T]) Link() (string, resource.Key) {
 }
 
 // MarshalText implements encoding.TextMarshaler.
-// It returns the name, matching the round-trip with UnmarshalText.
+// It formats the link as a multimetro key string, matching the round-trip
+// with UnmarshalText which parses via multimetro.ParseKey.
 func (l Link[T]) MarshalText() ([]byte, error) {
-	return []byte(l.Name), nil
+	k := multimetro.Key{
+		Metro: l.Metro,
+		Name:  l.Name,
+		UUID:  l.UUID,
+	}
+	return []byte(k.Canonical()), nil
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-// When parsing from text, the value is stored as the name.
+// When parsing from text, the value is parsed as a multimetro key.
 func (l *Link[T]) UnmarshalText(text []byte) error {
-	l.Name = string(text)
+	key := multimetro.ParseKey(string(text))
+	l.Metro = key.Metro
+	l.Name = key.Name
+	l.UUID = key.UUID
 	return nil
 }
 

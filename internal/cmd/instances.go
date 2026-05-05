@@ -18,7 +18,6 @@ import (
 
 	"github.com/alecthomas/kong"
 	"github.com/distribution/reference"
-	"github.com/google/uuid"
 	"mvdan.cc/sh/v3/shell"
 	"unikraft.com/cloud/sdk/platform"
 	"unikraft.com/cloud/sdk/platform/group"
@@ -218,11 +217,7 @@ func (i *InstanceService) UnmarshalText(data []byte) error {
 		*i = InstanceService(parsed)
 		return nil
 	}
-	key := multimetro.ParseKey(str)
-	i.Metro = key.Metro
-	i.UUID = key.UUID
-	i.Name = key.Name
-	return nil
+	return i.Link.UnmarshalText([]byte(str))
 }
 
 func (i *InstanceService) UnmarshalJSON(data []byte) error {
@@ -318,10 +313,8 @@ func (v *InstanceVolume) UnmarshalText(data []byte) error {
 		}
 	}
 
-	if uuid.Validate(name) == nil {
-		v.UUID = name
-	} else if name != "" {
-		v.Name = name
+	if err := v.Link.UnmarshalText([]byte(name)); err != nil {
+		return err
 	}
 	v.At = at
 	v.Readonly = readonly
