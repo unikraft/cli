@@ -15,9 +15,11 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/alecthomas/kong"
 	"github.com/distribution/reference"
+	"github.com/google/uuid"
 	"mvdan.cc/sh/v3/shell"
 	"unikraft.com/cloud/sdk/platform"
 	"unikraft.com/cloud/sdk/platform/group"
@@ -88,11 +90,16 @@ type InstanceCreateCmd struct {
 	Replicas  int64    `group:"flag-create" shortcut:"replicas" help:"Number of replicas." placeholder:"n" example:"1,3"`
 	Features  []string `group:"flag-create" shortcut:"features" help:"Instance features." placeholder:"feature"`
 	Template  string   `group:"flag-create" shortcut:"template" help:"Create from instance template." placeholder:"name"`
+
+	Rollout bool `group:"flag-create" help:"Perform sequential rollout, replacing old instances with matching image in the same service group."`
 }
 
 func (c *InstanceCreateCmd) Run(ctx context.Context, stdio config.Stdio, sandbox *resource.Sandbox, kctx *kong.Context) error {
 	if err := cmd.ApplyShortcutFlags(&c.SetArgs, kctx.Flags()); err != nil {
 		return err
+	}
+	if c.Rollout {
+		return c.runRollout(ctx, stdio, sandbox)
 	}
 	return c.ResourceCreateCmd.Run(ctx, stdio, sandbox)
 }
@@ -217,7 +224,11 @@ func (i *InstanceService) UnmarshalText(data []byte) error {
 		*i = InstanceService(parsed)
 		return nil
 	}
-	return i.Link.UnmarshalText([]byte(str))
+	key := multimetro.ParseKey(str)
+	i.Metro = key.Metro
+	i.UUID = key.UUID
+	i.Name = key.Name
+	return nil
 }
 
 func (i *InstanceService) UnmarshalJSON(data []byte) error {
@@ -313,8 +324,10 @@ func (v *InstanceVolume) UnmarshalText(data []byte) error {
 		}
 	}
 
-	if err := v.Link.UnmarshalText([]byte(name)); err != nil {
-		return err
+	if uuid.Validate(name) == nil {
+		v.UUID = name
+	} else if name != "" {
+		v.Name = name
 	}
 	v.At = at
 	v.Readonly = readonly
@@ -761,9 +774,6 @@ func (Instance) Create(ctx context.Context, fields []resource.Field) ([]resource
 			}
 		case "volumes":
 			for _, vol := range field.Create.Set.([]*InstanceVolume) {
-				if vol.Metro != "" && vol.Metro != metro {
-					return nil, fmt.Errorf("cannot create instance: metro mismatch between volume (%q) and instance (%q)", vol.Metro, metro)
-				}
 				reqVol := platform.CreateInstanceRequestVolume{
 					At: vol.At,
 				}
@@ -912,6 +922,123 @@ func (Instance) Create(ctx context.Context, fields []resource.Field) ([]resource
 		return nil, err
 	}
 	return results, nil
+}
+
+// runRollout performs a sequential rollout: for each old instance in the same
+// service group whose image base name matches, it creates a new instance,
+// waits for it to reach running state (up to rolloutTimeout), then deletes the
+// old one.
+func (c *InstanceCreateCmd) runRollout(ctx context.Context, stdio config.Stdio, sandbox *resource.Sandbox) error {
+	created, err := c.ResourceCreateCmd.RunResources(ctx, stdio, sandbox)
+	if err != nil {
+		return err
+	}
+	if len(created) == 0 {
+		return nil
+	}
+
+	newInstance := created[0].(Instance)
+	if newInstance.Service == nil || (newInstance.Service.UUID == "" && newInstance.Service.Name == "") {
+		return fmt.Errorf("--rollout requires a service group (use --service)")
+	}
+	if newInstance.Image.Reference == nil {
+		return fmt.Errorf("--rollout requires an image")
+	}
+	newImageName := newInstance.Image.Reference.Name()
+	metro := string(newInstance.MetroName)
+	timeoutMs := 10 * time.Second.Milliseconds()
+
+	g, err := multimetro.NewClient(ctx)
+	if err != nil {
+		return err
+	}
+
+	createdUUIDs := make(map[string]struct{}, len(created))
+	for _, r := range created {
+		createdUUIDs[r.(Instance).UUID] = struct{}{}
+	}
+
+	svcKey := cmp.Or(newInstance.Service.UUID, newInstance.Service.Name)
+	svcResults, err := (ServiceGroup{}).Get(ctx, []string{metro + "/" + svcKey})
+	if err != nil {
+		return fmt.Errorf("fetching service group: %w", err)
+	}
+	if len(svcResults) == 0 {
+		return fmt.Errorf("service group %q not found", svcKey)
+	}
+	svc := svcResults[0].(ServiceGroup)
+
+	var existingKeys []string
+	for _, inst := range svc.Instances {
+		if _, isNew := createdUUIDs[inst.UUID]; isNew {
+			continue
+		}
+		key := multimetro.Key{Metro: metro, UUID: inst.UUID, Name: inst.Name}
+		existingKeys = append(existingKeys, key.String())
+	}
+	if len(existingKeys) == 0 {
+		return nil
+	}
+
+	existing, err := (Instance{}).Get(ctx, existingKeys)
+	if err != nil {
+		return fmt.Errorf("fetching existing instances: %w", err)
+	}
+
+	var toRemove []Instance
+	for _, r := range existing {
+		inst := r.(Instance)
+		if inst.Image.Reference == nil {
+			continue
+		}
+		if inst.Image.Reference.Name() == newImageName {
+			toRemove = append(toRemove, inst)
+		}
+	}
+	if len(toRemove) == 0 {
+		return nil
+	}
+
+	for i, old := range toRemove {
+		var newInst Instance
+		if i < len(created) {
+			newInst = created[i].(Instance)
+		} else {
+			if c.Name != "" {
+				rolloutName := fmt.Sprintf("%s-%d", c.Name, i)
+				for j, entry := range c.SetArgs.Set {
+					if _, ok := entry["name"]; ok {
+						c.SetArgs.Set[j] = map[string]string{"name": rolloutName}
+						break
+					}
+				}
+			}
+			extra, err := c.ResourceCreateCmd.RunResources(ctx, stdio, sandbox)
+			if err != nil {
+				return fmt.Errorf("creating replacement instance: %w", err)
+			}
+			if len(extra) == 0 {
+				return fmt.Errorf("no replacement instance created")
+			}
+			newInst = extra[0].(Instance)
+		}
+
+		if waitErr := group.DoMetro(ctx, g, metro, func(ctx context.Context, mc multimetro.MetroClient) error {
+			_, err := mc.WaitInstanceByUUID(ctx, newInst.UUID, platform.WaitInstanceByUUIDRequestBody{
+				TimeoutMs: &timeoutMs,
+			})
+			return err
+		}); waitErr != nil {
+			return fmt.Errorf("waiting for new instance to be running: %w", waitErr)
+		}
+
+		delErr := (Instance{}).Delete(ctx, []resource.Resource{old})
+		if delErr != nil {
+			return fmt.Errorf("deleting instance %q: %w", cmp.Or(old.Name, old.UUID), delErr)
+		}
+	}
+
+	return nil
 }
 
 func (Instance) Examples() map[cmd.CmdType][]kingkong.Example {
