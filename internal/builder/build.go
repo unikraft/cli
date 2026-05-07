@@ -8,6 +8,7 @@ package builder
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/containerd/platforms"
@@ -48,6 +49,40 @@ type RootfsOpts struct {
 	NoCache bool
 }
 
+// erofsFeatureFlags are the OSFeatures that signal EROFS support in a runtime.
+var erofsFeatureFlags = []string{
+	"CONFIG_LIBUKFS_EROFS=y",
+	"CONFIG_EROFS_FS=y",
+}
+
+// runtimeHasErofsSupport reports whether the given runtime's OSFeatures
+// indicate EROFS support.
+func runtimeHasErofsSupport(p ocispec.Platform) bool {
+	for _, f := range p.OSFeatures {
+		for _, e := range erofsFeatureFlags {
+			if strings.EqualFold(f, e) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// DefaultRootfsFormat returns the default rootfs format based on the runtime
+// platforms' features. If all platforms advertise EROFS support, erofs is
+// returned.
+func DefaultRootfsFormat(ps []ocispec.Platform) kraftfile.FsType {
+	if len(ps) == 0 {
+		return kraftfile.FsTypeCpio
+	}
+	for _, p := range ps {
+		if !runtimeHasErofsSupport(p) {
+			return kraftfile.FsTypeCpio
+		}
+	}
+	return kraftfile.FsTypeErofs
+}
+
 // Build a unikraft image based on the provided build options.
 func Build(ctx context.Context, opts BuildOpts) ([]*imagespec.Image, error) {
 	kernels, err := BuildKernel(ctx, opts)
@@ -62,6 +97,10 @@ func Build(ctx context.Context, opts BuildOpts) ([]*imagespec.Image, error) {
 	opts.Platform = make([]ocispec.Platform, 0, len(kernels))
 	for _, kernel := range kernels {
 		opts.Platform = append(opts.Platform, kernel.Image.Platform)
+	}
+
+	if opts.Rootfs.Path != "" && opts.Rootfs.Format == "" {
+		opts.Rootfs.Format = DefaultRootfsFormat(opts.Platform)
 	}
 
 	meta := imagespec.ImageMetadata{
