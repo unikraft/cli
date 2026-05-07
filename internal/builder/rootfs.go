@@ -110,6 +110,12 @@ func BuildRootfs(ctx context.Context, opts BuildOpts) (_ []*imagespec.Image, rer
 		return nil, fmt.Errorf("at least one platform must be specified")
 	}
 
+	if opts.Rootfs.Format == "" &&
+		opts.Rootfs.Type != kraftfile.SourceTypeCpio &&
+		opts.Rootfs.Type != kraftfile.SourceTypeErofs {
+		opts.Rootfs.Format = DefaultRootfsFormat(opts.Platform)
+	}
+
 	switch opts.Rootfs.Type {
 	case kraftfile.SourceTypeCpio, kraftfile.SourceTypeErofs:
 		if opts.Rootfs.Format != "" {
