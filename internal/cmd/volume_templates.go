@@ -395,8 +395,12 @@ func (VolumeTemplate) Examples() map[cmd.CmdType][]kingkong.Example {
 	return map[cmd.CmdType][]kingkong.Example{
 		cmd.CmdTypeGet: {
 			{
-				Description: "Inspect a volume template by name or UUID",
+				Description: "Inspect a volume template by name",
 				Commands:    []string{"unikraft volume template get demo-template"},
+			},
+			{
+				Description: "Show template details in JSON format",
+				Commands:    []string{"unikraft volume template get demo-template -o json"},
 			},
 		},
 		cmd.CmdTypeList: {
@@ -410,12 +414,22 @@ func (VolumeTemplate) Examples() map[cmd.CmdType][]kingkong.Example {
 				Description: "Convert a volume into a template",
 				Commands:    []string{"unikraft volume template create demo-volume"},
 			},
+			{
+				Description: "Convert multiple volumes into templates",
+				Commands:    []string{"unikraft volume template create vol-1 vol-2"},
+			},
 		},
 		cmd.CmdTypeEdit: {
 			{
 				Description: "Update template tags",
 				Commands: []string{
-					"unikraft volume template edit demo-template --set tags=env-dev",
+					"unikraft volume template edit demo-template --tags env-prod,team-data",
+				},
+			},
+			{
+				Description: "Lock a template to prevent deletion",
+				Commands: []string{
+					"unikraft volume template edit demo-template --delete-lock",
 				},
 			},
 		},
@@ -423,6 +437,10 @@ func (VolumeTemplate) Examples() map[cmd.CmdType][]kingkong.Example {
 			{
 				Description: "Delete a volume template",
 				Commands:    []string{"unikraft volume template delete demo-template"},
+			},
+			{
+				Description: "Delete all volume templates (with confirmation)",
+				Commands:    []string{"unikraft volume template delete --all"},
 			},
 		},
 	}
