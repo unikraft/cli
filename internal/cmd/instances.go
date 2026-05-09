@@ -428,6 +428,34 @@ func inlineFileFromPath(src string, destPath string) (platform.InlineFile, error
 	}, nil
 }
 
+// resolveROMFilePlacement resolves a file= ROM's requested at= value into:
+// - the ROM mountpoint (at) on the instance, and
+// - the path for the single inline file within the ROM filesystem.
+//
+// For compatibility, at= supports two forms:
+// - Full destination file path (e.g. /etc/app/config.yaml)
+// - Mountpoint directory (e.g. /rom or /rom/), which keeps source basename
+func resolveROMFilePlacement(srcPath, at string) (mountAt, filePath string) {
+	base := pathpkg.Base(srcPath)
+	if base == "." || base == "/" {
+		base = "file"
+	}
+
+	// Treat trailing slash as an explicit directory mountpoint.
+	if strings.HasSuffix(at, "/") {
+		return at, "/" + base
+	}
+
+	atBase := pathpkg.Base(at)
+	// If the last segment has no extension, treat at= as mountpoint directory.
+	if pathpkg.Ext(atBase) == "" {
+		return at, "/" + base
+	}
+
+	// Otherwise treat at= as full destination file path.
+	return pathpkg.Dir(at), "/" + atBase
+}
+
 type InstanceScaleToZero struct {
 	Enabled      bool             `name:"-" json:"-" mirror:"enabled" field:",long"`
 	Policy       string           `name:"policy" json:"policy,omitempty" mirror:"policy" field:",long"`
@@ -856,13 +884,14 @@ func instancePatchSpec(path string, op patchOp, value any) (platform.UpdateInsta
 			}
 
 			romAt := rom.At
+			romFilePath := ""
 			if rom.File != "" && romAt != "" {
-				romAt = pathpkg.Dir(romAt)
+				romAt, romFilePath = resolveROMFilePlacement(rom.File, romAt)
 			}
 
 			reqRom := map[string]any{}
 			if rom.File != "" {
-				file, err := inlineFileFromPath(rom.File, "/"+pathpkg.Base(rom.At))
+				file, err := inlineFileFromPath(rom.File, romFilePath)
 				if err != nil {
 					return zero, nil, fmt.Errorf("reading rom file %q: %w", rom.File, err)
 				}
@@ -979,16 +1008,15 @@ func (Instance) Create(ctx context.Context, fields []resource.Field) ([]resource
 					return nil, fmt.Errorf("rom file=%q requires at= to specify the destination path", rom.File)
 				}
 
-				// For file= mode, the at= is the full destination path.
-				// We split it into the mountpoint (dir) and the filename.
 				romAt := rom.At
+				romFilePath := ""
 				if rom.File != "" && romAt != "" {
-					romAt = pathpkg.Dir(romAt)
+					romAt, romFilePath = resolveROMFilePlacement(rom.File, romAt)
 				}
 
 				var reqRom platform.CreateInstanceRequestRom
 				if rom.File != "" {
-					file, err := inlineFileFromPath(rom.File, "/"+pathpkg.Base(rom.At))
+					file, err := inlineFileFromPath(rom.File, romFilePath)
 					if err != nil {
 						return nil, fmt.Errorf("reading rom file %q: %w", rom.File, err)
 					}
