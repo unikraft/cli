@@ -42,12 +42,13 @@ import (
 	"unikraft.com/cli/internal/config"
 	"unikraft.com/cli/internal/integration"
 	"unikraft.com/cli/internal/resource"
+	resourcecmd "unikraft.com/cli/internal/resource/cmd"
 )
 
 const unikraftCmd = "unikraft"
 
-// testRunner holds shared state for running integration tests.
-type testRunner struct {
+// integrationRunner holds shared state for running integration tests.
+type integrationRunner struct {
 	t            *testing.T
 	cfg          *integration.Config
 	unikraftPath string
@@ -58,6 +59,7 @@ type command struct {
 	args       []string
 	err        commandErr
 	captureEnv string
+	match      []string
 }
 
 type commandErr int
@@ -70,26 +72,19 @@ const (
 
 // testBuilder provides a fluent interface for configuring and running tests.
 type testBuilder struct {
-	runner   *testRunner
-	online   bool
-	cleaners []cleaner
-	context  map[string]string
+	runner  *integrationRunner
+	online  bool
+	context map[string]string
 }
 
 // online returns a new testBuilder configured for online tests (requiring config).
-func (r *testRunner) online() *testBuilder {
+func (r *integrationRunner) online() *testBuilder {
 	return &testBuilder{runner: r, online: true}
 }
 
 // offline returns a new testBuilder configured for offline tests.
-func (r *testRunner) offline() *testBuilder {
+func (r *integrationRunner) offline() *testBuilder {
 	return &testBuilder{runner: r, online: false}
-}
-
-// withCleaners adds output cleaners to the test builder.
-func (b *testBuilder) withCleaners(cleaners []cleaner) *testBuilder {
-	b.cleaners = append(b.cleaners, cleaners...)
-	return b
 }
 
 // withContext adds context files to be created in the test directory.
@@ -98,14 +93,14 @@ func (b *testBuilder) withContext(context map[string]string) *testBuilder {
 	return b
 }
 
-func TestGolden(t *testing.T) {
+func TestIntegration(t *testing.T) {
 	integration.SkipUnlessIntegration(t)
 	unikraftPath := buildUnikraftBinary(t)
 
 	cfg, err := integration.LoadConfig(t)
 	require.NoError(t, err)
 
-	runner := &testRunner{
+	runner := &integrationRunner{
 		t:            t,
 		cfg:          cfg,
 		unikraftPath: unikraftPath,
@@ -113,9 +108,8 @@ func TestGolden(t *testing.T) {
 
 	tests := []struct {
 		name string
-		fn   func(*testing.T, *testRunner)
+		fn   func(*testing.T, *integrationRunner)
 	}{
-		{"help", helpTests},
 		{"auth", authTests},
 		{"instances", instancesTests},
 		{"instance-templates", instanceTemplatesTests},
@@ -138,8 +132,8 @@ func TestGolden(t *testing.T) {
 	}
 }
 
-// run executes a test case with the given commands using the testRunner directly (for offline tests).
-func (r *testRunner) run(t *testing.T, commands []command) {
+// run executes a test case with the given commands using the integrationRunner directly (for offline tests).
+func (r *integrationRunner) run(t *testing.T, commands []command) {
 	r.offline().run(t, commands)
 }
 
@@ -192,7 +186,6 @@ func (b *testBuilder) run(t *testing.T, commands []command) {
 	}
 
 	expander := &expander{}
-	output := strings.Builder{}
 	for i, command := range commands {
 		require.NotEmpty(t, command.args, "no command specified")
 		args := expander.expandArgs(command.args)
@@ -217,7 +210,7 @@ func (b *testBuilder) run(t *testing.T, commands []command) {
 		cmd.Env = slices.DeleteFunc(cmd.Env, func(s string) bool {
 			return strings.HasPrefix(s, "UNIKRAFT_")
 		})
-		cmd.Env = append(cmd.Env, "NO_COLOR=1") // color makes golden files harder to read
+		cmd.Env = append(cmd.Env, "NO_COLOR=1")
 		cmd.Env = append(cmd.Env, "UNIKRAFT_CONFIG="+configPath)
 		cmd.Env = append(cmd.Env, "BUILDKIT_PROGRESS=quiet")
 		cmd.Env = append(cmd.Env, resource.UnikraftSandboxEnv+"="+sandboxPath)
@@ -256,117 +249,13 @@ func (b *testBuilder) run(t *testing.T, commands []command) {
 			require.NotZero(t, exitCode, "command %q was expected to fail but succeeded", strings.Join(args, " "))
 		}
 
-		report := report{
-			args:       command.args,
-			stdout:     stdout.String(),
-			stderr:     stderr.String(),
-			exitCode:   exitCode,
-			captureEnv: command.captureEnv,
-		}
-
-		report.cleaners = append(report.cleaners, b.cleaners...)
-		report.cleaners = append(report.cleaners, expander.cleaners()...)
-
-		if testCfg != nil {
-			report.cleaners = append(
-				report.cleaners,
-				cleaner{
-					pattern: regexp.MustCompile(regexp.QuoteMeta(testCfg.Profile.Name)),
-					repl:    "default",
-				},
-				cleaner{
-					pattern: regexp.MustCompile(regexp.QuoteMeta(testCfg.Profile.Organization)),
-					repl:    "test",
-				},
-				cleaner{
-					pattern: regexp.MustCompile(regexp.QuoteMeta(testCfg.Profile.Token)),
-					repl:    "<token>",
-				},
-			)
-			for _, metro := range testCfg.Profile.Metros {
-				report.cleaners = append(
-					report.cleaners,
-					cleaner{
-						pattern: regexp.MustCompile(regexp.QuoteMeta(metro.Endpoint)),
-						repl:    "https://api.unikraft.test",
-					},
-					cleaner{
-						pattern: regexp.MustCompile(regexp.QuoteMeta(metro.Index().Host)),
-						repl:    "index.unikraft.test",
-					},
-					cleaner{
-						pattern: regexp.MustCompile(regexp.QuoteMeta(metro.Name)),
-						repl:    "test",
-					},
-				)
-			}
-		}
-
-		if i != 0 {
-			output.WriteString("\n")
-		}
-		output.WriteString(report.String())
-	}
-
-	golden.Assert(t, output.String(), t.Name(), "\n"+output.String())
-}
-
-type report struct {
-	args       []string
-	stdout     string
-	stderr     string
-	exitCode   int
-	captureEnv string
-	cleaners   []cleaner
-}
-
-func (report *report) String() string {
-	out := strings.Builder{}
-
-	cmd := strings.Join(formatArgs(report.args), " ")
-	cmd = report.cleanOutput(cmd)
-	if report.captureEnv != "" {
-		cmd = report.captureEnv + "=$(" + cmd + ")"
-	}
-	out.WriteString("$ " + cmd + "\n\n")
-	if report.captureEnv == "" {
-		stdout := report.cleanOutput(report.stdout)
-		if len(stdout) > 0 {
-			out.WriteString("stdout:\n" + indent(stdout, "\t") + "\n\n")
-		}
-		stderr := report.cleanOutput(report.stderr)
-		if len(stderr) > 0 {
-			out.WriteString("stderr:\n" + indent(stderr, "\t") + "\n\n")
-		}
-		if report.exitCode != 0 {
-			out.WriteString("exit code: " + strconv.Itoa(report.exitCode) + "\n\n")
+		combined := ansi.Strip(stdout.String() + stderr.String())
+		for _, pattern := range command.match {
+			assert.Regexp(t, pattern, combined,
+				"command %q output did not match pattern %q\nstdout:\n%s\nstderr:\n%s",
+				strings.Join(command.args, " "), pattern, ansi.Strip(stdout.String()), ansi.Strip(stderr.String()))
 		}
 	}
-
-	return strings.TrimSpace(out.String()) + "\n"
-}
-
-func (report *report) cleanOutput(s string) string {
-	// Normalize CRLF so ANSI stripping doesn't collapse log lines.
-	s = strings.ReplaceAll(s, "\r\n", "\n")
-	s = strings.ReplaceAll(s, "\r", "\n")
-
-	// remove ANSI escape sequences
-	s = ansi.Strip(s)
-	s = strings.TrimRightFunc(s, unicode.IsSpace)
-	if s == "" {
-		return ""
-	}
-
-	// apply any necessary cleanup to the output here
-	for _, c := range report.cleaners {
-		s = c.pattern.ReplaceAllString(s, c.repl)
-	}
-	for _, c := range cleaners {
-		s = c.pattern.ReplaceAllString(s, c.repl)
-	}
-
-	return s
 }
 
 func formatArgs(args []string) []string {
@@ -387,100 +276,9 @@ func quoteArg(arg string) string {
 	return arg
 }
 
-func indent(s string, indent string) string {
-	result := strings.Builder{}
-	for line := range strings.Lines(s) {
-		if len(strings.TrimSpace(line)) > 0 {
-			result.WriteString(indent)
-		}
-		result.WriteString(line)
-	}
-	return result.String()
-}
-
 type cleaner struct {
 	pattern *regexp.Regexp
 	repl    string
-}
-
-// cleaners are patterns applied to command output to normalize variable data
-// so we get consistent golden files.
-var cleaners = []cleaner{
-	{
-		// IP addresses like "10.0.1.29"
-		pattern: regexp.MustCompile(`\b10\.\d+\.\d+\.\d+\b`),
-		repl:    "10.X.X.X",
-	},
-	{
-		// MAC addresses like "12:b0:0a:b0:0a:29"
-		pattern: regexp.MustCompile(`[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}`),
-		repl:    "aa:bb:cc:dd:ee:ff",
-	},
-	{
-		// datetimes like "2000-01-02T12:34:56+01:00" change between runs
-		pattern: regexp.MustCompile(`\b\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(Z|(\+\d{2}:\d{2}))?\b`),
-		repl:    "YYYY-MM-DDTHH:MM:SSZ",
-	},
-	{
-		// datetimes like "2000-01-02 12:34:56 +0100 BST" change between runs
-		pattern: regexp.MustCompile(`\b\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}(?:\.\d+)?\s+[+-]\d{4}\s+[A-Z]{1,5}\b`),
-		repl:    "YYYY-MM-DD HH:MM:SS +0000 UTC",
-	},
-	{
-		// kernel log timestamps like "[    0.065015]" change between runs
-		pattern: regexp.MustCompile(`\[\s*\d+\.\d+\]`),
-		repl:    "[    0.000000]",
-	},
-	{
-		// times like "12:34:56" or "12:34:56PM" change between runs
-		pattern: regexp.MustCompile(`\b\d\d?:\d\d:\d\d([AP]M)?\b`),
-		repl:    "HH:MM:SS",
-	},
-	{
-		// times like "12:34" or "12:34PM" change between runs
-		pattern: regexp.MustCompile(`\b\d\d?:\d\d?([AP]M)?\b`),
-		repl:    "HH:MM",
-	},
-	{
-		// dates like "2000-01-02" change between runs
-		pattern: regexp.MustCompile(`\b\d{4}-\d{2}-\d{2}\b`),
-		repl:    "YYYY-MM-DD",
-	},
-	{
-		// relative times like "just now", "2 hours ago", or "in 5 minutes" change between runs
-		pattern: regexp.MustCompile(`\bjust now\b|\b(?:in\s+)?\d+\s+(?:minute|minutes|hour|hours|day|days|week|weeks|month|months|year|years)(?:\s+ago)?\b`),
-		repl:    "RELATIVE_TIME",
-	},
-	{
-		// runtime versions like "go1.25.4" change between go releases
-		pattern: wordCleaner(runtime.Version()),
-		repl:    "goX.Y.Z",
-	},
-	{
-		// platforms like "linux/amd64" change between systems
-		pattern: wordCleanerf("%s/%s", runtime.GOOS, runtime.GOARCH),
-		repl:    "GOOS/GOARCH",
-	},
-	{
-		// uuids like "12345678-1234-1234-1234-123456789abc" change between runs
-		pattern: regexp.MustCompile(`\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b`),
-		repl:    "12345678-1234-1234-1234-123456789abc",
-	},
-	{
-		// image digests like "sha256:abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890" may change between runs
-		pattern: regexp.MustCompile(`\bsha256:[0-9a-f]{64}\b`),
-		repl:    "sha256:abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
-	},
-	{
-		// temp config paths like "/tmp/TestGolden.../001/config.yaml" change between runs
-		pattern: regexp.MustCompile(`/tmp/TestGolden[^/]+/`),
-		repl:    "/tmp/TestGolden/",
-	},
-	{
-		// auto-generated domain names like "foo.ukp-stable.apw.unikraft.internal"
-		pattern: regexp.MustCompile(`\.[a-z0-9.\-]+\.unikraft\.(app|internal)\b`),
-		repl:    ".unikraft.internal",
-	},
 }
 
 func wordCleaner(word string) *regexp.Regexp {
@@ -560,25 +358,6 @@ func (e *expander) expandArgs(args []string) []string {
 	return expanded
 }
 
-func (e *expander) cleaners() []cleaner {
-	cleaners := make([]cleaner, 0, len(e.uniq)+len(e.certs))
-	for varname, val := range e.uniq {
-		cleaners = append(cleaners, cleaner{
-			pattern: wordCleaner(val),
-			repl:    fmt.Sprintf("<%s>", varname),
-		})
-	}
-	for name, cert := range e.certs {
-		// Clean the CN (without trailing dot)
-		cn := strings.TrimSuffix(cert.cn, ".")
-		cleaners = append(cleaners, cleaner{
-			pattern: regexp.MustCompile(regexp.QuoteMeta(cn)),
-			repl:    fmt.Sprintf("<CERT_%s_CN>", name),
-		})
-	}
-	return cleaners
-}
-
 func generateCert() *generatedCert {
 	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
@@ -638,4 +417,207 @@ func buildUnikraftBinary(t *testing.T) string {
 	cmd.Stderr = &stderr
 	require.NoError(t, cmd.Run(), "go build failed\nstdout:\n%s\nstderr:\n%s", stdout.String(), stderr.String())
 	return binaryPath
+}
+
+// testEnv holds per-test environment for running CLI commands deterministically.
+type testEnv struct {
+	unikraftPath string
+	configPath   string
+	sandboxPath  string
+	dir          string
+}
+
+// newTestEnv creates a new isolated test environment.
+func newTestEnv(t *testing.T, unikraftPath string) *testEnv {
+	t.Helper()
+	return &testEnv{
+		unikraftPath: unikraftPath,
+		configPath:   filepath.Join(t.TempDir(), "config.yaml"),
+		sandboxPath:  filepath.Join(t.TempDir(), "sandbox.json"),
+		dir:          t.TempDir(),
+	}
+}
+
+// cli runs a CLI command and returns formatted output for golden comparison.
+func (env *testEnv) cli(ctx context.Context, t *testing.T, args []string) string {
+	t.Helper()
+
+	var c *exec.Cmd
+	if args[0] == unikraftCmd {
+		c = exec.CommandContext(ctx, env.unikraftPath, args[1:]...)
+		c.Args[0] = env.unikraftPath
+	} else {
+		c = exec.CommandContext(ctx, args[0], args[1:]...)
+	}
+
+	var output bytes.Buffer
+	c.Stdout = &output
+	c.Stderr = &output
+	c.Dir = env.dir
+	c.Env = os.Environ()
+	c.Env = slices.DeleteFunc(c.Env, func(s string) bool {
+		return strings.HasPrefix(s, "UNIKRAFT_")
+	})
+	c.Env = append(c.Env, "NO_COLOR=1")
+	c.Env = append(c.Env, "UNIKRAFT_CONFIG="+env.configPath)
+	c.Env = append(c.Env, "BUILDKIT_PROGRESS=quiet")
+	c.Env = append(c.Env, resource.UnikraftSandboxEnv+"="+env.sandboxPath)
+
+	err := c.Run()
+
+	var exitCode int
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
+		exitCode = exitErr.ExitCode()
+	} else if err != nil {
+		require.NoError(t, err, "command %q failed: %s", strings.Join(args, " "), output.String())
+	}
+
+	var result strings.Builder
+	result.WriteString("$ " + strings.Join(formatArgs(args), " ") + "\n")
+
+	out := normalizeOutput(output.String())
+	if out != "" {
+		result.WriteString("\n" + out + "\n")
+	}
+
+	if exitCode != 0 {
+		result.WriteString("\nexit code: " + strconv.Itoa(exitCode) + "\n")
+	}
+
+	return result.String()
+}
+
+// gild runs a callback for each arg, concatenates the outputs, and asserts
+// against the golden file for the current test. Only use offline callbacks.
+func gild[Arg any](ctx context.Context, t *testing.T, callback func(context.Context, *testing.T, Arg) string, args ...Arg) {
+	t.Helper()
+	var output strings.Builder
+	for i, arg := range args {
+		if i > 0 {
+			output.WriteString("\n")
+		}
+		output.WriteString(callback(ctx, t, arg))
+	}
+	golden.Assert(t, output.String(), t.Name())
+}
+
+// normalizeOutput strips ANSI codes, normalizes line endings, and applies
+// build-environment cleaners.
+func normalizeOutput(s string) string {
+	s = strings.ReplaceAll(s, "\r\n", "\n")
+	s = strings.ReplaceAll(s, "\r", "\n")
+	s = ansi.Strip(s)
+	s = strings.TrimRightFunc(s, unicode.IsSpace)
+	if s == "" {
+		return ""
+	}
+	for _, c := range offlineCleaners {
+		s = c.pattern.ReplaceAllString(s, c.repl)
+	}
+	return s
+}
+
+// offlineCleaners normalize build-environment values that differ between
+// machines.
+var offlineCleaners = []cleaner{
+	{
+		pattern: wordCleaner(runtime.Version()),
+		repl:    "goX.Y.Z",
+	},
+	{
+		pattern: wordCleanerf("%s/%s", runtime.GOOS, runtime.GOARCH),
+		repl:    "GOOS/GOARCH",
+	},
+	{
+		pattern: regexp.MustCompile(`/tmp/Test[^/\s]+/`),
+		repl:    "/tmp/Test/",
+	},
+	{
+		pattern: regexp.MustCompile(`\b\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(Z|(\+\d{2}:\d{2}))?\b`),
+		repl:    "YYYY-MM-DDTHH:MM:SSZ",
+	},
+}
+
+// dumpResource renders a resource using kv, table, and debug printers and
+// returns the concatenated output.
+func dumpResource(ctx context.Context, t *testing.T, res resource.Resource) string {
+	t.Helper()
+	var output strings.Builder
+
+	for _, format := range []resourcecmd.PrinterType{
+		resourcecmd.PrinterTypeKeyValue,
+		resourcecmd.PrinterTypeTable,
+		resourcecmd.PrintTypeDebug,
+	} {
+		printer := resourcecmd.Printer{Type: format}
+
+		var buf bytes.Buffer
+		err := printer.Print(ctx, &buf, nil, res, res)
+		require.NoError(t, err)
+
+		rendered := ansi.Strip(buf.String())
+		rendered = strings.TrimRightFunc(rendered, unicode.IsSpace)
+
+		output.WriteString("=== " + string(format) + " ===\n")
+		output.WriteString(rendered)
+		output.WriteString("\n\n")
+	}
+
+	return strings.TrimRightFunc(output.String(), unicode.IsSpace) + "\n"
+}
+
+// TestHelp runs --help tests for all resource types.
+// These tests do NOT require the integration build tag and run on every
+// "task test" invocation.
+func TestHelp(t *testing.T) {
+	unikraftPath := buildUnikraftBinary(t)
+
+	tests := []struct {
+		name string
+		fn   func(*testing.T, string)
+	}{
+		{"general", generalHelpTests},
+		{"auth", authHelpTests},
+		{"instances", instancesHelpTests},
+		{"volumes", volumesHelpTests},
+		{"services", servicesHelpTests},
+		{"certificates", certificatesHelpTests},
+		{"images", imagesHelpTests},
+		{"resources", resourceHelpTests},
+		{"build", buildHelpTests},
+		{"config", configHelpTests},
+	}
+
+	t.Parallel()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			tt.fn(t, unikraftPath)
+		})
+	}
+}
+
+// TestOutput runs printer/output tests for all resource types.
+// They construct static sample data and verify that rendering through
+// kv/table/debug printers is stable.
+func TestOutput(t *testing.T) {
+	tests := []struct {
+		name string
+		fn   func(*testing.T)
+	}{
+		{"instances", instancesOutputTests},
+		{"volumes", volumesOutputTests},
+		{"services", servicesOutputTests},
+		{"certificates", certificatesOutputTests},
+		{"images", imagesOutputTests},
+	}
+
+	t.Parallel()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			tt.fn(t)
+		})
+	}
 }

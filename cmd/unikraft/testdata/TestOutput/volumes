@@ -1,0 +1,151 @@
+=== kv ===
+metro:        fra
+name:         my-volume
+uuid:         a1b2c3d4-e5f6-7890-abcd-ef1234567890
+state:        available
+size:         50MiB
+filesystem:   ext4
+quota-policy: hard
+persistent:   true
+
+=== table ===
+METRO  NAME       STATE      SIZE   CREATED
+fra    my-volume  available  50MiB  never
+
+=== debug ===
+[
+  {
+    "name": "metro",
+    "value": "fra",
+    "links": [
+      {
+        "type": "metro",
+        "key": "fra"
+      }
+    ],
+    "verbosity": "short",
+    "create": {
+      "set": "fra",
+      "required": true
+    }
+  },
+  {
+    "name": "name",
+    "value": "my-volume",
+    "verbosity": "short",
+    "create": {
+      "set": "my-volume"
+    }
+  },
+  {
+    "name": "uuid",
+    "value": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "verbosity": "long"
+  },
+  {
+    "name": "tags",
+    "value": [
+      "env-prod"
+    ],
+    "verbosity": "hidden"
+  },
+  {
+    "name": "state",
+    "value": "available",
+    "verbosity": "short"
+  },
+  {
+    "name": "size",
+    "value": "50MiB",
+    "verbosity": "short",
+    "create": {
+      "set": "50MiB",
+      "required": true
+    },
+    "edit": {
+      "set": "50MiB"
+    }
+  },
+  {
+    "name": "filesystem",
+    "value": "ext4",
+    "verbosity": "long",
+    "create": {
+      "set": "ext4"
+    }
+  },
+  {
+    "name": "quota-policy",
+    "value": "hard",
+    "verbosity": "long",
+    "create": {
+      "set": "hard"
+    },
+    "edit": {
+      "set": "hard"
+    }
+  },
+  {
+    "name": "persistent",
+    "value": true,
+    "verbosity": "long"
+  },
+  {
+    "name": "timestamps",
+    "subfields": [
+      {
+        "name": "created",
+        "value": "never",
+        "verbosity": "short"
+      }
+    ],
+    "verbosity": "short"
+  },
+  {
+    "name": "attached-to",
+    "elem": {
+      "name": "",
+      "value": "",
+      "subfields": [
+        {
+          "name": "name",
+          "value": "",
+          "verbosity": "long"
+        },
+        {
+          "name": "uuid",
+          "value": "",
+          "verbosity": "long"
+        }
+      ],
+      "verbosity": "long"
+    },
+    "verbosity": "long"
+  },
+  {
+    "name": "mounted-by",
+    "elem": {
+      "name": "",
+      "value": "",
+      "subfields": [
+        {
+          "name": "name",
+          "value": "",
+          "verbosity": "long"
+        },
+        {
+          "name": "uuid",
+          "value": "",
+          "verbosity": "long"
+        },
+        {
+          "name": "read-only",
+          "value": false,
+          "verbosity": "long"
+        }
+      ],
+      "verbosity": "long"
+    },
+    "verbosity": "long"
+  }
+]

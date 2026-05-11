@@ -1,9 +1,0 @@
-$ unikraft volume import my-volume --source . --port 99999
-
-stderr:
-	│  
-	│ error:
-	│   port must be between 1024 and 65535
-	│
-
-exit code: 1

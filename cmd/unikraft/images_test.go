@@ -7,36 +7,22 @@ package main
 
 import (
 	"fmt"
-	"regexp"
 	"testing"
+
+	"github.com/opencontainers/go-digest"
+	"github.com/stretchr/testify/require"
+
+	"unikraft.com/cli/internal/cmd"
+	"unikraft.com/cli/internal/resource"
+	"unikraft.com/cli/internal/types"
 )
 
-func imagesTests(t *testing.T, r *testRunner) {
-	t.Run("help", func(t *testing.T) {
-		r.run(t, []command{
-			{args: []string{unikraftCmd, "image", "--help"}},
-			{args: []string{unikraftCmd, "image", "get", "--help"}},
-			{args: []string{unikraftCmd, "image", "list", "--help"}},
-			{args: []string{unikraftCmd, "image", "copy", "--help"}},
-		})
-	})
+func imagesTests(t *testing.T, r *integrationRunner) {
 	t.Run("inspect", func(t *testing.T) {
 		r.
 			online().
-			withCleaners([]cleaner{
-				{
-					// exact nginx version numbers may change between runs
-					pattern: regexp.MustCompile(`nginx:[0-9]+\.[0-9]+`),
-					repl:    "nginx:X.Y",
-				},
-				{
-					// exact image size may change between runs
-					pattern: regexp.MustCompile(`([0-9]+(\.[0-9]+)?)([KMG]i?B)`),
-					repl:    "100MB",
-				},
-			}).
 			run(t, []command{
-				{args: []string{unikraftCmd, "image", "inspect", "nginx:latest"}},
+				{args: []string{unikraftCmd, "image", "inspect", "nginx:latest"}, match: []string{`nginx`}},
 			})
 	})
 
@@ -50,17 +36,54 @@ func imagesTests(t *testing.T, r *testRunner) {
 
 		r.
 			online().
-			withCleaners([]cleaner{
-				{
-					// exact image size may change between runs
-					pattern: regexp.MustCompile(`([0-9]+(\.[0-9]+)?)([KMG]i?B)`),
-					repl:    "100MB",
-				},
-			}).
 			run(t, []command{
 				{args: []string{unikraftCmd, "image", "copy", "nginx:latest", imageFull}},
-				{args: []string{unikraftCmd, "image", "inspect", imageName}},
+				{args: []string{unikraftCmd, "image", "inspect", imageName}, match: []string{`nginx`}},
 				{args: []string{unikraftCmd, "image", "delete", imageName}},
 			})
 	})
+}
+
+func imagesHelpTests(t *testing.T, unikraftPath string) {
+	r := newTestEnv(t, unikraftPath)
+	gild(t.Context(), t, r.cli,
+		[]string{unikraftCmd, "image", "--help"},
+		[]string{unikraftCmd, "image", "get", "--help"},
+		[]string{unikraftCmd, "image", "list", "--help"},
+		[]string{unikraftCmd, "image", "copy", "--help"},
+	)
+}
+
+func imagesOutputTests(t *testing.T) {
+	sample := &cmd.Image{}
+	require.NoError(t, sample.Ref.UnmarshalText([]byte("nginx:latest")))
+	sample.Digest = digest.Digest("sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4")
+	require.NoError(t, sample.Config.Platform.UnmarshalText([]byte("linux/amd64")))
+	sample.Config.Cmd = []string{"/usr/sbin/nginx", "-g", "daemon off;"}
+	sample.Config.Env = map[string]string{"PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"}
+	sample.Metadata.Author = "unikraft.io"
+	sample.Kernel = &cmd.ImageFile{
+		Digest:    digest.Digest("sha256:b3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4"),
+		MediaType: "application/vnd.unikraft.kernel.v1",
+		Size:      types.SizeBytes(4194304),
+	}
+	sample.Initrd = &cmd.ImageFile{
+		Digest:    digest.Digest("sha256:c3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4"),
+		MediaType: "application/vnd.unikraft.initrd.v1",
+		Size:      types.SizeBytes(1048576),
+	}
+	sample.KernelDebug = &cmd.ImageFile{
+		Digest:    digest.Digest("sha256:d3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4"),
+		MediaType: "application/vnd.unikraft.kernel.v1",
+		Size:      types.SizeBytes(8388608),
+	}
+	sample.Roms = []cmd.ImageFile{
+		{
+			Digest:    digest.Digest("sha256:e3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4"),
+			MediaType: "application/vnd.unikraft.rom.v1",
+			Size:      types.SizeBytes(524288),
+		},
+	}
+
+	gild[resource.Resource](t.Context(), t, dumpResource, sample)
 }

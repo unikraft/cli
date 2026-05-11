@@ -1,0 +1,1240 @@
+$ unikraft instance --help
+
+Manage Unikraft Cloud instances.
+
+Usage:
+  unikraft instances <command> [flags]
+
+Resources:
+  get, inspect, show
+          Inspect a instance.
+  wait
+          Wait for instances to match a filter.
+  list, ls
+          List instances.
+  delete, rm, remove
+          Remove a instance.
+  create
+          Create an instance.
+  edit
+          Edit an instance.
+  logs
+          Fetch and display instance logs.
+  start
+          Start one or more instances.
+  stop
+          Stop one or more instances.
+  suspend
+          Suspend one or more instances.
+  restart
+          Restart one or more instances.
+
+Templates:
+  template, templates
+          Manage instance templates.
+
+Fields:
+  metro
+  name
+  uuid
+  tags
+  state
+  image
+  runtime, runtime.args, runtime.env
+  resources, resources.memory, resources.vcpus
+  service, service.name, service.uuid, service.services, service.domains,
+  service.domains.*, service.domains.*.fqdn, service.domains.*.certificate,
+  service.domains.*.certificate.name, service.domains.*.certificate.uuid,
+  service.soft-limit, service.hard-limit
+  volumes, volumes.*, volumes.*.name, volumes.*.uuid, volumes.*.at,
+  volumes.*.readonly, volumes.*.size
+  roms, roms.*, roms.*.name, roms.*.image, roms.*.dir, roms.*.at
+  networks, networks.*, networks.*.uuid, networks.*.private-ip, networks.*.mac
+  timestamps, timestamps.created, timestamps.started, timestamps.stopped
+  scale-to-zero, scale-to-zero.enabled, scale-to-zero.policy, scale-to-
+  zero.stateful, scale-to-zero.cooldown-time, scale-to-zero.notify-time
+  timing, timing.uptime, timing.boot-time, timing.net-time
+  restart, restart.policy, restart.start-count, restart.restart-count
+  autostart
+  replicas
+  wait-timeout
+  features
+  vsock
+  template
+  stop, stop.reason, stop.origin, stop.errno, stop.exit-code
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+
+$ unikraft instance get --help
+
+Inspect a instance.
+
+Usage:
+  unikraft instances get [<target> ...] [flags]
+
+Arguments:
+  [<target> ...]
+          Target instances to get.
+
+Examples:
+  # Inspect an instance by name or UUID
+  unikraft instance get demo-instance
+
+Fields:
+  metro
+  name
+  uuid
+  tags
+  state
+  image
+  runtime, runtime.args, runtime.env
+  resources, resources.memory, resources.vcpus
+  service, service.name, service.uuid, service.services, service.domains,
+  service.domains.*, service.domains.*.fqdn, service.domains.*.certificate,
+  service.domains.*.certificate.name, service.domains.*.certificate.uuid,
+  service.soft-limit, service.hard-limit
+  volumes, volumes.*, volumes.*.name, volumes.*.uuid, volumes.*.at,
+  volumes.*.readonly, volumes.*.size
+  roms, roms.*, roms.*.name, roms.*.image, roms.*.dir, roms.*.at
+  networks, networks.*, networks.*.uuid, networks.*.private-ip, networks.*.mac
+  timestamps, timestamps.created, timestamps.started, timestamps.stopped
+  scale-to-zero, scale-to-zero.enabled, scale-to-zero.policy, scale-to-
+  zero.stateful, scale-to-zero.cooldown-time, scale-to-zero.notify-time
+  timing, timing.uptime, timing.boot-time, timing.net-time
+  restart, restart.policy, restart.start-count, restart.restart-count
+  autostart
+  replicas
+  wait-timeout
+  features
+  vsock
+  template
+  stop, stop.reason, stop.origin, stop.errno, stop.exit-code
+
+Flags:
+  -w, --watch=<duration>
+          Watch for changes and refresh output. Defaults to 2s.
+  -f, --field
+          Specify which fields to include in the output.
+  -o, --output
+          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+
+$ unikraft instance list --help
+
+List instances.
+
+Usage:
+  unikraft instances list [<target> ...] [flags]
+
+Arguments:
+  [<target> ...]
+          Target instances to list.
+
+Examples:
+  # List instances across metros
+  unikraft instance list
+
+Fields:
+  metro
+  name
+  uuid
+  tags
+  state
+  image
+  runtime, runtime.args, runtime.env
+  resources, resources.memory, resources.vcpus
+  service, service.name, service.uuid, service.services, service.domains,
+  service.domains.*, service.domains.*.fqdn, service.domains.*.certificate,
+  service.domains.*.certificate.name, service.domains.*.certificate.uuid,
+  service.soft-limit, service.hard-limit
+  volumes, volumes.*, volumes.*.name, volumes.*.uuid, volumes.*.at,
+  volumes.*.readonly, volumes.*.size
+  roms, roms.*, roms.*.name, roms.*.image, roms.*.dir, roms.*.at
+  networks, networks.*, networks.*.uuid, networks.*.private-ip, networks.*.mac
+  timestamps, timestamps.created, timestamps.started, timestamps.stopped
+  scale-to-zero, scale-to-zero.enabled, scale-to-zero.policy, scale-to-
+  zero.stateful, scale-to-zero.cooldown-time, scale-to-zero.notify-time
+  timing, timing.uptime, timing.boot-time, timing.net-time
+  restart, restart.policy, restart.start-count, restart.restart-count
+  autostart
+  replicas
+  wait-timeout
+  features
+  vsock
+  template
+  stop, stop.reason, stop.origin, stop.errno, stop.exit-code
+
+Flags:
+      --filter
+          Filter output based on a field value.
+          [examples: name==my-instance, metro==fra]
+  -w, --watch=<duration>
+          Watch for changes and refresh output. Defaults to 2s.
+      --sort
+          Sort output by field values. Use - prefix for descending, + for ascending.
+          [examples: name, -timestamps.created-at]
+  -f, --field
+          Specify which fields to include in the output.
+  -o, --output
+          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+
+$ unikraft instance wait --help
+
+Wait for instances to match a filter.
+
+Usage:
+  unikraft instances wait --until=UNTIL <target> ... [flags]
+
+Arguments:
+  <target> ...
+          Target instances to wait for.
+
+Fields:
+  metro
+  name
+  uuid
+  tags
+  state
+  image
+  runtime, runtime.args, runtime.env
+  resources, resources.memory, resources.vcpus
+  service, service.name, service.uuid, service.services, service.domains,
+  service.domains.*, service.domains.*.fqdn, service.domains.*.certificate,
+  service.domains.*.certificate.name, service.domains.*.certificate.uuid,
+  service.soft-limit, service.hard-limit
+  volumes, volumes.*, volumes.*.name, volumes.*.uuid, volumes.*.at,
+  volumes.*.readonly, volumes.*.size
+  roms, roms.*, roms.*.name, roms.*.image, roms.*.dir, roms.*.at
+  networks, networks.*, networks.*.uuid, networks.*.private-ip, networks.*.mac
+  timestamps, timestamps.created, timestamps.started, timestamps.stopped
+  scale-to-zero, scale-to-zero.enabled, scale-to-zero.policy, scale-to-
+  zero.stateful, scale-to-zero.cooldown-time, scale-to-zero.notify-time
+  timing, timing.uptime, timing.boot-time, timing.net-time
+  restart, restart.policy, restart.start-count, restart.restart-count
+  autostart
+  replicas
+  wait-timeout
+  features
+  vsock
+  template
+  stop, stop.reason, stop.origin, stop.errno, stop.exit-code
+
+Flags:
+      --until, --filter
+          Filter expression to wait for.
+          [examples: state==running, state!=stopped]
+      --interval
+          Polling interval.
+          [default: 2s]
+      --timeout
+          Timeout before giving up.
+          [default: 0]
+  -f, --field
+          Specify which fields to include in the output.
+  -o, --output
+          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+
+$ unikraft instance create --help
+
+Create an instance.
+
+Usage:
+  unikraft instances create [flags]
+
+Examples:
+  # Create a new instance
+  unikraft instance create \
+  	  --name demo-instance \
+  	  --metro fra \
+  	  --image nginx:latest \
+  	  --autostart \
+  	  --memory 128 \
+  	  --vcpus 1
+
+  # Create an instance from a template
+  unikraft instance create \
+  	  --name new-instance \
+  	  --metro fra \
+  	  --template my-template
+
+Fields:
+  metro
+  name
+  uuid
+  tags
+  state
+  image
+  runtime, runtime.args, runtime.env
+  resources, resources.memory, resources.vcpus
+  service, service.name, service.uuid, service.services, service.domains,
+  service.domains.*, service.domains.*.fqdn, service.domains.*.certificate,
+  service.domains.*.certificate.name, service.domains.*.certificate.uuid,
+  service.soft-limit, service.hard-limit
+  volumes, volumes.*, volumes.*.name, volumes.*.uuid, volumes.*.at,
+  volumes.*.readonly, volumes.*.size
+  roms, roms.*, roms.*.name, roms.*.image, roms.*.dir, roms.*.at
+  networks, networks.*, networks.*.uuid, networks.*.private-ip, networks.*.mac
+  timestamps, timestamps.created, timestamps.started, timestamps.stopped
+  scale-to-zero, scale-to-zero.enabled, scale-to-zero.policy, scale-to-
+  zero.stateful, scale-to-zero.cooldown-time, scale-to-zero.notify-time
+  timing, timing.uptime, timing.boot-time, timing.net-time
+  restart, restart.policy, restart.start-count, restart.restart-count
+  autostart
+  replicas
+  wait-timeout
+  features
+  vsock
+  template
+  stop, stop.reason, stop.origin, stop.errno, stop.exit-code
+
+Flags:
+      --set=<name>=<value>, --set-file=<name>=<filename>
+          Key-value pairs to set on the instance.
+      --visual
+          Open an editor to modify fields visually.
+      --cmd
+          Run a command to edit fields (receives YAML on stdin, outputs edited YAML on stdout).
+      --load, --save=<FILE>
+          Load fields from a YAML file.
+      --dry-run
+          Print patches without applying them.
+  -f, --field
+          Specify which fields to include in the output.
+  -o, --output
+          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+
+Create flags:
+      --metro=<metro>
+          Metro to deploy in.
+          [examples: fra, sfo, nyc]
+  -n, --name=<name>
+          Instance name.
+      --image=<name>:<tag>
+          Image to deploy.
+          [examples: nginx:latest, my-app:v1.2.3]
+      --args=<arg>
+          Arguments to pass to the instance.
+  -e, --env=<key>=<value>
+          Environment variables.
+          [examples: DEBUG=true, PORT=8080]
+  -m, --memory=<size>
+          Memory allocation.
+          [examples: 128MiB, 1GiB]
+      --vcpus=<n>
+          Number of vCPUs.
+          [examples: 1, 2, 4]
+  -v, --volume=<name>:<path>[:<options>]
+          Attach volume.
+          [examples: my-vol:/data, cache:/tmp:ro, data:/mnt:size=10GiB]
+      --rom=image=<ref>,at=<path>
+          Attach ROM.
+          [examples: image=myuser/my-rom:latest,at=/rom0,name=my-rom, dir=./mydata,at=/rom]
+      --service=<name>
+          Service group name or key.
+  -p, --publish=<src>:<dest>[/<handlers>]
+          Publish port.
+          [examples: 443:8080/http+tls, 80:8080/http]
+      --domain=<fqdn>
+          Service domain.
+          [examples: example.com, api.example.com]
+      --scale-to-zero=<key>=<value>
+          Scale-to-zero options.
+            policy: on | off
+            cooldown-time: cooldown in ms before scaling to zero
+            notify-time: notification time in ms before scaling to zero
+            stateful: true | false.
+          [examples: on, policy=on,cooldown-time=300, policy=on,stateful=true,cooldown-time=500,notify-time=100]
+      --restart=<policy>
+          Restart policy.
+          [examples: always, on-failure, never]
+      --autostart
+          Start instance automatically.
+      --replicas=<n>
+          Number of replicas.
+          [examples: 1, 3]
+      --features=<feature>
+          Instance features.
+      --template=<name>
+          Create from instance template.
+
+$ unikraft instance edit --help
+
+Edit an instance.
+
+Usage:
+  unikraft instances edit <target> [flags]
+
+Arguments:
+  <target>
+          Target instance to edit.
+
+Examples:
+  # Resize instance memory
+  unikraft instance edit demo-instance --memory 256
+
+  # Attach a ROM image to an instance
+  unikraft instance edit demo-instance \
+  	  --set roms=image=myuser/my-rom:latest,at=/rom0
+
+  # Add a ROM to an instance without replacing existing ones
+  unikraft instance edit demo-instance \
+  	  --add roms=dir=./mydata,at=/rom
+
+  # Remove a ROM from an instance by name
+  unikraft instance edit demo-instance --del roms=name=my-rom
+
+Fields:
+  metro
+  name
+  uuid
+  tags
+  state
+  image
+  runtime, runtime.args, runtime.env
+  resources, resources.memory, resources.vcpus
+  service, service.name, service.uuid, service.services, service.domains,
+  service.domains.*, service.domains.*.fqdn, service.domains.*.certificate,
+  service.domains.*.certificate.name, service.domains.*.certificate.uuid,
+  service.soft-limit, service.hard-limit
+  volumes, volumes.*, volumes.*.name, volumes.*.uuid, volumes.*.at,
+  volumes.*.readonly, volumes.*.size
+  roms, roms.*, roms.*.name, roms.*.image, roms.*.dir, roms.*.at
+  networks, networks.*, networks.*.uuid, networks.*.private-ip, networks.*.mac
+  timestamps, timestamps.created, timestamps.started, timestamps.stopped
+  scale-to-zero, scale-to-zero.enabled, scale-to-zero.policy, scale-to-
+  zero.stateful, scale-to-zero.cooldown-time, scale-to-zero.notify-time
+  timing, timing.uptime, timing.boot-time, timing.net-time
+  restart, restart.policy, restart.start-count, restart.restart-count
+  autostart
+  replicas
+  wait-timeout
+  features
+  vsock
+  template
+  stop, stop.reason, stop.origin, stop.errno, stop.exit-code
+
+Flags:
+      --set=<name>=<value>, --set-file=<name>=<filename>
+          Key-value pairs to set on the instance.
+      --add=<name>=<value>, --add-file=<name>=<filename>
+          Key-value pairs to add to the instance.
+      --del=<name>=<value>, --del-file=<name>=<filename>
+          Keys to delete from the instance.
+      --visual
+          Open an editor to modify fields visually.
+      --cmd
+          Run a command to edit fields (receives YAML on stdin, outputs edited YAML on stdout).
+      --load, --save=<FILE>
+          Load fields from a YAML file.
+      --dry-run
+          Print patches without applying them.
+  -f, --field
+          Specify which fields to include in the output.
+  -o, --output
+          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+
+Edit flags:
+      --image=<name>:<tag>
+          Image to deploy.
+          [examples: nginx:latest, my-app:v1.2.3]
+      --args=<arg>
+          Arguments to pass to the instance.
+  -e, --env=<key>=<value>
+          Environment variables.
+          [examples: DEBUG=true, PORT=8080]
+  -m, --memory=<size>
+          Memory allocation.
+          [examples: 128MiB, 1GiB]
+      --vcpus=<n>
+          Number of vCPUs.
+          [examples: 1, 2, 4]
+      --rom=image=<ref>,at=<path>
+          Attach ROM.
+          [examples: image=myuser/my-rom:latest,at=/rom0,name=my-rom, dir=./mydata,at=/rom]
+      --scale-to-zero=<key>=<value>
+          Scale-to-zero options.
+            policy: on | off
+            cooldown-time: cooldown in ms before scaling to zero
+            notify-time: notification time in ms before scaling to zero
+            stateful: true | false.
+          [examples: on, policy=on,cooldown-time=300, policy=on,stateful=true,cooldown-time=500,notify-time=100]
+
+$ unikraft instance delete --help
+
+Remove a instance.
+
+Usage:
+  unikraft instances delete [<target> ...] [flags]
+
+Arguments:
+  [<target> ...]
+          Target instances to remove.
+
+Examples:
+  # Delete an instance by name or UUID
+  unikraft instance delete demo-instance
+
+Fields:
+  metro
+  name
+  uuid
+  tags
+  state
+  image
+  runtime, runtime.args, runtime.env
+  resources, resources.memory, resources.vcpus
+  service, service.name, service.uuid, service.services, service.domains,
+  service.domains.*, service.domains.*.fqdn, service.domains.*.certificate,
+  service.domains.*.certificate.name, service.domains.*.certificate.uuid,
+  service.soft-limit, service.hard-limit
+  volumes, volumes.*, volumes.*.name, volumes.*.uuid, volumes.*.at,
+  volumes.*.readonly, volumes.*.size
+  roms, roms.*, roms.*.name, roms.*.image, roms.*.dir, roms.*.at
+  networks, networks.*, networks.*.uuid, networks.*.private-ip, networks.*.mac
+  timestamps, timestamps.created, timestamps.started, timestamps.stopped
+  scale-to-zero, scale-to-zero.enabled, scale-to-zero.policy, scale-to-
+  zero.stateful, scale-to-zero.cooldown-time, scale-to-zero.notify-time
+  timing, timing.uptime, timing.boot-time, timing.net-time
+  restart, restart.policy, restart.start-count, restart.restart-count
+  autostart
+  replicas
+  wait-timeout
+  features
+  vsock
+  template
+  stop, stop.reason, stop.origin, stop.errno, stop.exit-code
+
+Flags:
+      --all
+          Remove all instances. Prompts for confirmation.
+      --filter
+          Filter instances to remove. Prompts for confirmation.
+          [examples: name==my-instance, metro==fra]
+      --force
+          Do not prompt for confirmation when using --all or --filter.
+  -f, --field
+          Specify which fields to include in the output.
+  -o, --output
+          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+
+$ unikraft instance template --help
+
+Manage instance templates.
+
+Usage:
+  unikraft instances template <command>
+
+Templates:
+  get, inspect, show
+          Inspect a instance-template.
+  list, ls
+          List instance-templates.
+  delete, rm, remove
+          Remove a instance-template.
+  create
+          Create an instance template.
+  edit
+          Edit an instance template.
+
+Fields:
+  metro
+  name
+  uuid
+  tags
+  delete-lock
+  state
+  image
+  runtime, runtime.args, runtime.env
+  resources, resources.memory, resources.vcpus
+  volumes, volumes.*, volumes.*.name, volumes.*.uuid, volumes.*.at,
+  volumes.*.readonly, volumes.*.size
+  timestamps, timestamps.created
+  scale-to-zero, scale-to-zero.enabled, scale-to-zero.policy, scale-to-
+  zero.stateful, scale-to-zero.cooldown-time, scale-to-zero.notify-time
+  restart, restart.policy
+  instances
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+
+$ unikraft instance template get --help
+
+Inspect a instance-template.
+
+Usage:
+  unikraft instances template get [<target> ...] [flags]
+
+Arguments:
+  [<target> ...]
+          Target instance-templates to get.
+
+Examples:
+  # Inspect an instance template by name or UUID
+  unikraft instance template get demo-template
+
+Fields:
+  metro
+  name
+  uuid
+  tags
+  delete-lock
+  state
+  image
+  runtime, runtime.args, runtime.env
+  resources, resources.memory, resources.vcpus
+  volumes, volumes.*, volumes.*.name, volumes.*.uuid, volumes.*.at,
+  volumes.*.readonly, volumes.*.size
+  timestamps, timestamps.created
+  scale-to-zero, scale-to-zero.enabled, scale-to-zero.policy, scale-to-
+  zero.stateful, scale-to-zero.cooldown-time, scale-to-zero.notify-time
+  restart, restart.policy
+  instances
+
+Flags:
+  -w, --watch=<duration>
+          Watch for changes and refresh output. Defaults to 2s.
+  -f, --field
+          Specify which fields to include in the output.
+  -o, --output
+          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+
+$ unikraft instance template list --help
+
+List instance-templates.
+
+Usage:
+  unikraft instances template list [<target> ...] [flags]
+
+Arguments:
+  [<target> ...]
+          Target instance-templates to list.
+
+Examples:
+  # List instance templates across metros
+  unikraft instance template list
+
+Fields:
+  metro
+  name
+  uuid
+  tags
+  delete-lock
+  state
+  image
+  runtime, runtime.args, runtime.env
+  resources, resources.memory, resources.vcpus
+  volumes, volumes.*, volumes.*.name, volumes.*.uuid, volumes.*.at,
+  volumes.*.readonly, volumes.*.size
+  timestamps, timestamps.created
+  scale-to-zero, scale-to-zero.enabled, scale-to-zero.policy, scale-to-
+  zero.stateful, scale-to-zero.cooldown-time, scale-to-zero.notify-time
+  restart, restart.policy
+  instances
+
+Flags:
+      --filter
+          Filter output based on a field value.
+          [examples: name==my-instance, metro==fra]
+  -w, --watch=<duration>
+          Watch for changes and refresh output. Defaults to 2s.
+      --sort
+          Sort output by field values. Use - prefix for descending, + for ascending.
+          [examples: name, -timestamps.created-at]
+  -f, --field
+          Specify which fields to include in the output.
+  -o, --output
+          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+
+$ unikraft instance template create --help
+
+Create an instance template.
+
+Usage:
+  unikraft instances template create [<instance> ...] [flags]
+
+Arguments:
+  [<instance> ...]
+          Instances to convert into templates.
+
+Examples:
+  # Convert a stopped instance into a template
+  unikraft instance template create demo-instance
+
+Fields:
+  metro
+  name
+  uuid
+  tags
+  delete-lock
+  state
+  image
+  runtime, runtime.args, runtime.env
+  resources, resources.memory, resources.vcpus
+  volumes, volumes.*, volumes.*.name, volumes.*.uuid, volumes.*.at,
+  volumes.*.readonly, volumes.*.size
+  timestamps, timestamps.created
+  scale-to-zero, scale-to-zero.enabled, scale-to-zero.policy, scale-to-
+  zero.stateful, scale-to-zero.cooldown-time, scale-to-zero.notify-time
+  restart, restart.policy
+  instances
+
+Flags:
+      --set=<name>=<value>, --set-file=<name>=<filename>
+          Key-value pairs to set on the instance-template.
+      --visual
+          Open an editor to modify fields visually.
+      --cmd
+          Run a command to edit fields (receives YAML on stdin, outputs edited YAML on stdout).
+      --load, --save=<FILE>
+          Load fields from a YAML file.
+      --dry-run
+          Print patches without applying them.
+  -f, --field
+          Specify which fields to include in the output.
+  -o, --output
+          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+
+$ unikraft instance template edit --help
+
+Edit an instance template.
+
+Usage:
+  unikraft instances template edit <target> [flags]
+
+Arguments:
+  <target>
+          Target instance-template to edit.
+
+Examples:
+  # Update template tags
+  unikraft instance template edit demo-template --set tags=env-dev
+
+Fields:
+  metro
+  name
+  uuid
+  tags
+  delete-lock
+  state
+  image
+  runtime, runtime.args, runtime.env
+  resources, resources.memory, resources.vcpus
+  volumes, volumes.*, volumes.*.name, volumes.*.uuid, volumes.*.at,
+  volumes.*.readonly, volumes.*.size
+  timestamps, timestamps.created
+  scale-to-zero, scale-to-zero.enabled, scale-to-zero.policy, scale-to-
+  zero.stateful, scale-to-zero.cooldown-time, scale-to-zero.notify-time
+  restart, restart.policy
+  instances
+
+Flags:
+      --set=<name>=<value>, --set-file=<name>=<filename>
+          Key-value pairs to set on the instance-template.
+      --add=<name>=<value>, --add-file=<name>=<filename>
+          Key-value pairs to add to the instance-template.
+      --del=<name>=<value>, --del-file=<name>=<filename>
+          Keys to delete from the instance-template.
+      --visual
+          Open an editor to modify fields visually.
+      --cmd
+          Run a command to edit fields (receives YAML on stdin, outputs edited YAML on stdout).
+      --load, --save=<FILE>
+          Load fields from a YAML file.
+      --dry-run
+          Print patches without applying them.
+  -f, --field
+          Specify which fields to include in the output.
+  -o, --output
+          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+
+Edit flags:
+      --tags=<tag>
+          Template tags.
+          [examples: env-dev, team-platform]
+      --delete-lock
+          Prevent deletion of the template.
+
+$ unikraft instance template delete --help
+
+Remove a instance-template.
+
+Usage:
+  unikraft instances template delete [<target> ...] [flags]
+
+Arguments:
+  [<target> ...]
+          Target instance-templates to remove.
+
+Examples:
+  # Delete an instance template
+  unikraft instance template delete demo-template
+
+Fields:
+  metro
+  name
+  uuid
+  tags
+  delete-lock
+  state
+  image
+  runtime, runtime.args, runtime.env
+  resources, resources.memory, resources.vcpus
+  volumes, volumes.*, volumes.*.name, volumes.*.uuid, volumes.*.at,
+  volumes.*.readonly, volumes.*.size
+  timestamps, timestamps.created
+  scale-to-zero, scale-to-zero.enabled, scale-to-zero.policy, scale-to-
+  zero.stateful, scale-to-zero.cooldown-time, scale-to-zero.notify-time
+  restart, restart.policy
+  instances
+
+Flags:
+      --all
+          Remove all instance-templates. Prompts for confirmation.
+      --filter
+          Filter instance-templates to remove. Prompts for confirmation.
+          [examples: name==my-instance, metro==fra]
+      --force
+          Do not prompt for confirmation when using --all or --filter.
+  -f, --field
+          Specify which fields to include in the output.
+  -o, --output
+          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+
+$ unikraft instance logs --help
+
+Fetch and display instance logs.
+
+Usage:
+  unikraft instances logs <target> ... [flags]
+
+Arguments:
+  <target> ...
+          Target instances to fetch logs for.
+
+Examples:
+  # Fetch logs from an instance
+  unikraft instance logs my-instance
+
+  # Fetch the last 100 lines of logs from an instance
+  unikraft instance logs my-instance --tail 100
+
+  # Follow logs from an instance in real-time
+  unikraft instance logs my-instance --follow
+
+Flags:
+      --[no-]prefix
+          Prefix log lines with instance name.
+          [default: true]
+      --tail
+          Number of lines to show from the end of the logs.
+  -f, --follow
+          Follow log output.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+
+$ unikraft instance start --help
+
+Start one or more instances.
+
+Usage:
+  unikraft instances start <target> ... [flags]
+
+Arguments:
+  <target> ...
+          Target instances to start.
+
+Examples:
+  # Start an instance
+  unikraft instance start demo-instance
+
+Flags:
+  -f, --field
+          Specify which fields to include in the output.
+  -o, --output
+          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+
+$ unikraft instance stop --help
+
+Stop one or more instances.
+
+Usage:
+  unikraft instances stop <target> ... [flags]
+
+Arguments:
+  <target> ...
+          Target instances to stop.
+
+Examples:
+  # Stop an instance
+  unikraft instance stop demo-instance
+
+  # Stop with a drain timeout
+  unikraft instance stop demo-instance --drain-timeout 30000
+
+  # Force stop an instance
+  unikraft instance stop demo-instance --force
+
+Flags:
+      --force
+          Force stop the instance immediately.
+      --drain-timeout
+          Timeout in milliseconds for draining connections before stopping.
+          [default: -1]
+  -f, --field
+          Specify which fields to include in the output.
+  -o, --output
+          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+
+$ unikraft instance suspend --help
+
+Suspend one or more instances.
+
+Usage:
+  unikraft instances suspend <target> ... [flags]
+
+Arguments:
+  <target> ...
+          Target instances to suspend.
+
+Examples:
+  # Suspend an instance
+  unikraft instance suspend demo-instance
+
+  # Suspend with a drain timeout
+  unikraft instance suspend demo-instance --drain-timeout 30000
+
+Flags:
+      --drain-timeout
+          Timeout in milliseconds for draining connections before suspending.
+          [default: -1]
+  -f, --field
+          Specify which fields to include in the output.
+  -o, --output
+          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+
+$ unikraft instance restart --help
+
+Restart one or more instances.
+
+Usage:
+  unikraft instances restart <target> ... [flags]
+
+Arguments:
+  <target> ...
+          Target instances to restart.
+
+Examples:
+  # Restart an instance
+  unikraft instance restart demo-instance
+
+  # Force restart an instance
+  unikraft instance restart demo-instance --force
+
+Flags:
+      --force
+          Force stop the instance immediately.
+      --drain-timeout
+          Timeout in milliseconds for draining connections before stopping.
+          [default: -1]
+  -f, --field
+          Specify which fields to include in the output.
+  -o, --output
+          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]

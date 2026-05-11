@@ -1,0 +1,893 @@
+$ unikraft volume --help
+
+Manage Unikraft Cloud volumes.
+
+Usage:
+  unikraft volumes <command> [flags]
+
+Resources:
+  get, inspect, show
+          Inspect a volume.
+  wait
+          Wait for volumes to match a filter.
+  list, ls
+          List volumes.
+  delete, rm, remove
+          Remove a volume.
+  create
+          Create a volume.
+  edit
+          Edit a volume.
+  clone
+          Clone a volume.
+  import
+          Import data into a volume.
+
+Templates:
+  template, templates
+          Manage volume templates.
+
+Fields:
+  metro
+  name
+  uuid
+  tags
+  state
+  size
+  filesystem
+  quota-policy
+  persistent
+  timestamps, timestamps.created
+  attached-to, attached-to.*, attached-to.*.name, attached-to.*.uuid
+  mounted-by, mounted-by.*, mounted-by.*.name, mounted-by.*.uuid, mounted-
+  by.*.read-only
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+
+$ unikraft volume get --help
+
+Inspect a volume.
+
+Usage:
+  unikraft volumes get [<target> ...] [flags]
+
+Arguments:
+  [<target> ...]
+          Target volumes to get.
+
+Examples:
+  # Inspect a volume by name or UUID
+  unikraft volume get demo-volume
+
+Fields:
+  metro
+  name
+  uuid
+  tags
+  state
+  size
+  filesystem
+  quota-policy
+  persistent
+  timestamps, timestamps.created
+  attached-to, attached-to.*, attached-to.*.name, attached-to.*.uuid
+  mounted-by, mounted-by.*, mounted-by.*.name, mounted-by.*.uuid, mounted-
+  by.*.read-only
+
+Flags:
+  -w, --watch=<duration>
+          Watch for changes and refresh output. Defaults to 2s.
+  -f, --field
+          Specify which fields to include in the output.
+  -o, --output
+          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+
+$ unikraft volume list --help
+
+List volumes.
+
+Usage:
+  unikraft volumes list [<target> ...] [flags]
+
+Arguments:
+  [<target> ...]
+          Target volumes to list.
+
+Examples:
+  # List all volumes
+  unikraft volume list
+
+Fields:
+  metro
+  name
+  uuid
+  tags
+  state
+  size
+  filesystem
+  quota-policy
+  persistent
+  timestamps, timestamps.created
+  attached-to, attached-to.*, attached-to.*.name, attached-to.*.uuid
+  mounted-by, mounted-by.*, mounted-by.*.name, mounted-by.*.uuid, mounted-
+  by.*.read-only
+
+Flags:
+      --filter
+          Filter output based on a field value.
+          [examples: name==my-instance, metro==fra]
+  -w, --watch=<duration>
+          Watch for changes and refresh output. Defaults to 2s.
+      --sort
+          Sort output by field values. Use - prefix for descending, + for ascending.
+          [examples: name, -timestamps.created-at]
+  -f, --field
+          Specify which fields to include in the output.
+  -o, --output
+          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+
+$ unikraft volume wait --help
+
+Wait for volumes to match a filter.
+
+Usage:
+  unikraft volumes wait --until=UNTIL <target> ... [flags]
+
+Arguments:
+  <target> ...
+          Target volumes to wait for.
+
+Fields:
+  metro
+  name
+  uuid
+  tags
+  state
+  size
+  filesystem
+  quota-policy
+  persistent
+  timestamps, timestamps.created
+  attached-to, attached-to.*, attached-to.*.name, attached-to.*.uuid
+  mounted-by, mounted-by.*, mounted-by.*.name, mounted-by.*.uuid, mounted-
+  by.*.read-only
+
+Flags:
+      --until, --filter
+          Filter expression to wait for.
+          [examples: state==running, state!=stopped]
+      --interval
+          Polling interval.
+          [default: 2s]
+      --timeout
+          Timeout before giving up.
+          [default: 0]
+  -f, --field
+          Specify which fields to include in the output.
+  -o, --output
+          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+
+$ unikraft volume create --help
+
+Create a volume.
+
+Usage:
+  unikraft volumes create [flags]
+
+Examples:
+  # Create a new volume
+  unikraft volume create \
+  	  --name demo-volume \
+  	  --size 10 \
+  	  --metro fra
+
+Fields:
+  metro
+  name
+  uuid
+  tags
+  state
+  size
+  filesystem
+  quota-policy
+  persistent
+  timestamps, timestamps.created
+  attached-to, attached-to.*, attached-to.*.name, attached-to.*.uuid
+  mounted-by, mounted-by.*, mounted-by.*.name, mounted-by.*.uuid, mounted-
+  by.*.read-only
+
+Flags:
+      --set=<name>=<value>, --set-file=<name>=<filename>
+          Key-value pairs to set on the volume.
+      --visual
+          Open an editor to modify fields visually.
+      --cmd
+          Run a command to edit fields (receives YAML on stdin, outputs edited YAML on stdout).
+      --load, --save=<FILE>
+          Load fields from a YAML file.
+      --dry-run
+          Print patches without applying them.
+  -f, --field
+          Specify which fields to include in the output.
+  -o, --output
+          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+
+Create flags:
+      --metro=<metro>
+          Metro to create in.
+          [examples: fra, sfo, nyc]
+  -n, --name=<name>
+          Volume name.
+      --size=<size>
+          Volume size.
+          [examples: 10GiB, 100MiB]
+      --filesystem=<filesystem>
+          Volume filesystem.
+          [example: ext4]
+      --quota-policy=<quota-policy>
+          Volume quota policy.
+          [examples: static, dynamic]
+
+$ unikraft volume clone --help
+
+Clone a volume.
+
+Usage:
+  unikraft volumes clone <source> [flags]
+
+Arguments:
+  <source>
+          Name or UUID of the volume to clone.
+
+Examples:
+  # Clone a volume with a new name
+  unikraft volume clone demo-volume --name demo-volume-clone
+
+Flags:
+      --set=<name>=<value>, --set-file=<name>=<filename>
+          Key-value pairs to set on the volume.
+  -f, --field
+          Specify which fields to include in the output.
+  -o, --output
+          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+
+flag-clone
+  -n, --name=<name>
+          New volume name.
+      --tags=<tag>
+          Volume tags.
+          [examples: env=prod, team=platform]
+
+$ unikraft volume import --help
+
+Import data into a volume.
+
+Usage:
+  unikraft volumes import <volume> [flags]
+
+Arguments:
+  <volume>
+          Name or UUID of the volume to import into.
+
+Examples:
+  # Import the current directory into a volume
+  unikraft volume import my-volume --source .
+
+  # Import a local directory into a volume
+  unikraft volume import my-volume --source ./data
+
+  # Import a CPIO archive into a volume
+  unikraft volume import my-volume --source rootfs.cpio
+
+  # Import a Dockerfile context into a volume
+  unikraft volume import my-volume --source ./Dockerfile
+
+Flags:
+  -s, --source=<path>
+          Data source: local directory, CPIO archive, or Dockerfile.
+  -f, --force
+          Force import even if the data might exceed volume capacity.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+
+$ unikraft volume edit --help
+
+Edit a volume.
+
+Usage:
+  unikraft volumes edit <target> [flags]
+
+Arguments:
+  <target>
+          Target volume to edit.
+
+Examples:
+  # Resize a volume
+  unikraft volume edit demo-volume --size 20
+
+Fields:
+  metro
+  name
+  uuid
+  tags
+  state
+  size
+  filesystem
+  quota-policy
+  persistent
+  timestamps, timestamps.created
+  attached-to, attached-to.*, attached-to.*.name, attached-to.*.uuid
+  mounted-by, mounted-by.*, mounted-by.*.name, mounted-by.*.uuid, mounted-
+  by.*.read-only
+
+Flags:
+      --set=<name>=<value>, --set-file=<name>=<filename>
+          Key-value pairs to set on the volume.
+      --add=<name>=<value>, --add-file=<name>=<filename>
+          Key-value pairs to add to the volume.
+      --del=<name>=<value>, --del-file=<name>=<filename>
+          Keys to delete from the volume.
+      --visual
+          Open an editor to modify fields visually.
+      --cmd
+          Run a command to edit fields (receives YAML on stdin, outputs edited YAML on stdout).
+      --load, --save=<FILE>
+          Load fields from a YAML file.
+      --dry-run
+          Print patches without applying them.
+  -f, --field
+          Specify which fields to include in the output.
+  -o, --output
+          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+
+Edit flags:
+      --size=<size>
+          Volume size.
+          [examples: 20GiB, 100MiB]
+      --quota-policy=<quota-policy>
+          Volume quota policy.
+          [examples: static, dynamic]
+
+$ unikraft volume delete --help
+
+Remove a volume.
+
+Usage:
+  unikraft volumes delete [<target> ...] [flags]
+
+Arguments:
+  [<target> ...]
+          Target volumes to remove.
+
+Examples:
+  # Delete a volume by name or UUID
+  unikraft volume delete demo-volume
+
+Fields:
+  metro
+  name
+  uuid
+  tags
+  state
+  size
+  filesystem
+  quota-policy
+  persistent
+  timestamps, timestamps.created
+  attached-to, attached-to.*, attached-to.*.name, attached-to.*.uuid
+  mounted-by, mounted-by.*, mounted-by.*.name, mounted-by.*.uuid, mounted-
+  by.*.read-only
+
+Flags:
+      --all
+          Remove all volumes. Prompts for confirmation.
+      --filter
+          Filter volumes to remove. Prompts for confirmation.
+          [examples: name==my-instance, metro==fra]
+      --force
+          Do not prompt for confirmation when using --all or --filter.
+  -f, --field
+          Specify which fields to include in the output.
+  -o, --output
+          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+
+$ unikraft volume template --help
+
+Manage volume templates.
+
+Usage:
+  unikraft volumes template <command>
+
+Templates:
+  get, inspect, show
+          Inspect a volume-template.
+  list, ls
+          List volume-templates.
+  delete, rm, remove
+          Remove a volume-template.
+  create
+          Create a volume template.
+  edit
+          Edit a volume template.
+
+Fields:
+  metro
+  name
+  uuid
+  tags
+  delete-lock
+  state
+  size
+  filesystem
+  persistent
+  timestamps, timestamps.created
+  volumes
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+
+$ unikraft volume template get --help
+
+Inspect a volume-template.
+
+Usage:
+  unikraft volumes template get [<target> ...] [flags]
+
+Arguments:
+  [<target> ...]
+          Target volume-templates to get.
+
+Examples:
+  # Inspect a volume template by name or UUID
+  unikraft volume template get demo-template
+
+Fields:
+  metro
+  name
+  uuid
+  tags
+  delete-lock
+  state
+  size
+  filesystem
+  persistent
+  timestamps, timestamps.created
+  volumes
+
+Flags:
+  -w, --watch=<duration>
+          Watch for changes and refresh output. Defaults to 2s.
+  -f, --field
+          Specify which fields to include in the output.
+  -o, --output
+          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+
+$ unikraft volume template list --help
+
+List volume-templates.
+
+Usage:
+  unikraft volumes template list [<target> ...] [flags]
+
+Arguments:
+  [<target> ...]
+          Target volume-templates to list.
+
+Examples:
+  # List volume templates across metros
+  unikraft volume template list
+
+Fields:
+  metro
+  name
+  uuid
+  tags
+  delete-lock
+  state
+  size
+  filesystem
+  persistent
+  timestamps, timestamps.created
+  volumes
+
+Flags:
+      --filter
+          Filter output based on a field value.
+          [examples: name==my-instance, metro==fra]
+  -w, --watch=<duration>
+          Watch for changes and refresh output. Defaults to 2s.
+      --sort
+          Sort output by field values. Use - prefix for descending, + for ascending.
+          [examples: name, -timestamps.created-at]
+  -f, --field
+          Specify which fields to include in the output.
+  -o, --output
+          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+
+$ unikraft volume template create --help
+
+Create a volume template.
+
+Usage:
+  unikraft volumes template create [<volume> ...] [flags]
+
+Arguments:
+  [<volume> ...]
+          Volumes to convert into templates.
+
+Examples:
+  # Convert a volume into a template
+  unikraft volume template create demo-volume
+
+Fields:
+  metro
+  name
+  uuid
+  tags
+  delete-lock
+  state
+  size
+  filesystem
+  persistent
+  timestamps, timestamps.created
+  volumes
+
+Flags:
+      --set=<name>=<value>, --set-file=<name>=<filename>
+          Key-value pairs to set on the volume-template.
+      --visual
+          Open an editor to modify fields visually.
+      --cmd
+          Run a command to edit fields (receives YAML on stdin, outputs edited YAML on stdout).
+      --load, --save=<FILE>
+          Load fields from a YAML file.
+      --dry-run
+          Print patches without applying them.
+  -f, --field
+          Specify which fields to include in the output.
+  -o, --output
+          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+
+$ unikraft volume template edit --help
+
+Edit a volume template.
+
+Usage:
+  unikraft volumes template edit <target> [flags]
+
+Arguments:
+  <target>
+          Target volume-template to edit.
+
+Examples:
+  # Update template tags
+  unikraft volume template edit demo-template --set tags=env-dev
+
+Fields:
+  metro
+  name
+  uuid
+  tags
+  delete-lock
+  state
+  size
+  filesystem
+  persistent
+  timestamps, timestamps.created
+  volumes
+
+Flags:
+      --set=<name>=<value>, --set-file=<name>=<filename>
+          Key-value pairs to set on the volume-template.
+      --add=<name>=<value>, --add-file=<name>=<filename>
+          Key-value pairs to add to the volume-template.
+      --del=<name>=<value>, --del-file=<name>=<filename>
+          Keys to delete from the volume-template.
+      --visual
+          Open an editor to modify fields visually.
+      --cmd
+          Run a command to edit fields (receives YAML on stdin, outputs edited YAML on stdout).
+      --load, --save=<FILE>
+          Load fields from a YAML file.
+      --dry-run
+          Print patches without applying them.
+  -f, --field
+          Specify which fields to include in the output.
+  -o, --output
+          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+
+Edit flags:
+      --tags=<tag>
+          Template tags.
+          [examples: env-dev, team-platform]
+      --delete-lock
+          Prevent deletion of the template.
+
+$ unikraft volume template delete --help
+
+Remove a volume-template.
+
+Usage:
+  unikraft volumes template delete [<target> ...] [flags]
+
+Arguments:
+  [<target> ...]
+          Target volume-templates to remove.
+
+Examples:
+  # Delete a volume template
+  unikraft volume template delete demo-template
+
+Fields:
+  metro
+  name
+  uuid
+  tags
+  delete-lock
+  state
+  size
+  filesystem
+  persistent
+  timestamps, timestamps.created
+  volumes
+
+Flags:
+      --all
+          Remove all volume-templates. Prompts for confirmation.
+      --filter
+          Filter volume-templates to remove. Prompts for confirmation.
+          [examples: name==my-instance, metro==fra]
+      --force
+          Do not prompt for confirmation when using --all or --filter.
+  -f, --field
+          Specify which fields to include in the output.
+  -o, --output
+          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]

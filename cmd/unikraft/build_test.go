@@ -7,18 +7,11 @@ package main
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
 	"testing"
 )
 
-func buildTests(t *testing.T, r *testRunner) {
-	t.Run("help", func(t *testing.T) {
-		r.run(t, []command{
-			{args: []string{unikraftCmd, "build", "--help"}},
-		})
-	})
-
+func buildTests(t *testing.T, r *integrationRunner) {
 	var metroName string
 	type variant struct {
 		name  string
@@ -63,9 +56,7 @@ func buildTests(t *testing.T, r *testRunner) {
 
 			r.
 				online().
-				withCleaners(buildCleaners).
 				withContext(map[string]string{
-					// Base image context: busybox with cat.
 					"base/Dockerfile": `FROM busybox:latest`,
 					"base/Kraftfile": fmt.Sprintf(`
 spec: v0.7
@@ -91,7 +82,7 @@ roms:
 					{args: []string{unikraftCmd, "build", "rom", "--output", romImage}},
 					{args: []string{unikraftCmd, "run", "--name", "test-$UNIQ_INST", "--metro", metroName, "--output", "quiet", "--image", baseImage, "--rom", romFlag}},
 					{args: []string{unikraftCmd, "instance", "wait", "--until", "state==stopped", "--timeout", "10s", "test-$UNIQ_INST"}},
-					{args: []string{unikraftCmd, "instance", "logs", "test-$UNIQ_INST"}},
+					{args: []string{unikraftCmd, "instance", "logs", "test-$UNIQ_INST"}, match: []string{`Hello from ROM!`}},
 					{args: []string{unikraftCmd, "instance", "delete", "test-$UNIQ_INST"}},
 				})
 		})
@@ -105,9 +96,7 @@ roms:
 
 		r.
 			online().
-			withCleaners(buildCleaners).
 			withContext(map[string]string{
-				// Base image context: busybox with cat.
 				"base/Dockerfile": `FROM busybox:latest`,
 				"base/Kraftfile": `
 spec: v0.7
@@ -118,14 +107,13 @@ rootfs:
   source: ./Dockerfile
 cmd: ["cat", "/rom/hello.txt"]
 `,
-				// ROM directory: same files as the rom test, but passed inline via dir=.
 				"romdata/hello.txt": "Hello from ROM!\n",
 			}).
 			run(t, []command{
 				{args: []string{unikraftCmd, "build", "base", "--output", baseImage}},
 				{args: []string{unikraftCmd, "run", "--name", "test-$UNIQ_INST", "--metro", metroName, "--output", "quiet", "--image", baseImage, "--rom", "dir=romdata,at=/rom"}},
 				{args: []string{unikraftCmd, "instance", "wait", "--until", "state==stopped", "--timeout", "10s", "test-$UNIQ_INST"}},
-				{args: []string{unikraftCmd, "instance", "logs", "test-$UNIQ_INST"}},
+				{args: []string{unikraftCmd, "instance", "logs", "test-$UNIQ_INST"}, match: []string{`Hello from ROM!`}},
 				{args: []string{unikraftCmd, "instance", "delete", "test-$UNIQ_INST"}},
 			})
 	})
@@ -140,7 +128,6 @@ cmd: ["cat", "/rom/hello.txt"]
 					t.Run(v.name, func(t *testing.T) {
 						r.
 							online().
-							withCleaners(buildCleaners).
 							withContext(map[string]string{
 								"Dockerfile": `
 FROM busybox:latest
@@ -171,11 +158,11 @@ cmd: ["sh", "/entrypoint.sh"]
 							}).
 							run(t, []command{
 								{args: []string{unikraftCmd, "build", ".", "--output", v.image}},
-								{args: []string{unikraftCmd, "image", "inspect", v.image}},
+								{args: []string{unikraftCmd, "image", "inspect", v.image}, match: []string{`busybox-e2e`}},
 								{args: []string{unikraftCmd, "image", "ls", v.image, "-okv"}},
 								{args: []string{unikraftCmd, "run", "--name", "test-$UNIQ_INST", "--metro", metroName, "--output", "quiet", "--image", v.image}},
 								{args: []string{unikraftCmd, "instance", "wait", "--until", "state==stopped", "--timeout", "10s", "test-$UNIQ_INST"}},
-								{args: []string{unikraftCmd, "instance", "logs", "test-$UNIQ_INST"}},
+								{args: []string{unikraftCmd, "instance", "logs", "test-$UNIQ_INST"}, match: []string{`UNIKRAFT_E2E_OK`}},
 								{args: []string{unikraftCmd, "instance", "delete", "test-$UNIQ_INST"}},
 								{args: []string{unikraftCmd, "image", "delete", v.image}},
 								{args: []string{unikraftCmd, "image", "inspect", v.image}, err: errYes},
@@ -188,20 +175,9 @@ cmd: ["sh", "/entrypoint.sh"]
 	})
 }
 
-var buildCleaners = []cleaner{
-	{
-		// buildkit versions like "version=v0.25.2" or "version=v0.0.0+unknown" change between environments
-		pattern: regexp.MustCompile(`\bversion=v\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?\b`),
-		repl:    "version=vX.Y.Z",
-	},
-	{
-		// fractional seconds like ".151719804" in timestamps change between runs
-		pattern: regexp.MustCompile(`(\d{2}:\d{2}:\d{2})\.\d+`),
-		repl:    "${1}",
-	},
-	{
-		// sizes like "35.55MiB" or "128KiB" change between builds
-		pattern: regexp.MustCompile(`\b\d+(\.\d+)?(MiB|KiB|GiB)\b`),
-		repl:    "X.XXX${2}",
-	},
+func buildHelpTests(t *testing.T, unikraftPath string) {
+	r := newTestEnv(t, unikraftPath)
+	gild(t.Context(), t, r.cli,
+		[]string{unikraftCmd, "build", "--help"},
+	)
 }

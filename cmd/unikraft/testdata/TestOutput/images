@@ -1,0 +1,229 @@
+=== kv ===
+ref:          nginx
+digest:       sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4
+config:
+  platform:   linux/amd64
+  cmd:        ["/usr/sbin/nginx", "-g", "daemon off;"]
+  env:
+    PATH:     /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+metadata:
+  author:     unikraft.io
+kernel:
+  digest:     sha256:b3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4
+  media-type: application/vnd.unikraft.kernel.v1
+  size:       4MiB
+kernel.dbg:
+  digest:     sha256:d3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4
+  media-type: application/vnd.unikraft.kernel.v1
+  size:       8MiB
+initrd:
+  digest:     sha256:c3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4
+  media-type: application/vnd.unikraft.initrd.v1
+  size:       1MiB
+roms:
+- digest:     sha256:e3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4
+  media-type: application/vnd.unikraft.rom.v1
+  size:       512KiB
+
+=== table ===
+REF    PLATFORM
+nginx  linux/amd64
+
+=== debug ===
+[
+  {
+    "name": "ref",
+    "value": "nginx",
+    "links": [
+      {
+        "type": "image",
+        "key": "unikraft.io/official/nginx:latest"
+      }
+    ],
+    "verbosity": "short"
+  },
+  {
+    "name": "digest",
+    "value": "sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4",
+    "verbosity": "long"
+  },
+  {
+    "name": "config",
+    "subfields": [
+      {
+        "name": "platform",
+        "value": "linux/amd64",
+        "verbosity": "short"
+      },
+      {
+        "name": "cmd",
+        "value": [
+          "/usr/sbin/nginx",
+          "-g",
+          "daemon off;"
+        ],
+        "verbosity": "long"
+      },
+      {
+        "name": "env",
+        "value": {
+          "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+        },
+        "verbosity": "long"
+      }
+    ],
+    "verbosity": "short"
+  },
+  {
+    "name": "metadata",
+    "subfields": [
+      {
+        "name": "author",
+        "value": "unikraft.io",
+        "verbosity": "long"
+      },
+      {
+        "name": "created",
+        "value": null,
+        "verbosity": "long"
+      }
+    ],
+    "verbosity": "long"
+  },
+  {
+    "name": "kernel",
+    "subfields": [
+      {
+        "name": "digest",
+        "value": "sha256:b3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4",
+        "verbosity": "long"
+      },
+      {
+        "name": "media-type",
+        "value": "application/vnd.unikraft.kernel.v1",
+        "verbosity": "long"
+      },
+      {
+        "name": "annotations",
+        "value": null,
+        "verbosity": "long"
+      },
+      {
+        "name": "size",
+        "value": "4MiB",
+        "verbosity": "long"
+      }
+    ],
+    "verbosity": "long"
+  },
+  {
+    "name": "kernel.dbg",
+    "subfields": [
+      {
+        "name": "digest",
+        "value": "sha256:d3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4",
+        "verbosity": "long"
+      },
+      {
+        "name": "media-type",
+        "value": "application/vnd.unikraft.kernel.v1",
+        "verbosity": "long"
+      },
+      {
+        "name": "annotations",
+        "value": null,
+        "verbosity": "long"
+      },
+      {
+        "name": "size",
+        "value": "8MiB",
+        "verbosity": "long"
+      }
+    ],
+    "verbosity": "long"
+  },
+  {
+    "name": "initrd",
+    "subfields": [
+      {
+        "name": "digest",
+        "value": "sha256:c3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4",
+        "verbosity": "long"
+      },
+      {
+        "name": "media-type",
+        "value": "application/vnd.unikraft.initrd.v1",
+        "verbosity": "long"
+      },
+      {
+        "name": "annotations",
+        "value": null,
+        "verbosity": "long"
+      },
+      {
+        "name": "size",
+        "value": "1MiB",
+        "verbosity": "long"
+      }
+    ],
+    "verbosity": "long"
+  },
+  {
+    "name": "roms",
+    "subfields": [
+      {
+        "name": "0",
+        "subfields": [
+          {
+            "name": "digest",
+            "value": "sha256:e3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4",
+            "verbosity": "long"
+          },
+          {
+            "name": "media-type",
+            "value": "application/vnd.unikraft.rom.v1",
+            "verbosity": "long"
+          },
+          {
+            "name": "annotations",
+            "value": null,
+            "verbosity": "long"
+          },
+          {
+            "name": "size",
+            "value": "512KiB",
+            "verbosity": "long"
+          }
+        ],
+        "verbosity": "long"
+      }
+    ],
+    "elem": {
+      "name": "",
+      "subfields": [
+        {
+          "name": "digest",
+          "value": "",
+          "verbosity": "long"
+        },
+        {
+          "name": "media-type",
+          "value": "",
+          "verbosity": "long"
+        },
+        {
+          "name": "annotations",
+          "value": null,
+          "verbosity": "long"
+        },
+        {
+          "name": "size",
+          "value": "0B",
+          "verbosity": "long"
+        }
+      ],
+      "verbosity": "long"
+    },
+    "verbosity": "long"
+  }
+]

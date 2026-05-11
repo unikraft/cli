@@ -1,0 +1,333 @@
+=== kv ===
+metro:      fra
+name:       my-service
+uuid:       b2c3d4e5-f6a7-8901-bcde-f12345678901
+persistent: true
+autoscale:  true
+limits:
+  soft:     5
+  hard:     50
+domains:
+- fqdn:     example.unikraft.app
+services:
+- 443:8080/tls+http
+- 80:443/http+redirect
+
+=== table ===
+METRO  NAME        AUTOSCALE  CREATED  FQDN                  FQDN                  0                  1                     SERVICES
+fra    my-service  true       never    example.unikraft.app  example.unikraft.app  443:8080/tls+http  80:443/http+redirect  443:8080/tls+http, 80:443/http+redirect
+
+=== debug ===
+[
+  {
+    "name": "metro",
+    "value": "fra",
+    "links": [
+      {
+        "type": "metro",
+        "key": "fra"
+      }
+    ],
+    "verbosity": "short",
+    "create": {
+      "set": "fra",
+      "required": true
+    }
+  },
+  {
+    "name": "name",
+    "value": "my-service",
+    "verbosity": "short",
+    "create": {
+      "set": "my-service"
+    }
+  },
+  {
+    "name": "uuid",
+    "value": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+    "verbosity": "long"
+  },
+  {
+    "name": "persistent",
+    "value": true,
+    "verbosity": "long"
+  },
+  {
+    "name": "autoscale",
+    "value": true,
+    "verbosity": "short"
+  },
+  {
+    "name": "limits",
+    "subfields": [
+      {
+        "name": "soft",
+        "value": 5,
+        "verbosity": "long",
+        "create": {
+          "set": 5
+        },
+        "edit": {
+          "set": 5
+        }
+      },
+      {
+        "name": "hard",
+        "value": 50,
+        "verbosity": "long",
+        "create": {
+          "set": 50
+        },
+        "edit": {
+          "set": 50
+        }
+      }
+    ],
+    "verbosity": "long"
+  },
+  {
+    "name": "timestamps",
+    "subfields": [
+      {
+        "name": "created",
+        "value": "never",
+        "verbosity": "short"
+      }
+    ],
+    "verbosity": "short"
+  },
+  {
+    "name": "domains",
+    "subfields": [
+      {
+        "name": "0",
+        "subfields": [
+          {
+            "name": "fqdn",
+            "value": "example.unikraft.app",
+            "verbosity": "short"
+          },
+          {
+            "name": "certificate",
+            "value": "",
+            "subfields": [
+              {
+                "name": "name",
+                "value": "",
+                "verbosity": "long"
+              },
+              {
+                "name": "uuid",
+                "value": "",
+                "verbosity": "long"
+              }
+            ],
+            "verbosity": "long"
+          }
+        ],
+        "verbosity": "short"
+      }
+    ],
+    "elem": {
+      "name": "",
+      "subfields": [
+        {
+          "name": "fqdn",
+          "value": "",
+          "verbosity": "short"
+        },
+        {
+          "name": "certificate",
+          "value": "",
+          "subfields": [
+            {
+              "name": "name",
+              "value": "",
+              "verbosity": "long"
+            },
+            {
+              "name": "uuid",
+              "value": "",
+              "verbosity": "long"
+            }
+          ],
+          "verbosity": "long"
+        }
+      ],
+      "verbosity": "short"
+    },
+    "verbosity": "short",
+    "create": {
+      "set": [
+        {
+          "fqdn": "example.unikraft.app"
+        }
+      ]
+    },
+    "edit": {
+      "set": [
+        {
+          "fqdn": "example.unikraft.app"
+        }
+      ],
+      "add": null,
+      "del": null
+    }
+  },
+  {
+    "name": "instances",
+    "elem": {
+      "name": "",
+      "value": "",
+      "subfields": [
+        {
+          "name": "name",
+          "value": "",
+          "verbosity": "long"
+        },
+        {
+          "name": "uuid",
+          "value": "",
+          "verbosity": "long"
+        }
+      ],
+      "verbosity": "long"
+    },
+    "verbosity": "long"
+  },
+  {
+    "name": "services",
+    "subfields": [
+      {
+        "name": "0",
+        "value": {
+          "source": 443,
+          "destination": 8080,
+          "handlers": [
+            "tls",
+            "http"
+          ]
+        },
+        "subfields": [
+          {
+            "name": "source",
+            "value": 443,
+            "verbosity": "short"
+          },
+          {
+            "name": "destination",
+            "value": 8080,
+            "verbosity": "short"
+          },
+          {
+            "name": "handlers",
+            "value": [
+              "tls",
+              "http"
+            ],
+            "verbosity": "short"
+          }
+        ],
+        "verbosity": "short"
+      },
+      {
+        "name": "1",
+        "value": {
+          "source": 80,
+          "destination": 443,
+          "handlers": [
+            "http",
+            "redirect"
+          ]
+        },
+        "subfields": [
+          {
+            "name": "source",
+            "value": 80,
+            "verbosity": "short"
+          },
+          {
+            "name": "destination",
+            "value": 443,
+            "verbosity": "short"
+          },
+          {
+            "name": "handlers",
+            "value": [
+              "http",
+              "redirect"
+            ],
+            "verbosity": "short"
+          }
+        ],
+        "verbosity": "short"
+      }
+    ],
+    "elem": {
+      "name": "",
+      "value": null,
+      "subfields": [
+        {
+          "name": "source",
+          "value": 0,
+          "verbosity": "short"
+        },
+        {
+          "name": "destination",
+          "value": 0,
+          "verbosity": "short"
+        },
+        {
+          "name": "handlers",
+          "value": null,
+          "verbosity": "short"
+        }
+      ],
+      "verbosity": "short"
+    },
+    "verbosity": "short",
+    "create": {
+      "set": [
+        {
+          "source": 443,
+          "destination": 8080,
+          "handlers": [
+            "tls",
+            "http"
+          ]
+        },
+        {
+          "source": 80,
+          "destination": 443,
+          "handlers": [
+            "http",
+            "redirect"
+          ]
+        }
+      ],
+      "required": true
+    },
+    "edit": {
+      "set": [
+        {
+          "source": 443,
+          "destination": 8080,
+          "handlers": [
+            "tls",
+            "http"
+          ]
+        },
+        {
+          "source": 80,
+          "destination": 443,
+          "handlers": [
+            "http",
+            "redirect"
+          ]
+        }
+      ],
+      "add": null,
+      "del": null
+    }
+  }
+]

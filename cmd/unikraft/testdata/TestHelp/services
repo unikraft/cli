@@ -1,0 +1,442 @@
+$ unikraft service --help
+
+Manage Unikraft Cloud services.
+
+Usage:
+  unikraft services <command> [flags]
+
+Resources:
+  get, inspect, show
+          Inspect a service.
+  wait
+          Wait for services to match a filter.
+  list, ls
+          List services.
+  delete, rm, remove
+          Remove a service.
+  create
+          Create a service group.
+  edit
+          Edit a service group.
+
+Fields:
+  metro
+  name
+  uuid
+  persistent
+  autoscale
+  limits, limits.soft, limits.hard
+  timestamps, timestamps.created
+  domains, domains.*, domains.*.fqdn, domains.*.certificate,
+  domains.*.certificate.name, domains.*.certificate.uuid
+  instances, instances.*, instances.*.name, instances.*.uuid
+  services, services.*, services.*.source, services.*.destination,
+  services.*.handlers
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+
+$ unikraft service get --help
+
+Inspect a service.
+
+Usage:
+  unikraft services get [<target> ...] [flags]
+
+Arguments:
+  [<target> ...]
+          Target services to get.
+
+Examples:
+  # Inspect a service group by name or UUID
+  unikraft service get demo-service
+
+Fields:
+  metro
+  name
+  uuid
+  persistent
+  autoscale
+  limits, limits.soft, limits.hard
+  timestamps, timestamps.created
+  domains, domains.*, domains.*.fqdn, domains.*.certificate,
+  domains.*.certificate.name, domains.*.certificate.uuid
+  instances, instances.*, instances.*.name, instances.*.uuid
+  services, services.*, services.*.source, services.*.destination,
+  services.*.handlers
+
+Flags:
+  -w, --watch=<duration>
+          Watch for changes and refresh output. Defaults to 2s.
+  -f, --field
+          Specify which fields to include in the output.
+  -o, --output
+          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+
+$ unikraft service list --help
+
+List services.
+
+Usage:
+  unikraft services list [<target> ...] [flags]
+
+Arguments:
+  [<target> ...]
+          Target services to list.
+
+Examples:
+  # List all service groups
+  unikraft service list
+
+Fields:
+  metro
+  name
+  uuid
+  persistent
+  autoscale
+  limits, limits.soft, limits.hard
+  timestamps, timestamps.created
+  domains, domains.*, domains.*.fqdn, domains.*.certificate,
+  domains.*.certificate.name, domains.*.certificate.uuid
+  instances, instances.*, instances.*.name, instances.*.uuid
+  services, services.*, services.*.source, services.*.destination,
+  services.*.handlers
+
+Flags:
+      --filter
+          Filter output based on a field value.
+          [examples: name==my-instance, metro==fra]
+  -w, --watch=<duration>
+          Watch for changes and refresh output. Defaults to 2s.
+      --sort
+          Sort output by field values. Use - prefix for descending, + for ascending.
+          [examples: name, -timestamps.created-at]
+  -f, --field
+          Specify which fields to include in the output.
+  -o, --output
+          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+
+$ unikraft service wait --help
+
+Wait for services to match a filter.
+
+Usage:
+  unikraft services wait --until=UNTIL <target> ... [flags]
+
+Arguments:
+  <target> ...
+          Target services to wait for.
+
+Fields:
+  metro
+  name
+  uuid
+  persistent
+  autoscale
+  limits, limits.soft, limits.hard
+  timestamps, timestamps.created
+  domains, domains.*, domains.*.fqdn, domains.*.certificate,
+  domains.*.certificate.name, domains.*.certificate.uuid
+  instances, instances.*, instances.*.name, instances.*.uuid
+  services, services.*, services.*.source, services.*.destination,
+  services.*.handlers
+
+Flags:
+      --until, --filter
+          Filter expression to wait for.
+          [examples: state==running, state!=stopped]
+      --interval
+          Polling interval.
+          [default: 2s]
+      --timeout
+          Timeout before giving up.
+          [default: 0]
+  -f, --field
+          Specify which fields to include in the output.
+  -o, --output
+          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+
+$ unikraft service create --help
+
+Create a service group.
+
+Usage:
+  unikraft services create [flags]
+
+Examples:
+  # Create a new service group
+  unikraft service create \
+  	--name demo-service \
+  	--metro fra \
+  	--domains demo \
+  	--services 443:8080/tls+http
+
+Fields:
+  metro
+  name
+  uuid
+  persistent
+  autoscale
+  limits, limits.soft, limits.hard
+  timestamps, timestamps.created
+  domains, domains.*, domains.*.fqdn, domains.*.certificate,
+  domains.*.certificate.name, domains.*.certificate.uuid
+  instances, instances.*, instances.*.name, instances.*.uuid
+  services, services.*, services.*.source, services.*.destination,
+  services.*.handlers
+
+Flags:
+      --set=<name>=<value>, --set-file=<name>=<filename>
+          Key-value pairs to set on the service.
+      --visual
+          Open an editor to modify fields visually.
+      --cmd
+          Run a command to edit fields (receives YAML on stdin, outputs edited YAML on stdout).
+      --load, --save=<FILE>
+          Load fields from a YAML file.
+      --dry-run
+          Print patches without applying them.
+  -f, --field
+          Specify which fields to include in the output.
+  -o, --output
+          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+
+Create flags:
+      --metro=<metro>
+          Metro to create in.
+          [examples: fra, sfo, nyc]
+      --name=<name>
+          Service group name.
+      --soft-limit=<n>
+          Soft limit.
+          [examples: 1, 5]
+      --hard-limit=<n>
+          Hard limit.
+          [examples: 10, 100]
+      --domains=<fqdn>
+          Service domains.
+          [examples: example.com, api.example.com]
+      --services=<src>:<dest>[/<handlers>]
+          Service ports.
+          [examples: 443:8080/http+tls, 80:8080/http]
+
+$ unikraft service edit --help
+
+Edit a service group.
+
+Usage:
+  unikraft services edit <target> [flags]
+
+Arguments:
+  <target>
+          Target service to edit.
+
+Examples:
+  # Add a new service port
+  unikraft service edit demo-service --services 8443:8080/tls
+
+Fields:
+  metro
+  name
+  uuid
+  persistent
+  autoscale
+  limits, limits.soft, limits.hard
+  timestamps, timestamps.created
+  domains, domains.*, domains.*.fqdn, domains.*.certificate,
+  domains.*.certificate.name, domains.*.certificate.uuid
+  instances, instances.*, instances.*.name, instances.*.uuid
+  services, services.*, services.*.source, services.*.destination,
+  services.*.handlers
+
+Flags:
+      --set=<name>=<value>, --set-file=<name>=<filename>
+          Key-value pairs to set on the service.
+      --add=<name>=<value>, --add-file=<name>=<filename>
+          Key-value pairs to add to the service.
+      --del=<name>=<value>, --del-file=<name>=<filename>
+          Keys to delete from the service.
+      --visual
+          Open an editor to modify fields visually.
+      --cmd
+          Run a command to edit fields (receives YAML on stdin, outputs edited YAML on stdout).
+      --load, --save=<FILE>
+          Load fields from a YAML file.
+      --dry-run
+          Print patches without applying them.
+  -f, --field
+          Specify which fields to include in the output.
+  -o, --output
+          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+
+Edit flags:
+      --soft-limit=<n>
+          Soft limit.
+          [examples: 1, 5]
+      --hard-limit=<n>
+          Hard limit.
+          [examples: 10, 100]
+      --domains=<fqdn>
+          Service domains.
+          [examples: example.com, api.example.com]
+      --services=<src>:<dest>[/<handlers>]
+          Service ports.
+          [examples: 443:8080/http+tls, 80:8080/http]
+
+$ unikraft service delete --help
+
+Remove a service.
+
+Usage:
+  unikraft services delete [<target> ...] [flags]
+
+Arguments:
+  [<target> ...]
+          Target services to remove.
+
+Examples:
+  # Delete a service group by name or UUID
+  unikraft service delete demo-service
+
+Fields:
+  metro
+  name
+  uuid
+  persistent
+  autoscale
+  limits, limits.soft, limits.hard
+  timestamps, timestamps.created
+  domains, domains.*, domains.*.fqdn, domains.*.certificate,
+  domains.*.certificate.name, domains.*.certificate.uuid
+  instances, instances.*, instances.*.name, instances.*.uuid
+  services, services.*, services.*.source, services.*.destination,
+  services.*.handlers
+
+Flags:
+      --all
+          Remove all services. Prompts for confirmation.
+      --filter
+          Filter services to remove. Prompts for confirmation.
+          [examples: name==my-instance, metro==fra]
+      --force
+          Do not prompt for confirmation when using --all or --filter.
+  -f, --field
+          Specify which fields to include in the output.
+  -o, --output
+          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]

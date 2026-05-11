@@ -4,35 +4,24 @@
 
 package main
 
-import (
-	"regexp"
-	"testing"
-)
+import "testing"
 
-func configTests(t *testing.T, r *testRunner) {
-	t.Run("help", func(t *testing.T) {
-		r.run(t, []command{
-			{args: []string{unikraftCmd, "config", "--help"}},
-			{args: []string{unikraftCmd, "config", "get", "--help"}},
-		})
-	})
+func configTests(t *testing.T, r *integrationRunner) {
 	t.Run("get", func(t *testing.T) {
 		r.
 			online().
-			withCleaners([]cleaner{
-				{
-					pattern: regexp.MustCompile(`(?m)^(\s*insecure:\s*)\S+`),
-					repl:    "${1}false",
-				},
-				{
-					pattern: regexp.MustCompile(`(?m)("insecure":\s*)(true|false)`),
-					repl:    "${1}false",
-				},
-			}).
 			run(t, []command{
-				{args: []string{unikraftCmd, "config", "get"}},
-				{args: []string{unikraftCmd, "config", "get", "-o", "json"}},
-				{args: []string{unikraftCmd, "config", "get", "-o", "yaml"}},
+				{args: []string{unikraftCmd, "config", "get"}, match: []string{`profile:\s+\S+`, `token:`}},
+				{args: []string{unikraftCmd, "config", "get", "-o", "json"}, match: []string{`"token":`, `"profile":`}},
+				{args: []string{unikraftCmd, "config", "get", "-o", "yaml"}, match: []string{`token:`, `profile:`}},
 			})
 	})
+}
+
+func configHelpTests(t *testing.T, unikraftPath string) {
+	r := newTestEnv(t, unikraftPath)
+	gild(t.Context(), t, r.cli,
+		[]string{unikraftCmd, "config", "--help"},
+		[]string{unikraftCmd, "config", "get", "--help"},
+	)
 }

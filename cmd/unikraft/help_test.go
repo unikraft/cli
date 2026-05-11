@@ -7,37 +7,18 @@ package main
 
 import "testing"
 
-func helpTests(t *testing.T, r *testRunner) {
-	t.Run("empty", func(t *testing.T) {
-		r.run(t, []command{
-			{args: []string{unikraftCmd}, err: errYes},
-		})
-	})
-	t.Run("version", func(t *testing.T) {
-		r.run(t, []command{
-			{args: []string{unikraftCmd, "version"}},
-		})
-	})
-	t.Run("help", func(t *testing.T) {
-		r.run(t, []command{
-			{args: []string{unikraftCmd, "--help"}},
-		})
-	})
-	t.Run("invalid/arg", func(t *testing.T) {
-		r.run(t, []command{
-			{args: []string{unikraftCmd, "invalid"}, err: errYes},
-		})
-	})
-	t.Run("invalid/help", func(t *testing.T) {
-		r.run(t, []command{
-			{args: []string{unikraftCmd, "--help", "--bad-flag"}, err: errYes},
-			{args: []string{unikraftCmd, "--help", "bad-arg"}, err: errYes},
-		})
-	})
-	t.Run("invalid/logs", func(t *testing.T) {
-		r.run(t, []command{
-			{args: []string{unikraftCmd, "--log-type=json", "invalid"}, err: errYes},
-			{args: []string{unikraftCmd, "--log-level=fatal", "invalid"}, err: errYes},
-		})
-	})
+// generalHelpTests checks that top-level help, version, and error output
+// stays stable. Deterministic and offline.
+func generalHelpTests(t *testing.T, unikraftPath string) {
+	r := newTestEnv(t, unikraftPath)
+	gild(t.Context(), t, r.cli,
+		[]string{unikraftCmd},
+		[]string{unikraftCmd, "version"},
+		[]string{unikraftCmd, "--help"},
+		[]string{unikraftCmd, "invalid"},
+		[]string{unikraftCmd, "--help", "--bad-flag"},
+		[]string{unikraftCmd, "--help", "bad-arg"},
+		[]string{unikraftCmd, "--log-type=json", "invalid"},
+		[]string{unikraftCmd, "--log-level=fatal", "invalid"},
+	)
 }

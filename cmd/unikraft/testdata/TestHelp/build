@@ -1,0 +1,58 @@
+$ unikraft build --help
+
+Build a Unikraft project into a container image.
+
+Usage:
+  unikraft build [<input>] [flags]
+
+Arguments:
+  [<input>]
+          Path to the input directory.
+          [default: .]
+
+Examples:
+  # Build the project in the current directory
+  unikraft build .
+
+  # Build and publish an image from a Kraftfile
+  unikraft build . --output my-org/my-app:latest
+
+  # Build with custom build arguments
+  unikraft build ./app --build-arg VERSION=1.2.3 --build-arg COMMIT=abc123
+
+  # Build with secret and SSH access
+  unikraft build . --secret id=npm,src=$HOME/.npmrc --ssh default=$SSH_AUTH_SOCK
+
+  # Build and save to a local OCI archive
+  unikraft build . --output ./dist/my-app.oci.tar
+
+Flags:
+  -o, --output
+          Output destination.
+      --build-arg
+          Set build-time variables.
+      --no-cache
+          Do not use cache when building the image.
+      --secret
+          Secret to expose to the build (format: "id=mysecret[,src=/local/secret]").
+      --ssh
+          SSH agent socket or keys to expose to the build (format: "default|<id>[=<socket>|<key>[,<key>]]").
+      --insecure
+          Allow insecure (HTTP/unverified TLS) connections to registries. Specify hostnames to restrict, or omit to apply to all.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]

@@ -1,0 +1,84 @@
+$ unikraft resource --help
+
+Manage any Unikraft Cloud resource.
+
+Usage:
+  unikraft resources <command> [flags]
+
+Resources:
+  get, inspect, show
+          Inspect a resource.
+  list, ls
+          List resources.
+  create
+          Create a resource.
+  edit
+          Edit a resource.
+  delete, rm, remove
+          Remove a resource.
+
+Fields:
+  type
+  key
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+
+$ unikraft resource delete --help
+
+Remove a resource.
+
+Usage:
+  unikraft resources delete [<target> ...] [flags]
+
+Arguments:
+  [<target> ...]
+          Target resources to remove.
+
+Fields:
+  type
+  key
+
+Flags:
+      --all
+          Remove all resources. Prompts for confirmation.
+      --filter
+          Filter resources to remove. Prompts for confirmation.
+          [examples: name==my-instance, metro==fra]
+      --force
+          Do not prompt for confirmation when using --all or --filter.
+  -f, --field
+          Specify which fields to include in the output.
+  -o, --output
+          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]

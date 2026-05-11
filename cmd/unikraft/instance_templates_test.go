@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func instanceTemplatesTests(t *testing.T, r *testRunner) {
+func instanceTemplatesTests(t *testing.T, r *integrationRunner) {
 	metroName := ""
 	if r.cfg != nil {
 		metroName = r.cfg.MetroName
@@ -18,7 +18,6 @@ func instanceTemplatesTests(t *testing.T, r *testRunner) {
 	t.Run("template", func(t *testing.T) {
 		r.
 			online().
-			withCleaners(instanceCleaners).
 			run(t, []command{
 				{args: []string{
 					unikraftCmd, "instance", "create",
@@ -37,10 +36,10 @@ func instanceTemplatesTests(t *testing.T, r *testRunner) {
 					},
 					captureEnv: "TEMPLATE_NAME",
 				},
-				{args: []string{unikraftCmd, "instance", "template", "list"}},
-				{args: []string{unikraftCmd, "instance", "template", "inspect", "$TEMPLATE_NAME"}},
+				{args: []string{unikraftCmd, "instance", "template", "list"}, match: []string{`NAME`}},
+				{args: []string{unikraftCmd, "instance", "template", "inspect", "$TEMPLATE_NAME"}, match: []string{`image:\s+nginx`}},
 				{args: []string{unikraftCmd, "instance", "template", "edit", "$TEMPLATE_NAME", "--set", "tags=env-dev"}},
-				{args: []string{unikraftCmd, "instance", "template", "inspect", "$TEMPLATE_NAME"}},
+				{args: []string{unikraftCmd, "instance", "template", "inspect", "$TEMPLATE_NAME"}, match: []string{`image:\s+nginx`}},
 				{args: []string{unikraftCmd, "instance", "template", "delete", "$TEMPLATE_NAME"}},
 			})
 	})
@@ -48,9 +47,7 @@ func instanceTemplatesTests(t *testing.T, r *testRunner) {
 	t.Run("create-from-template", func(t *testing.T) {
 		r.
 			online().
-			withCleaners(instanceCleaners).
 			run(t, []command{
-				// Create a base instance
 				{args: []string{
 					unikraftCmd, "instance", "create",
 					"--output", "quiet",
@@ -61,7 +58,6 @@ func instanceTemplatesTests(t *testing.T, r *testRunner) {
 					"--set", "resources.memory=128",
 					"--set", "resources.vcpus=1",
 				}},
-				// Create template from instance
 				{
 					args: []string{
 						unikraftCmd, "instance", "template", "create", "test-base-$UNIQ_INST",
@@ -69,16 +65,13 @@ func instanceTemplatesTests(t *testing.T, r *testRunner) {
 					},
 					captureEnv: "TEMPLATE_NAME",
 				},
-				// Create new instance from template
 				{args: []string{
 					unikraftCmd, "instance", "create",
 					"--set", "name=test-from-template-$UNIQ_INST",
 					"--set", "metro=" + metroName,
 					"--set", "template=$TEMPLATE_NAME",
 				}},
-				// Verify the new instance was created
-				{args: []string{unikraftCmd, "instance", "inspect", "test-from-template-$UNIQ_INST"}},
-				// Clean up template
+				{args: []string{unikraftCmd, "instance", "inspect", "test-from-template-$UNIQ_INST"}, match: []string{`image:\s+nginx`, `memory:\s+128`}},
 				{args: []string{unikraftCmd, "instance", "template", "delete", "$TEMPLATE_NAME"}},
 			})
 	})

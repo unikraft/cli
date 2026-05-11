@@ -54,6 +54,16 @@ jobs:
         env:
           CGO_ENABLED: 1 # needed for race checker
 
+      - name: Run help tests
+        shell: bash
+        run: |
+          task --yes help
+
+      - name: Run output tests
+        shell: bash
+        run: |
+          task --yes output
+
   integration:
     runs-on: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork && 'ubuntu-latest' || 'arc-unikraft-cli-ubuntu24.04-standard' }}
     needs: unit

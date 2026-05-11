@@ -7,28 +7,30 @@ package main
 
 import "testing"
 
-func authTests(t *testing.T, r *testRunner) {
-	t.Run("help", func(t *testing.T) {
-		r.run(t, []command{
-			{args: []string{unikraftCmd, "login", "--help"}},
-			{args: []string{unikraftCmd, "logout", "--help"}},
-			{args: []string{unikraftCmd, "profile", "--help"}},
-			{args: []string{unikraftCmd, "profile", "get", "--help"}},
-			{args: []string{unikraftCmd, "profile", "list", "--help"}},
-			{args: []string{unikraftCmd, "profile", "use", "--help"}},
-			{args: []string{unikraftCmd, "metro", "--help"}},
-			{args: []string{unikraftCmd, "metro", "get", "--help"}},
-			{args: []string{unikraftCmd, "metro", "list", "--help"}},
-		})
-	})
+func authHelpTests(t *testing.T, unikraftPath string) {
+	r := newTestEnv(t, unikraftPath)
+	gild(t.Context(), t, r.cli,
+		[]string{unikraftCmd, "login", "--help"},
+		[]string{unikraftCmd, "logout", "--help"},
+		[]string{unikraftCmd, "profile", "--help"},
+		[]string{unikraftCmd, "profile", "get", "--help"},
+		[]string{unikraftCmd, "profile", "list", "--help"},
+		[]string{unikraftCmd, "profile", "use", "--help"},
+		[]string{unikraftCmd, "metro", "--help"},
+		[]string{unikraftCmd, "metro", "get", "--help"},
+		[]string{unikraftCmd, "metro", "list", "--help"},
+	)
+}
+
+func authTests(t *testing.T, r *integrationRunner) {
 	t.Run("flow", func(t *testing.T) {
 		r.
 			online().
 			run(t, []command{
-				{args: []string{unikraftCmd, "login", "--check"}},
-				{args: []string{unikraftCmd, "profile", "list"}},
-				{args: []string{unikraftCmd, "metro", "list"}},
-				{args: []string{unikraftCmd, "logout"}},
+				{args: []string{unikraftCmd, "login", "--check"}, match: []string{`authentication token found`}},
+				{args: []string{unikraftCmd, "profile", "list"}, match: []string{`true`}},
+				{args: []string{unikraftCmd, "metro", "list"}, match: []string{`https?://`}},
+				{args: []string{unikraftCmd, "logout"}, match: []string{`logout successful`}},
 				{args: []string{unikraftCmd, "profile", "list"}, err: errMaybe},
 				{args: []string{unikraftCmd, "metro", "list"}, err: errMaybe},
 			})

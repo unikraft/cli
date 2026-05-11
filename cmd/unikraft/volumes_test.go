@@ -6,25 +6,16 @@
 package main
 
 import (
-	"regexp"
 	"testing"
+
+	"unikraft.com/cloud/sdk/platform"
+
+	"unikraft.com/cli/internal/cmd"
+	"unikraft.com/cli/internal/resource"
+	"unikraft.com/cli/internal/types"
 )
 
-func volumesTests(t *testing.T, r *testRunner) {
-	t.Run("help", func(t *testing.T) {
-		r.run(t, []command{
-			{args: []string{unikraftCmd, "volume", "--help"}},
-			{args: []string{unikraftCmd, "volume", "get", "--help"}},
-			{args: []string{unikraftCmd, "volume", "list", "--help"}},
-			{args: []string{unikraftCmd, "volume", "wait", "--help"}},
-			{args: []string{unikraftCmd, "volume", "create", "--help"}},
-			{args: []string{unikraftCmd, "volume", "clone", "--help"}},
-			{args: []string{unikraftCmd, "volume", "import", "--help"}},
-			{args: []string{unikraftCmd, "volume", "edit", "--help"}},
-			{args: []string{unikraftCmd, "volume", "delete", "--help"}},
-		})
-	})
-
+func volumesTests(t *testing.T, r *integrationRunner) {
 	metroName := ""
 	if r.cfg != nil {
 		metroName = r.cfg.MetroName
@@ -34,11 +25,11 @@ func volumesTests(t *testing.T, r *testRunner) {
 		r.
 			online().
 			run(t, []command{
-				{args: []string{unikraftCmd, "volume", "list"}},
-				{args: []string{unikraftCmd, "volume", "create", "--set", "name=test-$UNIQ_VOLUME", "--set", "size=10", "--set", "metro=" + metroName}},
-				{args: []string{unikraftCmd, "volume", "list"}},
-				{args: []string{unikraftCmd, "volume", "inspect", "test-$UNIQ_VOLUME"}},
-				{args: []string{unikraftCmd, "volume", "delete", "test-$UNIQ_VOLUME"}},
+				{args: []string{unikraftCmd, "volume", "list"}, match: []string{`METRO\s+NAME`}},
+				{args: []string{unikraftCmd, "volume", "create", "--set", "name=test-$UNIQ_VOLUME", "--set", "size=10", "--set", "metro=" + metroName}, match: []string{`state:\s+available`, `size:\s+10`}},
+				{args: []string{unikraftCmd, "volume", "list"}, match: []string{`test-.*available`}},
+				{args: []string{unikraftCmd, "volume", "inspect", "test-$UNIQ_VOLUME"}, match: []string{`state:\s+available`, `size:\s+10`}},
+				{args: []string{unikraftCmd, "volume", "delete", "test-$UNIQ_VOLUME"}, match: []string{`test-`}},
 			})
 	})
 
@@ -48,7 +39,7 @@ func volumesTests(t *testing.T, r *testRunner) {
 			run(t, []command{
 				{args: []string{unikraftCmd, "volume", "create", "--output", "quiet", "--set", "name=test-$UNIQ_VOLUME", "--set", "size=10", "--set", "metro=" + metroName}},
 				{args: []string{unikraftCmd, "volume", "edit", "test-$UNIQ_VOLUME", "--output", "quiet", "--set", "size=20"}},
-				{args: []string{unikraftCmd, "volume", "inspect", "test-$UNIQ_VOLUME"}},
+				{args: []string{unikraftCmd, "volume", "inspect", "test-$UNIQ_VOLUME"}, match: []string{`size:\s+20`}},
 				{args: []string{unikraftCmd, "volume", "delete", "test-$UNIQ_VOLUME"}},
 			})
 	})
@@ -59,72 +50,51 @@ func volumesTests(t *testing.T, r *testRunner) {
 			run(t, []command{
 				{args: []string{unikraftCmd, "volume", "create", "--output", "quiet", "--set", "name=test-$UNIQ_VOLUME", "--set", "size=10", "--set", "metro=" + metroName}},
 				{args: []string{unikraftCmd, "volume", "clone", "test-$UNIQ_VOLUME", "--output", "quiet", "--set", "name=test-$UNIQ_VOLUME_CLONE"}},
-				{args: []string{unikraftCmd, "volume", "inspect", "test-$UNIQ_VOLUME", "test-$UNIQ_VOLUME_CLONE"}},
+				{args: []string{unikraftCmd, "volume", "inspect", "test-$UNIQ_VOLUME", "test-$UNIQ_VOLUME_CLONE"}, match: []string{`state:\s+available`}},
 				{args: []string{unikraftCmd, "volume", "delete", "test-$UNIQ_VOLUME", "test-$UNIQ_VOLUME_CLONE"}},
 			})
 	})
 
 	t.Run("import", func(t *testing.T) {
-		// Offline: missing --source errors before any network call.
 		t.Run("missing-source", func(t *testing.T) {
 			r.run(t, []command{
-				{args: []string{unikraftCmd, "volume", "import", "my-volume"}, err: errYes},
+				{args: []string{unikraftCmd, "volume", "import", "my-volume"}, err: errYes, match: []string{`source path is required`}},
 			})
 		})
 
-		// Offline: port below the allowed range errors before any network call.
 		t.Run("invalid-port", func(t *testing.T) {
 			r.run(t, []command{
-				{args: []string{unikraftCmd, "volume", "import", "my-volume", "--source", ".", "--port", "80"}, err: errYes},
+				{args: []string{unikraftCmd, "volume", "import", "my-volume", "--source", ".", "--port", "80"}, err: errYes, match: []string{`port must be between`}},
 			})
 		})
 
-		// Offline: port above the allowed range errors before any network call.
 		t.Run("invalid-port-high", func(t *testing.T) {
 			r.run(t, []command{
-				{args: []string{unikraftCmd, "volume", "import", "my-volume", "--source", ".", "--port", "99999"}, err: errYes},
+				{args: []string{unikraftCmd, "volume", "import", "my-volume", "--source", ".", "--port", "99999"}, err: errYes, match: []string{`port must be between`}},
 			})
 		})
 
-		// Import a small directory into a freshly created volume.
 		t.Run("dir", func(t *testing.T) {
 			r.
 				online().
-				withCleaners([]cleaner{
-					// free size differs on every run
-					{
-						pattern: regexp.MustCompile(`free=[0-9]+.?[0-9]*MiB`),
-						repl:    "free=10MiB",
-					},
-				}).
 				withContext(map[string]string{
 					"hello.txt": "hello from volume import\n",
 				}).
 				run(t, []command{
 					{args: []string{unikraftCmd, "volume", "create", "--output", "quiet", "--set", "name=test-$UNIQ_VOLUME", "--set", "size=10", "--set", "metro=" + metroName}},
-					{args: []string{unikraftCmd, "volume", "import", "test-$UNIQ_VOLUME", "--source", "."}},
-					{args: []string{unikraftCmd, "volume", "inspect", "test-$UNIQ_VOLUME"}},
+					{args: []string{unikraftCmd, "volume", "import", "test-$UNIQ_VOLUME", "--source", "."}, match: []string{`import complete`}},
+					{args: []string{unikraftCmd, "volume", "inspect", "test-$UNIQ_VOLUME"}, match: []string{`state:\s+available`}},
 					{args: []string{unikraftCmd, "volume", "delete", "test-$UNIQ_VOLUME"}},
 				})
 		})
 
-		// Import a file into a freshly created volume and test connection.
 		t.Run("serve", func(t *testing.T) {
 			r.
 				online().
-				withCleaners(instanceCleaners).
-				withCleaners([]cleaner{
-					{
-						// free size differs on every run
-						pattern: regexp.MustCompile(`free=[0-9]+.?[0-9]*MiB`),
-						repl:    "free=50MiB",
-					},
-				}).
 				withContext(map[string]string{
 					"index.html": "<html><body>hello from volume import</body></html>\n",
 				}).
 				run(t, []command{
-					// Create a volume to hold the custom web content
 					{args: []string{
 						unikraftCmd, "volume", "create",
 						"--output", "quiet",
@@ -132,8 +102,7 @@ func volumesTests(t *testing.T, r *testRunner) {
 						"--set", "size=50",
 						"--set", "metro=" + metroName,
 					}},
-					// Import the custom index.html into the volume
-					{args: []string{unikraftCmd, "volume", "import", "test-$UNIQ_VOL", "--source", "."}},
+					{args: []string{unikraftCmd, "volume", "import", "test-$UNIQ_VOL", "--source", "."}, match: []string{`import complete`}},
 					{args: []string{
 						unikraftCmd, "instance", "create",
 						"--set", "name=test-$UNIQ_INST",
@@ -146,7 +115,6 @@ func volumesTests(t *testing.T, r *testRunner) {
 						"--set", "service.services=443:8080/tls+http",
 						"--set", "service.domains=name=$UNIQ_DOMAIN",
 					}},
-					// Capture the assigned FQDN
 					{
 						args: []string{
 							unikraftCmd, "instance", "inspect", "test-$UNIQ_INST",
@@ -155,7 +123,6 @@ func volumesTests(t *testing.T, r *testRunner) {
 						captureEnv: "FQDN",
 					},
 					{args: []string{unikraftCmd, "instance", "wait", "--until", "state==running", "--timeout", "30s", "test-$UNIQ_INST"}},
-					// Curl the instance and write the body to a file for content verification.
 					{args: []string{
 						"curl",
 						"-k",
@@ -170,11 +137,47 @@ func volumesTests(t *testing.T, r *testRunner) {
 						"--max-time", "10",
 						"https://$FQDN",
 					}},
-					// Assert the imported content is served.
-					{args: []string{"grep", "hello from volume import", "response.html"}},
+					{args: []string{"grep", "hello from volume import", "response.html"}, match: []string{`hello from volume import`}},
 					{args: []string{unikraftCmd, "instance", "delete", "test-$UNIQ_INST"}},
 					{args: []string{unikraftCmd, "volume", "delete", "test-$UNIQ_VOL"}},
 				})
 		})
 	})
+}
+
+func volumesHelpTests(t *testing.T, unikraftPath string) {
+	r := newTestEnv(t, unikraftPath)
+	gild(t.Context(), t, r.cli,
+		[]string{unikraftCmd, "volume", "--help"},
+		[]string{unikraftCmd, "volume", "get", "--help"},
+		[]string{unikraftCmd, "volume", "list", "--help"},
+		[]string{unikraftCmd, "volume", "wait", "--help"},
+		[]string{unikraftCmd, "volume", "create", "--help"},
+		[]string{unikraftCmd, "volume", "clone", "--help"},
+		[]string{unikraftCmd, "volume", "import", "--help"},
+		[]string{unikraftCmd, "volume", "edit", "--help"},
+		[]string{unikraftCmd, "volume", "delete", "--help"},
+		[]string{unikraftCmd, "volume", "template", "--help"},
+		[]string{unikraftCmd, "volume", "template", "get", "--help"},
+		[]string{unikraftCmd, "volume", "template", "list", "--help"},
+		[]string{unikraftCmd, "volume", "template", "create", "--help"},
+		[]string{unikraftCmd, "volume", "template", "edit", "--help"},
+		[]string{unikraftCmd, "volume", "template", "delete", "--help"},
+	)
+}
+
+func volumesOutputTests(t *testing.T) {
+	sample := cmd.Volume{
+		MetroName:   "fra",
+		Name:        "my-volume",
+		UUID:        "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+		Tags:        []string{"env-prod"},
+		State:       types.VolumeState(platform.VolumeStateAvailable),
+		Size:        50,
+		Filesystem:  "ext4",
+		QuotaPolicy: "hard",
+		Persistent:  true,
+	}
+
+	gild[resource.Resource](t.Context(), t, dumpResource, sample)
 }

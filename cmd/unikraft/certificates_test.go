@@ -5,20 +5,44 @@
 
 package main
 
-import "testing"
+import (
+	"testing"
 
-func certificatesTests(t *testing.T, r *testRunner) {
-	t.Run("help", func(t *testing.T) {
-		r.run(t, []command{
-			{args: []string{unikraftCmd, "certificate", "--help"}},
-			{args: []string{unikraftCmd, "certificate", "get", "--help"}},
-			{args: []string{unikraftCmd, "certificate", "list", "--help"}},
-			{args: []string{unikraftCmd, "certificate", "wait", "--help"}},
-			{args: []string{unikraftCmd, "certificate", "create", "--help"}},
-			{args: []string{unikraftCmd, "certificate", "delete", "--help"}},
-		})
-	})
+	"unikraft.com/cloud/sdk/platform"
 
+	"unikraft.com/cli/internal/cmd"
+	"unikraft.com/cli/internal/resource"
+	"unikraft.com/cli/internal/types"
+)
+
+func certificatesHelpTests(t *testing.T, unikraftPath string) {
+	r := newTestEnv(t, unikraftPath)
+	gild(t.Context(), t, r.cli,
+		[]string{unikraftCmd, "certificate", "--help"},
+		[]string{unikraftCmd, "certificate", "get", "--help"},
+		[]string{unikraftCmd, "certificate", "list", "--help"},
+		[]string{unikraftCmd, "certificate", "wait", "--help"},
+		[]string{unikraftCmd, "certificate", "create", "--help"},
+		[]string{unikraftCmd, "certificate", "delete", "--help"},
+	)
+}
+
+func certificatesOutputTests(t *testing.T) {
+	sample := cmd.Certificate{
+		MetroName:    "fra",
+		Name:         "my-cert",
+		UUID:         "c3d4e5f6-a7b8-9012-cdef-123456789012",
+		CommonName:   "example.unikraft.app",
+		Subject:      "CN=example.unikraft.app",
+		Issuer:       "CN=Test CA",
+		SerialNumber: "1234567890",
+		State:        types.CertificateState(platform.CertificateStateValid),
+	}
+
+	gild[resource.Resource](t.Context(), t, dumpResource, sample)
+}
+
+func certificatesTests(t *testing.T, r *integrationRunner) {
 	metroName := ""
 	if r.cfg != nil {
 		metroName = r.cfg.MetroName
@@ -28,12 +52,12 @@ func certificatesTests(t *testing.T, r *testRunner) {
 		r.
 			online().
 			run(t, []command{
-				{args: []string{unikraftCmd, "certificate", "list"}},
-				{args: []string{unikraftCmd, "certificate", "create", "--set", "name=test-$UNIQ_CERT_A", "--set", "cn=$CERT_A_CN", "--set", "chain=$CERT_A_CHAIN", "--set", "pkey=$CERT_A_KEY", "--set", "metro=" + metroName}},
-				{args: []string{unikraftCmd, "certificate", "create", "--set", "name=test-$UNIQ_CERT_B", "--set", "cn=$CERT_B_CN", "--set", "chain=$CERT_B_CHAIN", "--set", "pkey=$CERT_B_KEY", "--set", "metro=" + metroName}},
-				{args: []string{unikraftCmd, "certificate", "list"}},
-				{args: []string{unikraftCmd, "certificate", "inspect", "test-$UNIQ_CERT_A", "test-$UNIQ_CERT_B"}},
-				{args: []string{unikraftCmd, "certificate", "delete", "test-$UNIQ_CERT_A", "test-$UNIQ_CERT_B"}},
+				{args: []string{unikraftCmd, "certificate", "list"}, match: []string{`METRO\s+NAME`}},
+				{args: []string{unikraftCmd, "certificate", "create", "--set", "name=test-$UNIQ_CERT_A", "--set", "cn=$CERT_A_CN", "--set", "chain=$CERT_A_CHAIN", "--set", "pkey=$CERT_A_KEY", "--set", "metro=" + metroName}, match: []string{`name:\s+test-`, `state:\s+valid`}},
+				{args: []string{unikraftCmd, "certificate", "create", "--set", "name=test-$UNIQ_CERT_B", "--set", "cn=$CERT_B_CN", "--set", "chain=$CERT_B_CHAIN", "--set", "pkey=$CERT_B_KEY", "--set", "metro=" + metroName}, match: []string{`name:\s+test-`, `state:\s+valid`}},
+				{args: []string{unikraftCmd, "certificate", "list"}, match: []string{`test-.*valid`}},
+				{args: []string{unikraftCmd, "certificate", "inspect", "test-$UNIQ_CERT_A", "test-$UNIQ_CERT_B"}, match: []string{`state:\s+valid`}},
+				{args: []string{unikraftCmd, "certificate", "delete", "test-$UNIQ_CERT_A", "test-$UNIQ_CERT_B"}, match: []string{`test-`}},
 			})
 	})
 }

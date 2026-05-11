@@ -6,34 +6,17 @@
 package main
 
 import (
-	"regexp"
 	"testing"
+
+	"github.com/stretchr/testify/require"
+	"unikraft.com/cloud/sdk/platform"
+
+	"unikraft.com/cli/internal/cmd"
+	"unikraft.com/cli/internal/resource"
+	"unikraft.com/cli/internal/types"
 )
 
-func instancesTests(t *testing.T, r *testRunner) {
-	t.Run("help", func(t *testing.T) {
-		r.run(t, []command{
-			{args: []string{unikraftCmd, "instance", "--help"}},
-			{args: []string{unikraftCmd, "instance", "get", "--help"}},
-			{args: []string{unikraftCmd, "instance", "list", "--help"}},
-			{args: []string{unikraftCmd, "instance", "wait", "--help"}},
-			{args: []string{unikraftCmd, "instance", "create", "--help"}},
-			{args: []string{unikraftCmd, "instance", "edit", "--help"}},
-			{args: []string{unikraftCmd, "instance", "delete", "--help"}},
-			{args: []string{unikraftCmd, "instance", "template", "--help"}},
-			{args: []string{unikraftCmd, "instance", "template", "get", "--help"}},
-			{args: []string{unikraftCmd, "instance", "template", "list", "--help"}},
-			{args: []string{unikraftCmd, "instance", "template", "create", "--help"}},
-			{args: []string{unikraftCmd, "instance", "template", "edit", "--help"}},
-			{args: []string{unikraftCmd, "instance", "template", "delete", "--help"}},
-			{args: []string{unikraftCmd, "instance", "logs", "--help"}},
-			{args: []string{unikraftCmd, "instance", "start", "--help"}},
-			{args: []string{unikraftCmd, "instance", "stop", "--help"}},
-			{args: []string{unikraftCmd, "instance", "suspend", "--help"}},
-			{args: []string{unikraftCmd, "instance", "restart", "--help"}},
-		})
-	})
-
+func instancesTests(t *testing.T, r *integrationRunner) {
 	metroName := ""
 	if r.cfg != nil {
 		metroName = r.cfg.MetroName
@@ -42,9 +25,8 @@ func instancesTests(t *testing.T, r *testRunner) {
 	t.Run("create", func(t *testing.T) {
 		r.
 			online().
-			withCleaners(instanceCleaners).
 			run(t, []command{
-				{args: []string{unikraftCmd, "instance", "list"}},
+				{args: []string{unikraftCmd, "instance", "list"}, match: []string{`METRO\s+NAME`}},
 
 				// Create an nginx instance
 				{args: []string{
@@ -56,20 +38,19 @@ func instancesTests(t *testing.T, r *testRunner) {
 					"--set", "autostart=true",
 					"--set", "resources.memory=128",
 					"--set", "resources.vcpus=1",
-				}},
+				}, match: []string{`name:\s+test-`, `image:\s+nginx`, `memory:\s+128`}},
 
-				{args: []string{unikraftCmd, "instance", "list"}},
-				{args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}},
+				{args: []string{unikraftCmd, "instance", "list"}, match: []string{`test-.*nginx`}},
+				{args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}, match: []string{`image:\s+nginx`, `memory:\s+128`}},
 
-				{args: []string{unikraftCmd, "instance", "delete", "test-$UNIQ_INST"}},
-				{args: []string{unikraftCmd, "instance", "list"}},
+				{args: []string{unikraftCmd, "instance", "delete", "test-$UNIQ_INST"}, match: []string{`test-`}},
+				{args: []string{unikraftCmd, "instance", "list"}, match: []string{`METRO\s+NAME`}},
 			})
 	})
 
 	t.Run("create-oom", func(t *testing.T) {
 		r.
 			online().
-			withCleaners(instanceCleaners).
 			run(t, []command{
 				{args: []string{
 					unikraftCmd, "instance", "create",
@@ -89,7 +70,6 @@ func instancesTests(t *testing.T, r *testRunner) {
 	t.Run("connect", func(t *testing.T) {
 		r.
 			online().
-			withCleaners(instanceCleaners).
 			run(t, []command{
 				// Create an nginx instance with a service
 				{args: []string{
@@ -126,7 +106,7 @@ func instancesTests(t *testing.T, r *testRunner) {
 					"--connect-timeout", "5",
 					"--max-time", "10",
 					"https://$FQDN",
-				}},
+				}, match: []string{`HTTP 200 OK`}},
 				{args: []string{unikraftCmd, "instance", "delete", "test-$UNIQ_INST"}},
 			})
 	})
@@ -136,9 +116,7 @@ func instancesTests(t *testing.T, r *testRunner) {
 
 		r.
 			online().
-			withCleaners(instanceCleaners).
 			run(t, []command{
-				// Create an nginx instance
 				{args: []string{
 					unikraftCmd, "instance", "create",
 					"--set", "name=test-$UNIQ_INST",
@@ -151,19 +129,16 @@ func instancesTests(t *testing.T, r *testRunner) {
 				}},
 
 				{args: []string{unikraftCmd, "instance", "stop", "test-$UNIQ_INST"}},
-				{args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}},
+				{args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}, match: []string{`state:\s+stop`}},
 
 				{args: []string{unikraftCmd, "instance", "start", "test-$UNIQ_INST"}},
-				{args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}},
+				{args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}, match: []string{`state:\s+running`}},
 
 				{args: []string{unikraftCmd, "instance", "edit", "test-$UNIQ_INST", "--set", "state=stopped"}},
-				{args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}},
+				{args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}, match: []string{`state:\s+stop`}},
 
 				{args: []string{unikraftCmd, "instance", "edit", "test-$UNIQ_INST", "--set", "state=running"}},
-				{args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}},
-
-				// {args: []string{unikraftCmd, "instance", "restart", "test-$UNIQ_INST"}},
-				// {args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}},
+				{args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}, match: []string{`state:\s+running`}},
 
 				{args: []string{unikraftCmd, "instance", "delete", "test-$UNIQ_INST"}},
 			})
@@ -172,7 +147,6 @@ func instancesTests(t *testing.T, r *testRunner) {
 	t.Run("edit", func(t *testing.T) {
 		r.
 			online().
-			withCleaners(instanceCleaners).
 			run(t, []command{
 				{args: []string{
 					unikraftCmd, "instance", "create",
@@ -193,9 +167,8 @@ func instancesTests(t *testing.T, r *testRunner) {
 					"--set", "runtime.args=after,second",
 					"--set", "runtime.env=A=3,B=4",
 					"--set", "resources.memory=256",
-					// "--set", "resources.vcpus=2",
 				}},
-				{args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}},
+				{args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}, match: []string{`image:\s+redis`, `memory:\s+256`, `A:\s+3`}},
 				{args: []string{unikraftCmd, "instance", "delete", "test-$UNIQ_INST"}},
 			})
 	})
@@ -203,9 +176,7 @@ func instancesTests(t *testing.T, r *testRunner) {
 	t.Run("volume", func(t *testing.T) {
 		r.
 			online().
-			withCleaners(instanceCleaners).
 			run(t, []command{
-				// Create a volume first
 				{args: []string{
 					unikraftCmd, "volume", "create",
 					"--output", "quiet",
@@ -213,7 +184,6 @@ func instancesTests(t *testing.T, r *testRunner) {
 					"--set", "size=20",
 					"--set", "metro=" + metroName,
 				}},
-				// Create an instance with the volume mounted at /mnt
 				{args: []string{
 					unikraftCmd, "instance", "create",
 					"--set", "name=test-$UNIQ_INST",
@@ -224,7 +194,7 @@ func instancesTests(t *testing.T, r *testRunner) {
 					"--set", "resources.vcpus=1",
 					"--set", "volumes=test-$UNIQ_VOL:/mnt",
 				}},
-				{args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}},
+				{args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}, match: []string{`:/mnt`}},
 				{args: []string{unikraftCmd, "instance", "delete", "test-$UNIQ_INST"}},
 				{args: []string{unikraftCmd, "volume", "delete", "test-$UNIQ_VOL"}},
 			})
@@ -233,11 +203,7 @@ func instancesTests(t *testing.T, r *testRunner) {
 	t.Run("volume-inline", func(t *testing.T) {
 		r.
 			online().
-			withCleaners(instanceCleaners).
 			run(t, []command{
-				// Create an instance with an inline volume (volume created automatically)
-				// This tests the create-only "size" field in InstanceVolume
-				// Format is :AT[:ro][:size=N] (no name, only size)
 				{args: []string{
 					unikraftCmd, "instance", "create",
 					"--set", "name=test-$UNIQ_INST",
@@ -248,7 +214,7 @@ func instancesTests(t *testing.T, r *testRunner) {
 					"--set", "resources.vcpus=1",
 					"--set", "volumes=:/data:size=20",
 				}},
-				{args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}},
+				{args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}, match: []string{`:/data`}},
 				{args: []string{unikraftCmd, "instance", "delete", "test-$UNIQ_INST"}},
 			})
 	})
@@ -256,9 +222,7 @@ func instancesTests(t *testing.T, r *testRunner) {
 	t.Run("shortcut-service-volume", func(t *testing.T) {
 		r.
 			online().
-			withCleaners(instanceCleaners).
 			run(t, []command{
-				// Create a service group first
 				{args: []string{
 					unikraftCmd, "service", "create",
 					"--output", "quiet",
@@ -266,7 +230,6 @@ func instancesTests(t *testing.T, r *testRunner) {
 					"--set", "metro=" + metroName,
 					"--set", "services=443:8080/tls+http",
 				}},
-				// Create a volume
 				{args: []string{
 					unikraftCmd, "volume", "create",
 					"--output", "quiet",
@@ -274,8 +237,6 @@ func instancesTests(t *testing.T, r *testRunner) {
 					"--set", "size=20",
 					"--set", "metro=" + metroName,
 				}},
-				// Create an instance using shortcut flags --service and -v
-				// to connect to the existing service and volume
 				{args: []string{
 					unikraftCmd, "instance", "create",
 					"--set", "name=test-$UNIQ_INST",
@@ -287,7 +248,7 @@ func instancesTests(t *testing.T, r *testRunner) {
 					"--service", "test-$UNIQ_SVC",
 					"-v", "test-$UNIQ_VOL:/mnt",
 				}},
-				{args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}},
+				{args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}, match: []string{`:/mnt`, `service:`}},
 				{args: []string{unikraftCmd, "instance", "delete", "test-$UNIQ_INST"}},
 				{args: []string{unikraftCmd, "volume", "delete", "test-$UNIQ_VOL"}},
 				{args: []string{unikraftCmd, "service", "delete", "test-$UNIQ_SVC"}},
@@ -297,12 +258,10 @@ func instancesTests(t *testing.T, r *testRunner) {
 	t.Run("rom-attach", func(t *testing.T) {
 		r.
 			online().
-			withCleaners(instanceCleaners).
 			withContext(map[string]string{
 				"romdata/hello.txt": "Hello from ROM!\n",
 			}).
 			run(t, []command{
-				// Create an instance without any ROMs
 				{args: []string{
 					unikraftCmd, "instance", "create",
 					"--output", "quiet",
@@ -313,13 +272,12 @@ func instancesTests(t *testing.T, r *testRunner) {
 					"--set", "resources.memory=128",
 					"--set", "resources.vcpus=1",
 				}},
-				// Attach a ROM via inline dir to the stopped instance
 				{args: []string{
 					unikraftCmd, "instance", "edit", "test-$UNIQ_INST",
 					"--output", "quiet",
 					"--set", "roms=dir=romdata,at=/rom",
 				}},
-				{args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}},
+				{args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}, match: []string{`at:\s+/rom`}},
 				{args: []string{unikraftCmd, "instance", "delete", "test-$UNIQ_INST"}},
 			})
 	})
@@ -327,13 +285,11 @@ func instancesTests(t *testing.T, r *testRunner) {
 	t.Run("rom-add", func(t *testing.T) {
 		r.
 			online().
-			withCleaners(instanceCleaners).
 			withContext(map[string]string{
 				"romdata1/hello.txt":   "Hello from ROM 1!\n",
 				"romdata2/goodbye.txt": "Goodbye from ROM 2!\n",
 			}).
 			run(t, []command{
-				// Create a stopped instance with one ROM
 				{args: []string{
 					unikraftCmd, "instance", "create",
 					"--output", "quiet",
@@ -345,13 +301,12 @@ func instancesTests(t *testing.T, r *testRunner) {
 					"--set", "resources.vcpus=1",
 					"--rom", "dir=romdata1,at=/rom1,name=rom1",
 				}},
-				// Add a second ROM without removing the first
 				{args: []string{
 					unikraftCmd, "instance", "edit", "test-$UNIQ_INST",
 					"--output", "quiet",
 					"--add", "roms=dir=romdata2,at=/rom2,name=rom2",
 				}},
-				{args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}},
+				{args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}, match: []string{`at:\s+/rom1`, `at:\s+/rom2`}},
 				{args: []string{unikraftCmd, "instance", "delete", "test-$UNIQ_INST"}},
 			})
 	})
@@ -359,12 +314,10 @@ func instancesTests(t *testing.T, r *testRunner) {
 	t.Run("rom-detach", func(t *testing.T) {
 		r.
 			online().
-			withCleaners(instanceCleaners).
 			withContext(map[string]string{
 				"romdata/hello.txt": "Hello from ROM!\n",
 			}).
 			run(t, []command{
-				// Create a stopped instance with a ROM attached
 				{args: []string{
 					unikraftCmd, "instance", "create",
 					"--output", "quiet",
@@ -376,13 +329,12 @@ func instancesTests(t *testing.T, r *testRunner) {
 					"--set", "resources.vcpus=1",
 					"--rom", "dir=romdata,at=/rom,name=myrom",
 				}},
-				// Detach a specific ROM by name
 				{args: []string{
 					unikraftCmd, "instance", "edit", "test-$UNIQ_INST",
 					"--output", "quiet",
 					"--del", "roms=name=myrom",
 				}},
-				{args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}},
+				{args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}, match: []string{`image:\s+nginx`}},
 				{args: []string{unikraftCmd, "instance", "delete", "test-$UNIQ_INST"}},
 			})
 	})
@@ -390,9 +342,7 @@ func instancesTests(t *testing.T, r *testRunner) {
 	t.Run("autostart", func(t *testing.T) {
 		r.
 			online().
-			withCleaners(instanceCleaners).
 			run(t, []command{
-				// Create an instance with autostart=true (should start automatically)
 				{args: []string{
 					unikraftCmd, "instance", "create",
 					"--output", "quiet",
@@ -403,8 +353,7 @@ func instancesTests(t *testing.T, r *testRunner) {
 					"--set", "resources.memory=128",
 					"--set", "resources.vcpus=1",
 				}},
-				// Verify instance is running (autostart worked)
-				{args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}},
+				{args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}, match: []string{`state:\s+(running|starting)`}},
 				{args: []string{unikraftCmd, "instance", "delete", "test-$UNIQ_INST"}},
 			})
 	})
@@ -412,9 +361,7 @@ func instancesTests(t *testing.T, r *testRunner) {
 	t.Run("suspend", func(t *testing.T) {
 		r.
 			online().
-			withCleaners(instanceCleaners).
 			run(t, []command{
-				// Create a running instance
 				{args: []string{
 					unikraftCmd, "instance", "create",
 					"--output", "quiet",
@@ -427,14 +374,12 @@ func instancesTests(t *testing.T, r *testRunner) {
 				}},
 				{args: []string{unikraftCmd, "instance", "wait", "--until", "state==running", "--timeout", "30s", "test-$UNIQ_INST"}},
 
-				// Suspend the instance — it should move to standby
 				{args: []string{unikraftCmd, "instance", "suspend", "test-$UNIQ_INST"}},
-				{args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}},
+				{args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}, match: []string{`state:\s+(standby|stopped)`}},
 
-				// Wake the instance back up with start
 				{args: []string{unikraftCmd, "instance", "start", "test-$UNIQ_INST"}},
 				{args: []string{unikraftCmd, "instance", "wait", "--until", "state==running", "--timeout", "30s", "test-$UNIQ_INST"}},
-				{args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}},
+				{args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}, match: []string{`state:\s+running`}},
 
 				{args: []string{unikraftCmd, "instance", "delete", "test-$UNIQ_INST"}},
 			})
@@ -443,9 +388,7 @@ func instancesTests(t *testing.T, r *testRunner) {
 	t.Run("add-domain", func(t *testing.T) {
 		r.
 			online().
-			withCleaners(instanceCleaners).
 			run(t, []command{
-				// Create an instance with a service (required to add domains later)
 				{args: []string{
 					unikraftCmd, "instance", "create",
 					"--set", "name=test-$UNIQ_INST",
@@ -456,7 +399,6 @@ func instancesTests(t *testing.T, r *testRunner) {
 					"--set", "resources.vcpus=1",
 					"--set", "service.services=443:8080/tls+http",
 				}},
-				// Capture the auto-generated service name
 				{
 					args: []string{
 						unikraftCmd, "instance", "inspect", "test-$UNIQ_INST",
@@ -464,48 +406,103 @@ func instancesTests(t *testing.T, r *testRunner) {
 					},
 					captureEnv: "SERVICE_NAME",
 				},
-				// Edit the service to add a domain
 				{args: []string{
 					unikraftCmd, "service", "edit", "$SERVICE_NAME",
 					"--output", "quiet",
 					"--add", "domains=name=$UNIQ_DOMAIN",
 				}},
-				// Verify instance now has the domain via the service
-				{args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}},
+				{args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}, match: []string{`service:`}},
 				{args: []string{unikraftCmd, "instance", "delete", "test-$UNIQ_INST"}},
 			})
 	})
 }
 
-var instanceCleaners = []cleaner{
-	{
-		// auto-generated service names like "falling-sky-7cay704w"
-		pattern: regexp.MustCompile(`\b[a-z]+-[a-z]+-[a-z0-9]{8}\b`),
-		repl:    "<SERVICE_NAME>",
-	},
-	{
-		// auto-generated volume names like "vol-0g8gc"
-		pattern: regexp.MustCompile(`\bvol-[a-z0-9]+\b`),
-		repl:    "<INLINE_VOL>",
-	},
-	{
-		// IP addresses like "10.0.1.29"
-		pattern: regexp.MustCompile(`\b10\.\d+\.\d+\.\d+\b`),
-		repl:    "10.X.X.X",
-	},
-	{
-		// MAC addresses like "12:b0:0a:HH:MM:1d" (already partially cleaned)
-		pattern: regexp.MustCompile(`\b[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}\b`),
-		repl:    "aa:bb:cc:dd:ee:ff",
-	},
-	{
-		// states can be running/starting
-		pattern: regexp.MustCompile(`\bstate:(\s+)(running|starting)`),
-		repl:    "state:${1}running",
-	},
-	{
-		// states can be stopping/stoped
-		pattern: regexp.MustCompile(`\bstate:(\s+)(stopping|stopped)`),
-		repl:    "state:${1}stopped",
-	},
+func instancesHelpTests(t *testing.T, unikraftPath string) {
+	r := newTestEnv(t, unikraftPath)
+	gild(t.Context(), t, r.cli,
+		[]string{unikraftCmd, "instance", "--help"},
+		[]string{unikraftCmd, "instance", "get", "--help"},
+		[]string{unikraftCmd, "instance", "list", "--help"},
+		[]string{unikraftCmd, "instance", "wait", "--help"},
+		[]string{unikraftCmd, "instance", "create", "--help"},
+		[]string{unikraftCmd, "instance", "edit", "--help"},
+		[]string{unikraftCmd, "instance", "delete", "--help"},
+		[]string{unikraftCmd, "instance", "template", "--help"},
+		[]string{unikraftCmd, "instance", "template", "get", "--help"},
+		[]string{unikraftCmd, "instance", "template", "list", "--help"},
+		[]string{unikraftCmd, "instance", "template", "create", "--help"},
+		[]string{unikraftCmd, "instance", "template", "edit", "--help"},
+		[]string{unikraftCmd, "instance", "template", "delete", "--help"},
+		[]string{unikraftCmd, "instance", "logs", "--help"},
+		[]string{unikraftCmd, "instance", "start", "--help"},
+		[]string{unikraftCmd, "instance", "stop", "--help"},
+		[]string{unikraftCmd, "instance", "suspend", "--help"},
+		[]string{unikraftCmd, "instance", "restart", "--help"},
+	)
+}
+
+func instancesOutputTests(t *testing.T) {
+	// Construct a fully-populated sample Instance with deterministic values.
+	sample := cmd.Instance{
+		MetroName: "fra",
+		Name:      "my-instance",
+		UUID:      "7b79b250-0658-4d10-8dc0-d854399d7e74",
+		Tags:      []string{"env-prod", "team-core"},
+		State:     types.InstanceState(platform.InstanceStateRunning),
+	}
+	require.NoError(t, sample.Image.UnmarshalText([]byte("nginx:latest")))
+	sample.Runtime.Args = cmd.InstanceArgs{"arg1", "arg2"}
+	sample.Runtime.Env = map[string]string{"KEY1": "val1", "KEY2": "val2"}
+	sample.Resources.Memory = 256
+	sample.Resources.VCPUs = 2
+
+	service := &cmd.InstanceService{}
+	service.Name = "my-service"
+	service.UUID = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+	service.Services = []*cmd.Service{
+		{Source: 443, Destination: 8080, Handlers: []platform.ConnectionHandler{"tls", "http"}},
+	}
+	service.Domains = []cmd.Domain{
+		{FQDN: "example.unikraft.app"},
+	}
+	sample.Service = service
+
+	vol := &cmd.InstanceVolume{}
+	vol.Name = "my-volume"
+	vol.At = "/data"
+	vol.Readonly = true
+	sample.Volumes = []*cmd.InstanceVolume{vol}
+
+	sample.Roms = []*cmd.InstanceRom{
+		{Name: "my-rom", Image: "myuser/my-rom:latest", At: "/rom"},
+	}
+
+	sample.Networks = []struct {
+		UUID      string `mirror:"uuid" field:",long"`
+		PrivateIP string `mirror:"private_ip" field:",long"`
+		MAC       string `mirror:"mac" field:",long"`
+	}{
+		{UUID: "net-uuid-1234", PrivateIP: "192.168.1.10", MAC: "aa:bb:cc:dd:ee:ff"},
+	}
+
+	sample.ScaleToZero = cmd.InstanceScaleToZero{
+		Policy:       "on",
+		Stateful:     true,
+		CooldownTime: 500,
+		NotifyTime:   100,
+	}
+
+	sample.Timing.Uptime = types.DurationMS(1500)
+	sample.Timing.BootTime = types.DurationUS(250000)
+	sample.Timing.NetTime = types.DurationUS(100000)
+
+	sample.Restart.Policy = "always"
+	sample.Restart.StartCount = 3
+	sample.Restart.RestartCount = 1
+
+	sample.Stop.Reason = "crashed"
+	sample.Stop.Origin = "kernel"
+	sample.Stop.ExitCode = new(uint32(1))
+
+	gild[resource.Resource](t.Context(), t, dumpResource, sample)
 }

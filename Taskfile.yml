@@ -72,12 +72,32 @@ tasks:
       vars:
         go_tags: "integration"
         package: ./cmd/unikraft ./internal/builder
-        CLI_ARGS: '{{if .TEST}}-run "TestGolden/{{.TEST}}"{{end}}'
+        CLI_ARGS: '{{if .TEST}}-run "TestIntegration/{{.TEST}}"{{end}}'
 
   integration-update:
     desc: Update integration test golden files. Use TEST=<pattern> to filter (e.g., TEST=help).
     cmd: >-
-      {{.go_bin}} test -v ./cmd/unikraft -tags integration --update {{if .TEST}}-run "TestGolden/{{.TEST}}"{{end}}
+      {{.go_bin}} test -v ./cmd/unikraft -tags integration --update {{if .TEST}}-run "TestIntegration/{{.TEST}}"{{end}}
+
+  help:
+    desc: Run offline help tests.
+    cmd: >-
+      {{.go_bin}} test -v ./cmd/unikraft -run TestHelp
+
+  help-update:
+    desc: Update golden files for offline help tests.
+    cmd: >-
+      {{.go_bin}} test -v ./cmd/unikraft --update -run TestHelp
+
+  output:
+    desc: Run offline output/printer tests.
+    cmd: >-
+      {{.go_bin}} test -v ./cmd/unikraft -run TestOutput
+
+  output-update:
+    desc: Update golden files for offline output/printer tests.
+    cmd: >-
+      {{.go_bin}} test -v ./cmd/unikraft --update -run TestOutput
 
   docs:
     desc: Generate all documentation.

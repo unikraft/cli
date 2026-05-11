@@ -1,9 +1,0 @@
-$ unikraft invalid
-
-stderr:
-	│  
-	│ error:
-	│   parsing arguments: unexpected argument invalid
-	│
-
-exit code: 1

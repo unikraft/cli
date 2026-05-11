@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func volumeTemplatesTests(t *testing.T, r *testRunner) {
+func volumeTemplatesTests(t *testing.T, r *integrationRunner) {
 	metroName := ""
 	if r.cfg != nil {
 		metroName = r.cfg.MetroName
@@ -18,7 +18,6 @@ func volumeTemplatesTests(t *testing.T, r *testRunner) {
 	t.Run("template", func(t *testing.T) {
 		r.
 			online().
-			withCleaners(volumeCleaners).
 			run(t, []command{
 				{args: []string{
 					unikraftCmd, "volume", "create",
@@ -34,13 +33,11 @@ func volumeTemplatesTests(t *testing.T, r *testRunner) {
 					},
 					captureEnv: "TEMPLATE_NAME",
 				},
-				{args: []string{unikraftCmd, "volume", "template", "list"}},
-				{args: []string{unikraftCmd, "volume", "template", "inspect", "$TEMPLATE_NAME"}},
+				{args: []string{unikraftCmd, "volume", "template", "list"}, match: []string{`NAME`}},
+				{args: []string{unikraftCmd, "volume", "template", "inspect", "$TEMPLATE_NAME"}, match: []string{`size:\s+10`}},
 				{args: []string{unikraftCmd, "volume", "template", "edit", "$TEMPLATE_NAME", "--set", "tags=env-dev"}},
-				{args: []string{unikraftCmd, "volume", "template", "inspect", "$TEMPLATE_NAME"}},
+				{args: []string{unikraftCmd, "volume", "template", "inspect", "$TEMPLATE_NAME"}, match: []string{`size:\s+10`}},
 				{args: []string{unikraftCmd, "volume", "template", "delete", "$TEMPLATE_NAME"}},
 			})
 	})
 }
-
-var volumeCleaners []cleaner
