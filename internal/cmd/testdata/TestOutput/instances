@@ -780,6 +780,13 @@ fra    my-instance  running  nginx  ["arg1", "arg2"]  256MiB  2      example.uni
     }
   },
   {
+    "name": "checkpoint",
+    "verbosity": "invisible",
+    "create": {
+      "set": ""
+    }
+  },
+  {
     "name": "stop",
     "subfields": [
       {

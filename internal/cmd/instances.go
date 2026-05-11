@@ -49,15 +49,17 @@ type InstancesCmd struct {
 	cmd.ListableResourceCmd[Instance]
 	cmd.BulkDeletableResourceCmd[Instance]
 
-	Create   InstanceCreateCmd    `cmd:"" aliases:"new" help:"Create an instance."`
-	Edit     InstanceEditCmd      `cmd:"" help:"Edit an instance."`
-	Template InstanceTemplatesCmd `cmd:"" group:"cmd-templates" help:"Manage instance templates." aliases:"templates" set:"name=instance-template" set:"names=instance-templates"`
+	Create     InstanceCreateCmd      `cmd:"" aliases:"new" help:"Create an instance."`
+	Edit       InstanceEditCmd        `cmd:"" help:"Edit an instance."`
+	Template   InstanceTemplatesCmd   `cmd:"" group:"cmd-templates" help:"Manage instance templates." aliases:"templates" set:"name=instance-template" set:"names=instance-templates"`
+	Checkpoint InstanceCheckpointsCmd `cmd:"" group:"cmd-checkpoints" help:"Manage instance checkpoints." aliases:"checkpoints" set:"name=instance-checkpoint" set:"names=instance-checkpoints"`
 
 	Logs    InstancesLogsCmd    `cmd:"" help:"Fetch and display instance logs."`
 	Start   InstancesStartCmd   `cmd:"" help:"Start one or more instances."`
 	Stop    InstancesStopCmd    `cmd:"" help:"Stop one or more instances."`
 	Suspend InstancesSuspendCmd `cmd:"" help:"Suspend one or more instances."`
 	Restart InstancesRestartCmd `cmd:"" help:"Restart one or more instances."`
+	History InstanceHistoryCmd  `cmd:"" help:"Show checkpoint history for an instance."`
 }
 
 // InstanceCreateCmd extends the generic resource create command with shortcut
@@ -99,6 +101,7 @@ type InstanceCreateCmd struct {
 	Features     []string       `group:"flag-create" shortcut:"features" help:"Instance features." placeholder:"feature"`
 	Template     string         `group:"flag-create" shortcut:"template" help:"Create from instance template." placeholder:"name"`
 	Branch       multimetro.Key `group:"flag-create" shortcut:"branch" help:"Branch from an existing instance." placeholder:"instance"`
+	Checkpoint   multimetro.Key `group:"flag-create" shortcut:"checkpoint" help:"Create from a checkpoint." placeholder:"checkpoint"`
 	DeleteOnStop bool           `group:"flag-create" name:"rm" help:"Automatically delete the instance when it stops."`
 }
 
@@ -209,6 +212,7 @@ type Instance struct {
 	Vsock         bool                    `field:"vsock,invisible,valueless" create:"set" edit:"set"`
 	Template      string                  `field:"template,invisible,valueless" create:"set"`
 	Branch        multimetro.Key          `field:"branch,invisible,valueless" create:"set"`
+	Checkpoint    multimetro.Key          `field:"checkpoint,invisible,valueless" create:"set"`
 
 	Stop struct {
 		Reason string     `field:",long"`
@@ -1205,12 +1209,22 @@ func (Instance) Create(ctx context.Context, fields []resource.Field) ([]resource
 				branchFrom.Uuid = &branch.UUID
 			}
 			req.BranchFrom = branchFrom
+		case "checkpoint":
+			cp := field.Create.Set.(multimetro.Key)
+			cpRef := &platform.NameOrUUID{}
+			if cp.Name != "" {
+				cpRef.Name = &cp.Name
+			}
+			if cp.UUID != "" {
+				cpRef.Uuid = &cp.UUID
+			}
+			req.Checkpoint = cpRef
 		}
 	}
 
-	// Validate that either image, template, or branch is provided
-	if req.Image == nil && req.Template == nil && req.BranchFrom == nil {
-		return nil, fmt.Errorf("either --image, --template, or --branch must be specified")
+	// Validate that either image, template, branch, or checkpoint is provided
+	if req.Image == nil && req.Template == nil && req.BranchFrom == nil && req.Checkpoint == nil {
+		return nil, fmt.Errorf("either --image, --template, --branch, or --checkpoint must be specified")
 	}
 
 	if req.Image != nil {
@@ -1700,6 +1714,35 @@ func (c *InstancesRestartCmd) Run(ctx context.Context, stdio config.Stdio) error
 	_, err = io.Copy(stdio.Stdout, mux)
 	if errors.Is(err, context.Canceled) {
 		return nil
+	}
+	return err
+}
+
+// InstanceHistoryCmd shows the checkpoint history for an instance.
+type InstanceHistoryCmd struct {
+	Targets []string `arg:"" name:"target" completion-predictor:"resource-key-instance" help:"Target instances to show history for."`
+
+	cmd.FormatOpts
+}
+
+func (cmd InstanceHistoryCmd) Examples() []kingkong.Example {
+	return []kingkong.Example{
+		{
+			Description: "Show the checkpoint history of an instance",
+			Commands:    []string{"unikraft instance history my-instance"},
+		},
+	}
+}
+
+func (c *InstanceHistoryCmd) Run(ctx context.Context, stdio config.Stdio) error {
+	entries, err := getInstanceHistory(ctx, c.Targets, func(ctx context.Context, mc multimetro.MetroClient, ids []platform.NameOrUUID) (*platform.Response[platform.GetCheckpointHistoryResponseData], error) {
+		return mc.GetInstanceHistory(ctx, ids)
+	})
+	if err != nil && len(entries) == 0 {
+		return err
+	}
+	if printErr := renderInstanceHistory(ctx, stdio.Stdout, c.FormatOpts, entries); printErr != nil {
+		return errors.Join(err, printErr)
 	}
 	return err
 }
