@@ -1,0 +1,297 @@
+====================================== kv ======================================
+metro:      fra
+name:       my-checkpoint
+uuid:       f6a7b8c9-d0e1-2345-f012-3456789abcde
+tags:       ["env-prod", "team-core"]
+state:      checkpoint
+image:      nginx
+runtime:
+  args:     ["arg1", "arg2"]
+  env:
+    KEY1:   val1
+    KEY2:   val2
+resources:
+  memory:   256MiB
+  vcpus:    2
+volumes:
+- name:     my-volume
+  at:       /data
+  readonly: true
+
+==================================== kv-all ====================================
+metro:           fra
+name:            my-checkpoint
+uuid:            f6a7b8c9-d0e1-2345-f012-3456789abcde
+tags:            ["env-prod", "team-core"]
+delete-lock:     true
+state:           checkpoint
+image:           nginx
+runtime:
+  args:          ["arg1", "arg2"]
+  env:
+    KEY1:        val1
+    KEY2:        val2
+resources:
+  memory:        256MiB
+  vcpus:         2
+volumes:
+- name:          my-volume
+  uuid:
+  at:            /data
+  readonly:      true
+timestamps:
+  created:       never
+scale-to-zero:
+  enabled:       false
+  policy:
+  stateful:      false
+  cooldown-time: 0s
+  notify-time:   0s
+restart:
+  policy:        always
+
+==================================== table =====================================
+METRO  NAME           STATE       IMAGE  ARGS              MEMORY  VCPUS  CREATED
+fra    my-checkpoint  checkpoint  nginx  ["arg1", "arg2"]  256MiB  2
+
+==================================== debug =====================================
+[
+  {
+    "name": "metro",
+    "value": "fra",
+    "links": [
+      {
+        "type": "metro",
+        "key": "fra"
+      }
+    ],
+    "verbosity": "short"
+  },
+  {
+    "name": "name",
+    "value": "my-checkpoint",
+    "verbosity": "short"
+  },
+  {
+    "name": "uuid",
+    "value": "f6a7b8c9-d0e1-2345-f012-3456789abcde",
+    "verbosity": "long"
+  },
+  {
+    "name": "tags",
+    "value": [
+      "env-prod",
+      "team-core"
+    ],
+    "verbosity": "long",
+    "edit": {
+      "set": [
+        "env-prod",
+        "team-core"
+      ],
+      "add": null,
+      "del": null
+    }
+  },
+  {
+    "name": "delete-lock",
+    "value": true,
+    "verbosity": "hidden",
+    "edit": {
+      "set": true
+    }
+  },
+  {
+    "name": "state",
+    "value": "checkpoint",
+    "verbosity": "short"
+  },
+  {
+    "name": "image",
+    "value": "nginx",
+    "links": [
+      {
+        "type": "image",
+        "key": "unikraft.io/official/nginx:latest"
+      }
+    ],
+    "verbosity": "short"
+  },
+  {
+    "name": "runtime",
+    "subfields": [
+      {
+        "name": "args",
+        "value": [
+          "arg1",
+          "arg2"
+        ],
+        "verbosity": "short"
+      },
+      {
+        "name": "env",
+        "value": {
+          "KEY1": "val1",
+          "KEY2": "val2"
+        },
+        "verbosity": "long"
+      }
+    ],
+    "verbosity": "short"
+  },
+  {
+    "name": "resources",
+    "subfields": [
+      {
+        "name": "memory",
+        "value": "256MiB",
+        "verbosity": "short"
+      },
+      {
+        "name": "vcpus",
+        "value": 2,
+        "verbosity": "short"
+      }
+    ],
+    "verbosity": "short"
+  },
+  {
+    "name": "volumes",
+    "subfields": [
+      {
+        "name": "0",
+        "subfields": [
+          {
+            "name": "name",
+            "value": "my-volume",
+            "verbosity": "long"
+          },
+          {
+            "name": "uuid",
+            "value": "",
+            "verbosity": "long"
+          },
+          {
+            "name": "at",
+            "value": "/data",
+            "verbosity": "long"
+          },
+          {
+            "name": "readonly",
+            "value": true,
+            "verbosity": "long"
+          },
+          {
+            "name": "size",
+            "verbosity": "invisible",
+            "create": {
+              "set": "0B"
+            }
+          }
+        ],
+        "links": [
+          {
+            "type": "volume",
+            "key": "my-volume"
+          }
+        ],
+        "verbosity": "long"
+      }
+    ],
+    "elem": {
+      "name": "",
+      "subfields": [
+        {
+          "name": "name",
+          "value": "",
+          "verbosity": "long"
+        },
+        {
+          "name": "uuid",
+          "value": "",
+          "verbosity": "long"
+        },
+        {
+          "name": "at",
+          "value": "",
+          "verbosity": "long"
+        },
+        {
+          "name": "readonly",
+          "value": false,
+          "verbosity": "long"
+        },
+        {
+          "name": "size",
+          "verbosity": "invisible",
+          "create": {
+            "set": "0B"
+          }
+        }
+      ],
+      "verbosity": "long"
+    },
+    "verbosity": "long"
+  },
+  {
+    "name": "timestamps",
+    "subfields": [
+      {
+        "name": "created",
+        "value": "never",
+        "verbosity": "short"
+      }
+    ],
+    "verbosity": "short"
+  },
+  {
+    "name": "scale-to-zero",
+    "subfields": [
+      {
+        "name": "enabled",
+        "value": false,
+        "verbosity": "long"
+      },
+      {
+        "name": "policy",
+        "value": "",
+        "verbosity": "long"
+      },
+      {
+        "name": "stateful",
+        "value": false,
+        "verbosity": "long"
+      },
+      {
+        "name": "cooldown-time",
+        "value": "0s",
+        "verbosity": "long"
+      },
+      {
+        "name": "notify-time",
+        "value": "0s",
+        "verbosity": "long"
+      }
+    ],
+    "verbosity": "long"
+  },
+  {
+    "name": "restart",
+    "subfields": [
+      {
+        "name": "policy",
+        "value": "always",
+        "verbosity": "hidden"
+      }
+    ],
+    "verbosity": "hidden"
+  },
+  {
+    "name": "instances",
+    "verbosity": "invisible",
+    "create": {
+      "set": null,
+      "required": true
+    }
+  }
+]

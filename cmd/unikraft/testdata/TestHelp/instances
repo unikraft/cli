@@ -28,10 +28,16 @@ Resources:
           Suspend one or more instances.
   restart
           Restart one or more instances.
+  history
+          Show checkpoint history for an instance.
 
 Templates:
   template, templates
           Manage instance templates.
+
+cmd-checkpoints
+  checkpoint, checkpoints
+          Manage instance checkpoints.
 
 Fields:
   metro
@@ -63,6 +69,7 @@ Fields:
   vsock
   template
   branch
+  checkpoint
   stop, stop.reason, stop.origin, stop.errno, stop.exit-code
 
 Global flags:
@@ -129,6 +136,7 @@ Fields:
   vsock
   template
   branch
+  checkpoint
   stop, stop.reason, stop.origin, stop.errno, stop.exit-code
 
 Flags:
@@ -203,6 +211,7 @@ Fields:
   vsock
   template
   branch
+  checkpoint
   stop, stop.reason, stop.origin, stop.errno, stop.exit-code
 
 Flags:
@@ -279,6 +288,7 @@ Fields:
   vsock
   template
   branch
+  checkpoint
   stop, stop.reason, stop.origin, stop.errno, stop.exit-code
 
 Flags:
@@ -365,6 +375,7 @@ Fields:
   vsock
   template
   branch
+  checkpoint
   stop, stop.reason, stop.origin, stop.errno, stop.exit-code
 
 Flags:
@@ -463,6 +474,8 @@ Create flags:
           Create from instance template.
       --branch=<instance>
           Branch from an existing instance.
+      --checkpoint=<checkpoint>
+          Create from a checkpoint.
       --rm
           Automatically delete the instance when it stops.
 
@@ -519,6 +532,7 @@ Fields:
   vsock
   template
   branch
+  checkpoint
   stop, stop.reason, stop.origin, stop.errno, stop.exit-code
 
 Flags:
@@ -617,6 +631,8 @@ Create flags:
           Create from instance template.
       --branch=<instance>
           Branch from an existing instance.
+      --checkpoint=<checkpoint>
+          Create from a checkpoint.
       --rm
           Automatically delete the instance when it stops.
 
@@ -682,6 +698,7 @@ Fields:
   vsock
   template
   branch
+  checkpoint
   stop, stop.reason, stop.origin, stop.errno, stop.exit-code
 
 Flags:
@@ -800,6 +817,7 @@ Fields:
   vsock
   template
   branch
+  checkpoint
   stop, stop.reason, stop.origin, stop.errno, stop.exit-code
 
 Flags:
@@ -1228,6 +1246,442 @@ Global flags:
       --timeout=<duration> ($UNIKRAFT_TIMEOUT)
           Set a deadline for the command (e.g. 30s, 5m, 1h).
 
+$ unikraft instance checkpoint --help
+
+Manage instance checkpoints.
+
+Usage:
+  unikraft instances checkpoint <command>
+
+cmd-checkpoints
+  get, inspect, show
+          Inspect a instance-checkpoint.
+  list, ls
+          List instance-checkpoints.
+  delete, rm, remove
+          Remove a instance-checkpoint.
+  create
+          Create a checkpoint from an instance.
+  edit
+          Edit an instance checkpoint.
+  history
+          Show the history of a checkpoint.
+
+Fields:
+  metro
+  name
+  uuid
+  tags
+  delete-lock
+  state
+  image
+  runtime, runtime.args, runtime.env
+  resources, resources.memory, resources.vcpus
+  volumes, volumes.*, volumes.*.name, volumes.*.uuid, volumes.*.at,
+  volumes.*.readonly, volumes.*.size
+  timestamps, timestamps.created
+  scale-to-zero, scale-to-zero.enabled, scale-to-zero.policy, scale-to-
+  zero.stateful, scale-to-zero.cooldown-time, scale-to-zero.notify-time
+  restart, restart.policy
+  instances
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
+
+$ unikraft instance checkpoint get --help
+
+Inspect a instance-checkpoint.
+
+Usage:
+  unikraft instances checkpoint get [<target> ...] [flags]
+
+Arguments:
+  [<target> ...]
+          Target instance-checkpoints to get.
+
+Examples:
+  # Inspect a checkpoint by name or UUID
+  unikraft instance checkpoint get my-checkpoint
+
+Fields:
+  metro
+  name
+  uuid
+  tags
+  delete-lock
+  state
+  image
+  runtime, runtime.args, runtime.env
+  resources, resources.memory, resources.vcpus
+  volumes, volumes.*, volumes.*.name, volumes.*.uuid, volumes.*.at,
+  volumes.*.readonly, volumes.*.size
+  timestamps, timestamps.created
+  scale-to-zero, scale-to-zero.enabled, scale-to-zero.policy, scale-to-
+  zero.stateful, scale-to-zero.cooldown-time, scale-to-zero.notify-time
+  restart, restart.policy
+  instances
+
+Flags:
+  -w, --watch=<duration>
+          Watch for changes and refresh output. Defaults to 2s.
+  -f, --field
+          Specify which fields to include in the output.
+  -o, --output
+          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
+
+$ unikraft instance checkpoint list --help
+
+List instance-checkpoints.
+
+Usage:
+  unikraft instances checkpoint list [<target> ...] [flags]
+
+Arguments:
+  [<target> ...]
+          Target instance-checkpoints to list.
+
+Examples:
+  # List checkpoints across metros
+  unikraft instance checkpoint list
+
+Fields:
+  metro
+  name
+  uuid
+  tags
+  delete-lock
+  state
+  image
+  runtime, runtime.args, runtime.env
+  resources, resources.memory, resources.vcpus
+  volumes, volumes.*, volumes.*.name, volumes.*.uuid, volumes.*.at,
+  volumes.*.readonly, volumes.*.size
+  timestamps, timestamps.created
+  scale-to-zero, scale-to-zero.enabled, scale-to-zero.policy, scale-to-
+  zero.stateful, scale-to-zero.cooldown-time, scale-to-zero.notify-time
+  restart, restart.policy
+  instances
+
+Flags:
+      --filter
+          Filter output based on a field value.
+          [examples: name==my-instance, metro==fra]
+  -w, --watch=<duration>
+          Watch for changes and refresh output. Defaults to 2s.
+      --sort
+          Sort output by field values. Use - prefix for descending, + for ascending.
+          [examples: name, -timestamps.created-at]
+  -f, --field
+          Specify which fields to include in the output.
+  -o, --output
+          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
+
+$ unikraft instance checkpoint create --help
+
+Create a checkpoint from an instance.
+
+Usage:
+  unikraft instances checkpoint create [<instance> ...] [flags]
+
+Arguments:
+  [<instance> ...]
+          Instances to create checkpoints from.
+
+Examples:
+  # Create a checkpoint from a running instance
+  unikraft instance checkpoint create my-instance
+
+Fields:
+  metro
+  name
+  uuid
+  tags
+  delete-lock
+  state
+  image
+  runtime, runtime.args, runtime.env
+  resources, resources.memory, resources.vcpus
+  volumes, volumes.*, volumes.*.name, volumes.*.uuid, volumes.*.at,
+  volumes.*.readonly, volumes.*.size
+  timestamps, timestamps.created
+  scale-to-zero, scale-to-zero.enabled, scale-to-zero.policy, scale-to-
+  zero.stateful, scale-to-zero.cooldown-time, scale-to-zero.notify-time
+  restart, restart.policy
+  instances
+
+Flags:
+      --set=<name>=<value>, --set-file=<name>=<filename>
+          Key-value pairs to set on the instance-checkpoint.
+      --visual
+          Open an editor to modify fields visually.
+      --cmd
+          Run a command to edit fields (receives YAML on stdin, outputs edited YAML on stdout).
+      --load, --save=<FILE>
+          Load fields from a YAML file.
+      --dry-run
+          Print patches without applying them.
+  -f, --field
+          Specify which fields to include in the output.
+  -o, --output
+          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
+
+$ unikraft instance checkpoint edit --help
+
+Edit an instance checkpoint.
+
+Usage:
+  unikraft instances checkpoint edit <target> [flags]
+
+Arguments:
+  <target>
+          Target instance-checkpoint to edit.
+
+Examples:
+  # Update checkpoint tags
+  unikraft instance checkpoint edit my-checkpoint --set tags=env-dev
+
+Fields:
+  metro
+  name
+  uuid
+  tags
+  delete-lock
+  state
+  image
+  runtime, runtime.args, runtime.env
+  resources, resources.memory, resources.vcpus
+  volumes, volumes.*, volumes.*.name, volumes.*.uuid, volumes.*.at,
+  volumes.*.readonly, volumes.*.size
+  timestamps, timestamps.created
+  scale-to-zero, scale-to-zero.enabled, scale-to-zero.policy, scale-to-
+  zero.stateful, scale-to-zero.cooldown-time, scale-to-zero.notify-time
+  restart, restart.policy
+  instances
+
+Flags:
+      --set=<name>=<value>, --set-file=<name>=<filename>
+          Key-value pairs to set on the instance-checkpoint.
+      --add=<name>=<value>, --add-file=<name>=<filename>
+          Key-value pairs to add to the instance-checkpoint.
+      --del=<name>=<value>, --del-file=<name>=<filename>
+          Keys to delete from the instance-checkpoint.
+      --visual
+          Open an editor to modify fields visually.
+      --cmd
+          Run a command to edit fields (receives YAML on stdin, outputs edited YAML on stdout).
+      --load, --save=<FILE>
+          Load fields from a YAML file.
+      --dry-run
+          Print patches without applying them.
+  -f, --field
+          Specify which fields to include in the output.
+  -o, --output
+          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
+
+Edit flags:
+      --tags=<tag>
+          Checkpoint tags.
+          [examples: env-dev, team-platform]
+      --delete-lock
+          Prevent deletion of the checkpoint.
+
+$ unikraft instance checkpoint delete --help
+
+Remove a instance-checkpoint.
+
+Usage:
+  unikraft instances checkpoint delete [<target> ...] [flags]
+
+Arguments:
+  [<target> ...]
+          Target instance-checkpoints to remove.
+
+Examples:
+  # Delete a checkpoint
+  unikraft instance checkpoint delete my-checkpoint
+
+Fields:
+  metro
+  name
+  uuid
+  tags
+  delete-lock
+  state
+  image
+  runtime, runtime.args, runtime.env
+  resources, resources.memory, resources.vcpus
+  volumes, volumes.*, volumes.*.name, volumes.*.uuid, volumes.*.at,
+  volumes.*.readonly, volumes.*.size
+  timestamps, timestamps.created
+  scale-to-zero, scale-to-zero.enabled, scale-to-zero.policy, scale-to-
+  zero.stateful, scale-to-zero.cooldown-time, scale-to-zero.notify-time
+  restart, restart.policy
+  instances
+
+Flags:
+      --all
+          Remove all instance-checkpoints. Prompts for confirmation.
+      --filter
+          Filter instance-checkpoints to remove. Prompts for confirmation.
+          [examples: name==my-instance, metro==fra]
+      --force
+          Do not prompt for confirmation when using --all or --filter.
+  -f, --field
+          Specify which fields to include in the output.
+  -o, --output
+          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
+
+$ unikraft instance checkpoint history --help
+
+Show the history of a checkpoint.
+
+Usage:
+  unikraft instances checkpoint history <target> ... [flags]
+
+Arguments:
+  <target> ...
+          Target checkpoints to show history for.
+
+Examples:
+  # Show the history of a checkpoint
+  unikraft instance checkpoint history my-checkpoint
+
+Flags:
+  -f, --field
+          Specify which fields to include in the output.
+  -o, --output
+          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
+
 $ unikraft instance logs --help
 
 Fetch and display instance logs.
@@ -1448,6 +1902,46 @@ Flags:
           [default: -1]
       --follow
           Follow log output after restarting.
+  -f, --field
+          Specify which fields to include in the output.
+  -o, --output
+          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
+
+$ unikraft instance history --help
+
+Show checkpoint history for an instance.
+
+Usage:
+  unikraft instances history <target> ... [flags]
+
+Arguments:
+  <target> ...
+          Target instances to show history for.
+
+Examples:
+  # Show the checkpoint history of an instance
+  unikraft instance history my-instance
+
+Flags:
   -f, --field
           Specify which fields to include in the output.
   -o, --output

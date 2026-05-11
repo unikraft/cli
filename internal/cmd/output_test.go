@@ -87,6 +87,8 @@ func TestOutput(t *testing.T) {
 
 	run("instances", instancesOutputTests)
 	run("instance-templates", instanceTemplatesOutputTests)
+	run("instance-checkpoints", instanceCheckpointsOutputTests)
+	run("instance-history", instanceHistoryOutputTests)
 	run("volumes", volumesOutputTests)
 	run("volume-templates", volumeTemplatesOutputTests)
 	run("services", servicesOutputTests)
@@ -162,6 +164,41 @@ func instanceTemplatesOutputTests(t *testing.T) {
 	sample.Resources.Memory = 128
 	sample.Resources.VCPUs = 1
 	require.NoError(t, sample.Image.UnmarshalText([]byte("nginx:latest")))
+
+	integ.Gild[resource.Resource](t, dumpResource, sample)
+}
+
+func instanceCheckpointsOutputTests(t *testing.T) {
+	sample := cmd.InstanceCheckpoint{
+		MetroName:  "fra",
+		Name:       "my-checkpoint",
+		UUID:       "f6a7b8c9-d0e1-2345-f012-3456789abcde",
+		Tags:       []string{"env-prod", "team-core"},
+		DeleteLock: true,
+		State:      types.InstanceState(platform.InstanceStateCheckpoint),
+		Volumes: []*cmd.InstanceVolume{
+			{Link: cmd.Link[cmd.Volume]{Name: "my-volume"}, At: "/data", Readonly: true},
+		},
+	}
+	sample.Runtime.Args = cmd.InstanceArgs{"arg1", "arg2"}
+	sample.Runtime.Env = map[string]string{"KEY1": "val1", "KEY2": "val2"}
+	sample.Resources.Memory = 256
+	sample.Resources.VCPUs = 2
+	sample.Restart.Policy = "always"
+	require.NoError(t, sample.Image.UnmarshalText([]byte("nginx:latest")))
+
+	integ.Gild[resource.Resource](t, dumpResource, sample)
+}
+
+func instanceHistoryOutputTests(t *testing.T) {
+	sample := cmd.InstanceHistoryEntry{
+		Metro:  "fra",
+		Target: "fra/my-instance",
+		Name:   "my-checkpoint",
+		UUID:   "f6a7b8c9-d0e1-2345-f012-3456789abcde",
+		// Created is left as the zero value so it renders deterministically
+		// ("never") instead of a wall-clock-relative string.
+	}
 
 	integ.Gild[resource.Resource](t, dumpResource, sample)
 }

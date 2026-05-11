@@ -53,6 +53,7 @@ func (state InstanceState) validate() error {
 	case platform.InstanceStateTemplate:
 	case platform.InstanceStateStandby:
 	case platform.InstanceStateDeleted:
+	case platform.InstanceStateCheckpoint:
 	default:
 		return fmt.Errorf("unknown instance state: %q", string(state))
 	}
@@ -90,6 +91,8 @@ func (state InstanceState) ansiFg() string {
 		return fgPrimary
 	case platform.InstanceStateDeleted:
 		return fgInfo
+	case platform.InstanceStateCheckpoint:
+		return fgPrimary
 	}
 	return fgInfo
 }

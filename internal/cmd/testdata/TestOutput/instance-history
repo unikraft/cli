@@ -1,0 +1,51 @@
+====================================== kv ======================================
+metro:  fra
+target: fra/my-instance
+name:   my-checkpoint
+uuid:   f6a7b8c9-d0e1-2345-f012-3456789abcde
+
+==================================== kv-all ====================================
+metro:   fra
+target:  fra/my-instance
+name:    my-checkpoint
+uuid:    f6a7b8c9-d0e1-2345-f012-3456789abcde
+created: never
+
+==================================== table =====================================
+METRO  TARGET           NAME           CREATED
+fra    fra/my-instance  my-checkpoint
+
+==================================== debug =====================================
+[
+  {
+    "name": "metro",
+    "value": "fra",
+    "links": [
+      {
+        "type": "metro",
+        "key": "fra"
+      }
+    ],
+    "verbosity": "short"
+  },
+  {
+    "name": "target",
+    "value": "fra/my-instance",
+    "verbosity": "short"
+  },
+  {
+    "name": "name",
+    "value": "my-checkpoint",
+    "verbosity": "short"
+  },
+  {
+    "name": "uuid",
+    "value": "f6a7b8c9-d0e1-2345-f012-3456789abcde",
+    "verbosity": "long"
+  },
+  {
+    "name": "created",
+    "value": "never",
+    "verbosity": "short"
+  }
+]
