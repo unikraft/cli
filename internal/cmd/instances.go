@@ -389,7 +389,7 @@ func inlineFilesFromDir(dir string) ([]platform.InlineFile, error) {
 		if err != nil {
 			return err
 		}
-		enc := platform.InlineFileEncodingBase64
+		enc := platform.InlineDataEncodingBase64
 		files = append(files, platform.InlineFile{
 			Path:     "/" + filepath.ToSlash(rel),
 			Encoding: &enc,
@@ -420,7 +420,7 @@ func inlineFileFromPath(src string, destPath string) (platform.InlineFile, error
 	if err != nil {
 		return platform.InlineFile{}, err
 	}
-	enc := platform.InlineFileEncodingBase64
+	enc := platform.InlineDataEncodingBase64
 	return platform.InlineFile{
 		Path:     destPath,
 		Encoding: &enc,
@@ -625,7 +625,7 @@ func (Instance) Get(ctx context.Context, keys []string) ([]resource.Resource, er
 		var results []resource.Resource
 		var errs []error
 		for i, instance := range resp.Data.Instances {
-			if instance.Status == nil || *instance.Status != platform.ResponseStatusSUCCESS {
+			if instance.Status == nil || *instance.Status != platform.ResponseStatusSuccess {
 				continue
 			}
 			result, err := Instance{}.load(&refs[i], instance, &c.Metro, profile)
@@ -648,13 +648,13 @@ func (Instance) load(ref *group.Ref, instance platform.Instance, metro *config.M
 	if ref == nil {
 		ref = &group.Ref{
 			Metro: metro.Name,
-			Name:  ptr.ZeroIfNil(instance.Name),
-			UUID:  ptr.ZeroIfNil(instance.Uuid),
+			Name:  instance.Name,
+			UUID:  instance.Uuid,
 		}
 	} else {
 		ref.Metro = cmp.Or(ref.Metro, metro.Name)
-		ref.Name = cmp.Or(ref.Name, ptr.ZeroIfNil(instance.Name))
-		ref.UUID = cmp.Or(ref.UUID, ptr.ZeroIfNil(instance.Uuid))
+		ref.Name = cmp.Or(ref.Name, instance.Name)
+		ref.UUID = cmp.Or(ref.UUID, instance.Uuid)
 	}
 
 	result := Instance{
@@ -711,13 +711,13 @@ func (Instance) Delete(ctx context.Context, targets []resource.Resource) error {
 		}
 		var deleted []group.Ref
 		for _, instance := range instances.Data.Instances {
-			if instance.Status == nil || *instance.Status != platform.ResponseStatusSUCCESS {
+			if instance.Status != platform.ResponseStatusSuccess {
 				continue
 			}
 			deleted = append(deleted, group.Ref{
 				Metro: c.Metro.Name,
-				Name:  *instance.Name,
-				UUID:  *instance.Uuid,
+				Name:  instance.Name,
+				UUID:  instance.Uuid,
 			})
 		}
 		return deleted, nil
@@ -765,7 +765,7 @@ func (Instance) Edit(ctx context.Context, target resource.Resource, fields []res
 	for _, patch := range patches {
 		reqs = append(reqs, platform.UpdateInstancesRequestItem{
 			Uuid:  &instance.UUID,
-			Op:    platform.UpdateInstancesRequestItemOp(patch.Op),
+			Op:    platform.MutableInstanceOperation(patch.Op),
 			Prop:  patch.Prop,
 			Value: new(patch.Value),
 		})
@@ -804,22 +804,22 @@ func (Instance) Edit(ctx context.Context, target resource.Resource, fields []res
 	return results[0], nil
 }
 
-func instancePatchSpec(path string, op patchOp, value any) (platform.UpdateInstancesRequestItemProp, any, error) {
-	var zero platform.UpdateInstancesRequestItemProp
+func instancePatchSpec(path string, op patchOp, value any) (platform.MutableInstanceProperty, any, error) {
+	var zero platform.MutableInstanceProperty
 	switch path {
 	case "image":
-		return platform.UpdateInstancesRequestItemPropImage, value.(types.ImageRef[reference.Named]).Reference.String(), nil
+		return platform.MutableInstancePropertyImage, value.(types.ImageRef[reference.Named]).Reference.String(), nil
 	case "runtime.args":
-		return platform.UpdateInstancesRequestItemPropArgs, []string(value.(InstanceArgs)), nil
+		return platform.MutableInstancePropertyArgs, []string(value.(InstanceArgs)), nil
 	case "runtime.env":
 		if op == patchOpDel {
-			return platform.UpdateInstancesRequestItemPropEnv, value.([]string), nil
+			return platform.MutableInstancePropertyEnv, value.([]string), nil
 		}
-		return platform.UpdateInstancesRequestItemPropEnv, value.(map[string]string), nil
+		return platform.MutableInstancePropertyEnv, value.(map[string]string), nil
 	case "resources.memory":
-		return platform.UpdateInstancesRequestItemPropMemory_mb, int64(value.(types.SizeMebibytes)), nil
+		return platform.MutableInstancePropertyMemory_mb, int64(value.(types.SizeMebibytes)), nil
 	case "resources.vcpus":
-		return platform.UpdateInstancesRequestItemPropVcpus, value.(int), nil
+		return platform.MutableInstancePropertyVcpus, value.(int), nil
 	case "scale-to-zero":
 		value := value.(InstanceScaleToZero)
 		req := map[string]any{}
@@ -835,7 +835,7 @@ func instancePatchSpec(path string, op patchOp, value any) (platform.UpdateInsta
 		if value.NotifyTime > 0 {
 			req["notify_time_ms"] = int32(value.NotifyTime)
 		}
-		return platform.UpdateInstancesRequestItemPropScale_to_zero, req, nil
+		return platform.MutableInstancePropertyScale_to_zero, req, nil
 	case "vsock":
 		return "vsock", value.(bool), nil
 	case "roms":
@@ -847,7 +847,7 @@ func instancePatchSpec(path string, op patchOp, value any) (platform.UpdateInsta
 					names = append(names, rom.Name)
 				}
 			}
-			return platform.UpdateInstancesRequestItemPropRoms, names, nil
+			return platform.MutableInstancePropertyRoms, names, nil
 		}
 		var reqRoms []map[string]any
 		for _, rom := range roms {
@@ -884,7 +884,7 @@ func instancePatchSpec(path string, op patchOp, value any) (platform.UpdateInsta
 			}
 			reqRoms = append(reqRoms, reqRom)
 		}
-		return platform.UpdateInstancesRequestItemPropRoms, reqRoms, nil
+		return platform.MutableInstancePropertyRoms, reqRoms, nil
 	default:
 		return zero, nil, nil
 	}
@@ -916,13 +916,13 @@ func (Instance) Create(ctx context.Context, fields []resource.Field) ([]resource
 			vcpus := int32(field.Create.Set.(int))
 			req.Vcpus = &vcpus
 		case "restart.policy":
-			policy := platform.CreateInstanceRequestRestartPolicy(field.Create.Set.(string))
+			policy := platform.InstanceRestartPolicy(field.Create.Set.(string))
 			req.RestartPolicy = &policy
 		case "scale-to-zero":
 			scale := field.Create.Set.(InstanceScaleToZero)
-			req.ScaleToZero = &platform.CreateInstanceRequestScaleToZero{}
+			req.ScaleToZero = &platform.CreateInstanceScaleToZero{}
 			if scale.Policy != "" {
-				req.ScaleToZero.Policy = new(platform.CreateInstanceRequestScaleToZeroPolicy(scale.Policy))
+				req.ScaleToZero.Policy = new(platform.InstanceScaleToZeroPolicy(scale.Policy))
 			}
 			if scale.Stateful {
 				req.ScaleToZero.Stateful = &scale.Stateful
@@ -1003,7 +1003,7 @@ func (Instance) Create(ctx context.Context, fields []resource.Field) ([]resource
 					reqRom.Image = &rom.Image
 				}
 				if rom.Name != "" {
-					reqRom.Name = &rom.Name
+					reqRom.Name = rom.Name
 				}
 				if romAt != "" {
 					atJSON, _ := json.Marshal(romAt)
@@ -1033,7 +1033,7 @@ func (Instance) Create(ctx context.Context, fields []resource.Field) ([]resource
 				for _, svc := range services {
 					req.ServiceGroup.Services = append(req.ServiceGroup.Services, platform.Service{
 						Port:            svc.Source,
-						DestinationPort: &svc.Destination,
+						DestinationPort: svc.Destination,
 						Handlers:        svc.Handlers,
 					})
 				}
@@ -1082,7 +1082,7 @@ func (Instance) Create(ctx context.Context, fields []resource.Field) ([]resource
 		case "features":
 			features := field.Create.Set.([]string)
 			for _, f := range features {
-				req.Features = append(req.Features, platform.CreateInstanceRequestFeatures(f))
+				req.Features = append(req.Features, platform.InstanceFeature(f))
 			}
 		case "vsock":
 			vsock := field.Create.Set.(bool)
@@ -1130,8 +1130,8 @@ func (Instance) Create(ctx context.Context, fields []resource.Field) ([]resource
 		for _, instance := range resp.Data.Instances {
 			key := multimetro.Key{
 				Metro: c.Metro.Name,
-				UUID:  ptr.ZeroIfNil(instance.Uuid),
-				Name:  ptr.ZeroIfNil(instance.Name),
+				UUID:  instance.Uuid,
+				Name:  instance.Name,
 			}
 			created = append(created, key)
 		}
@@ -1574,13 +1574,13 @@ func startInstances(ctx context.Context, g *group.Group[multimetro.MetroClient],
 		}
 		var started multimetro.Keys
 		for _, instance := range resp.Data.Instances {
-			if instance.Status == nil || *instance.Status != platform.ResponseStatusSUCCESS {
+			if instance.Status != platform.ResponseStatusSuccess {
 				continue
 			}
 			started = append(started, multimetro.Key{
 				Metro: c.Metro.Name,
-				Name:  *instance.Name,
-				UUID:  *instance.Uuid,
+				Name:  instance.Name,
+				UUID:  instance.Uuid,
 			})
 		}
 		return started, started.Refs(), nil
@@ -1601,13 +1601,13 @@ func stopInstances(ctx context.Context, g *group.Group[multimetro.MetroClient], 
 		}
 		var stopped multimetro.Keys
 		for _, instance := range resp.Data.Instances {
-			if instance.Status == nil || *instance.Status != platform.ResponseStatusSUCCESS {
+			if instance.Status == nil || *instance.Status != platform.ResponseStatusSuccess {
 				continue
 			}
 			stopped = append(stopped, multimetro.Key{
 				Metro: c.Metro.Name,
-				Name:  *instance.Name,
-				UUID:  *instance.Uuid,
+				Name:  instance.Name,
+				UUID:  instance.Uuid,
 			})
 		}
 		return stopped, stopped.Refs(), nil
@@ -1706,13 +1706,13 @@ func suspendInstances(ctx context.Context, g *group.Group[multimetro.MetroClient
 		}
 		var suspended multimetro.Keys
 		for _, instance := range resp.Data.Instances {
-			if instance.Status == nil || *instance.Status != platform.ResponseStatusSUCCESS {
+			if instance.Status == nil || *instance.Status != platform.ResponseStatusSuccess {
 				continue
 			}
 			suspended = append(suspended, multimetro.Key{
 				Metro: c.Metro.Name,
-				Name:  *instance.Name,
-				UUID:  *instance.Uuid,
+				Name:  instance.Name,
+				UUID:  instance.Uuid,
 			})
 		}
 		return suspended, suspended.Refs(), nil

@@ -22,7 +22,6 @@ import (
 	"unikraft.com/x/joinerrgroup"
 	"unikraft.com/x/kingkong"
 	"unikraft.com/x/log"
-	"unikraft.com/x/ptr"
 
 	imagespec "unikraft.com/x/image-spec"
 
@@ -459,7 +458,7 @@ func (ImageEntry) Get(ctx context.Context, keys []string) ([]resource.Resource, 
 }
 
 func (ImageEntry) loadFromControlplane(image controlplane.Image) ([]ImageEntry, error) {
-	name := strings.TrimSpace(ptr.ZeroIfNil(image.Name))
+	name := strings.TrimSpace(image.Name)
 	if name == "" {
 		return nil, fmt.Errorf("image has no name")
 	}
@@ -480,7 +479,7 @@ func (ImageEntry) loadFromControlplane(image controlplane.Image) ([]ImageEntry, 
 	tagged := make([]reference.NamedTagged, 0, len(image.Tags))
 	tagDigests := make(map[string]digest.Digest, len(image.Tags))
 	for _, tag := range image.Tags {
-		tagName := strings.TrimSpace(ptr.ZeroIfNil(tag.Name))
+		tagName := strings.TrimSpace(tag.Name)
 		if tagName == "" {
 			continue
 		}
@@ -504,7 +503,7 @@ func (ImageEntry) loadFromControlplane(image controlplane.Image) ([]ImageEntry, 
 		}
 
 		tagged = append(tagged, taggedRef)
-		digestStr := strings.TrimSpace(ptr.ZeroIfNil(tag.Digest))
+		digestStr := strings.TrimSpace(tag.Digest)
 		if digestStr != "" {
 			tagDigest, err := digest.Parse(digestStr)
 			if err != nil {
@@ -558,7 +557,7 @@ func (ImageEntry) loadFromControlplane(image controlplane.Image) ([]ImageEntry, 
 }
 
 func (ImageEntry) loadFromPlatform(image platform.Image, metro *config.Metro) ([]ImageEntry, error) {
-	url := strings.TrimSpace(ptr.ZeroIfNil(image.Url))
+	url := strings.TrimSpace(image.Url)
 	if url == "" {
 		return nil, fmt.Errorf("platform image has no url")
 	}

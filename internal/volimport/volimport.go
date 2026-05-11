@@ -16,7 +16,6 @@ import (
 	"unikraft.com/cli/internal/multimetro"
 	"unikraft.com/cloud/sdk/platform"
 	"unikraft.com/x/log"
-	"unikraft.com/x/ptr"
 )
 
 const (
@@ -45,8 +44,8 @@ func Start(ctx context.Context, c multimetro.MetroClient, image, volUUID, authSt
 		Args:          args,
 		Autostart:     new(true),
 		TimeoutS:      new(startTimeoutS),
-		RestartPolicy: new(platform.CreateInstanceRequestRestartPolicyNever),
-		Features:      []platform.CreateInstanceRequestFeatures{platform.CreateInstanceRequestFeaturesDelete_on_stop},
+		RestartPolicy: new(platform.InstanceRestartPolicyNever),
+		Features:      []platform.InstanceFeature{platform.InstanceFeatureDelete_on_stop},
 		Volumes: []platform.CreateInstanceRequestVolume{{
 			Uuid: &volUUID,
 			At:   "/mnt",
@@ -54,8 +53,8 @@ func Start(ctx context.Context, c multimetro.MetroClient, image, volUUID, authSt
 		ServiceGroup: &platform.CreateInstanceRequestServiceGroup{
 			Services: []platform.Service{{
 				Port:            uint32(servicePort),
-				DestinationPort: &destPort,
-				Handlers:        []platform.ServiceHandlers{platform.ServiceHandlersTls},
+				DestinationPort: destPort,
+				Handlers:        []platform.ConnectionHandler{platform.ConnectionHandlerTls},
 			}},
 		},
 	})
@@ -67,7 +66,7 @@ func Start(ctx context.Context, c multimetro.MetroClient, image, volUUID, authSt
 	}
 
 	inst := resp.Data.Instances[0]
-	instUUID = ptr.ZeroIfNil(inst.Uuid)
+	instUUID = inst.Uuid
 
 	if inst.ServiceGroup == nil || len(inst.ServiceGroup.Domains) == 0 {
 		if instUUID != "" {
@@ -77,7 +76,7 @@ func Start(ctx context.Context, c multimetro.MetroClient, image, volUUID, authSt
 		return "", "", fmt.Errorf("import instance has no service group domain")
 	}
 
-	fqdn = ptr.ZeroIfNil(inst.ServiceGroup.Domains[0].Fqdn)
+	fqdn = inst.ServiceGroup.Domains[0].Fqdn
 	if fqdn == "" {
 		if instUUID != "" {
 			log.G(ctx).Trace().Str("uuid", instUUID).Msg("deleting instance: empty FQDN returned")
@@ -103,9 +102,9 @@ func Terminate(ctx context.Context, c multimetro.MetroClient, instUUID string) e
 
 // Wait waits for the given instance to reach the stopped state.
 func Wait(ctx context.Context, c multimetro.MetroClient, instUUID string) error {
-	state := platform.WaitInstanceByUUIDRequestBodyStateStopped
+	state := platform.InstanceStateStopped
 	_, err := c.WaitInstanceByUUID(ctx, instUUID, platform.WaitInstanceByUUIDRequestBody{
-		State:     &state,
+		State:     state,
 		TimeoutMs: new(stopTimeoutMs),
 	})
 	if err != nil && !platform.ErrorContainsOnly(err, platform.APIHTTPErrorNotFound) {

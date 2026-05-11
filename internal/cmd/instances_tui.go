@@ -72,7 +72,7 @@ func instanceClient(ctx context.Context, ref group.Ref) (platform.Client, error)
 			return nil, nil, nil
 		}
 		for _, inst := range resp.Data.Instances {
-			if inst.Status == nil || *inst.Status != platform.ResponseStatusSUCCESS {
+			if inst.Status == nil || *inst.Status != platform.ResponseStatusSuccess {
 				continue
 			}
 			return c.Client, refs, nil

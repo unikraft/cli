@@ -182,7 +182,7 @@ func (InstanceTemplate) Get(ctx context.Context, keys []string) ([]resource.Reso
 		var results []resource.Resource
 		var errs []error
 		for i, instance := range resp.Data.Instances {
-			if instance.Status == nil || *instance.Status != platform.ResponseStatusSUCCESS {
+			if instance.Status == nil || *instance.Status != platform.ResponseStatusSuccess {
 				continue
 			}
 			result, err := InstanceTemplate{}.load(&refs[i], instance, &c.Metro, profile)
@@ -205,13 +205,13 @@ func (InstanceTemplate) load(ref *group.Ref, instance platform.Instance, metro *
 	if ref == nil {
 		ref = &group.Ref{
 			Metro: metro.Name,
-			Name:  ptr.ZeroIfNil(instance.Name),
-			UUID:  ptr.ZeroIfNil(instance.Uuid),
+			Name:  instance.Name,
+			UUID:  instance.Uuid,
 		}
 	} else {
 		ref.Metro = cmp.Or(ref.Metro, metro.Name)
-		ref.Name = cmp.Or(ref.Name, ptr.ZeroIfNil(instance.Name))
-		ref.UUID = cmp.Or(ref.UUID, ptr.ZeroIfNil(instance.Uuid))
+		ref.Name = cmp.Or(ref.Name, instance.Name)
+		ref.UUID = cmp.Or(ref.UUID, instance.Uuid)
 	}
 
 	result := InstanceTemplate{
@@ -246,14 +246,14 @@ func (InstanceTemplate) Delete(ctx context.Context, targets []resource.Resource)
 		}
 		var deleted []group.Ref
 		for _, template := range templates.Data.Instances {
-			status := ptr.ZeroIfNil(template.Status)
-			if status != "" && status != platform.ResponseStatusSUCCESS {
+			status := template.Status
+			if status != "" && status != platform.ResponseStatusSuccess {
 				continue
 			}
 			deleted = append(deleted, group.Ref{
 				Metro: c.Metro.Name,
-				Name:  ptr.ZeroIfNil(template.Name),
-				UUID:  ptr.ZeroIfNil(template.Uuid),
+				Name:  template.Name,
+				UUID:  template.Uuid,
 			})
 		}
 		return deleted, nil
@@ -270,7 +270,7 @@ func (InstanceTemplate) Edit(ctx context.Context, target resource.Resource, fiel
 	for _, patch := range patches {
 		reqs = append(reqs, platform.UpdateTemplateInstancesRequestItem{
 			Uuid:  &template.UUID,
-			Op:    platform.UpdateTemplateInstancesRequestItemOp(patch.Op),
+			Op:    platform.MutableTemplateInstanceOperation(patch.Op),
 			Prop:  patch.Prop,
 			Value: new(patch.Value),
 		})
@@ -295,20 +295,20 @@ func (InstanceTemplate) Edit(ctx context.Context, target resource.Resource, fiel
 	return results[0], nil
 }
 
-func instanceTemplatePatchSpec(path string, op patchOp, value any) (platform.UpdateTemplateInstancesRequestItemProp, any, error) {
-	var zero platform.UpdateTemplateInstancesRequestItemProp
+func instanceTemplatePatchSpec(path string, op patchOp, value any) (platform.MutableTemplateInstanceProperty, any, error) {
+	var zero platform.MutableTemplateInstanceProperty
 	switch path {
 	case "tags":
-		return platform.UpdateTemplateInstancesRequestItemPropTags, value.([]string), nil
+		return platform.MutableTemplateInstancePropertyTags, value.([]string), nil
 	case "delete-lock":
 		if value == nil {
 			return zero, nil, nil
 		}
 		switch v := value.(type) {
 		case bool:
-			return platform.UpdateTemplateInstancesRequestItemPropDelete_lock, v, nil
+			return platform.MutableTemplateInstancePropertyDelete_lock, v, nil
 		case *bool:
-			return platform.UpdateTemplateInstancesRequestItemPropDelete_lock, *v, nil
+			return platform.MutableTemplateInstancePropertyDelete_lock, *v, nil
 		}
 		return zero, nil, nil
 	default:
@@ -374,9 +374,9 @@ func (InstanceTemplate) Create(ctx context.Context, fields []resource.Field) ([]
 					continue
 				}
 				for _, tmpl := range resp.Data.Instances {
-					status := ptr.ZeroIfNil(tmpl.Status)
-					if status != "" && status != platform.ResponseStatusSUCCESS {
-						name := cmp.Or(ptr.ZeroIfNil(tmpl.Name), ptr.ZeroIfNil(tmpl.Uuid))
+					status := tmpl.Status
+					if status != "" && status != platform.ResponseStatusSuccess {
+						name := cmp.Or(tmpl.Name, tmpl.Uuid)
 						message := ptr.ZeroIfNil(tmpl.Message)
 						if message == "" {
 							message = "unknown error"
@@ -386,8 +386,8 @@ func (InstanceTemplate) Create(ctx context.Context, fields []resource.Field) ([]
 					}
 					created = append(created, multimetro.Key{
 						Metro: c.Metro.Name,
-						UUID:  ptr.ZeroIfNil(tmpl.Uuid),
-						Name:  ptr.ZeroIfNil(tmpl.Name),
+						UUID:  tmpl.Uuid,
+						Name:  tmpl.Name,
 					})
 				}
 			}

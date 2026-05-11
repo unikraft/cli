@@ -17,7 +17,6 @@ import (
 	"github.com/pkg/browser"
 	"unikraft.com/cloud/sdk/controlplane"
 	"unikraft.com/x/log"
-	"unikraft.com/x/ptr"
 
 	"unikraft.com/cli/internal/config"
 	"unikraft.com/cli/internal/logfmt"
@@ -80,17 +79,17 @@ func (cmd *LoginCmd) Run(ctx context.Context, cfg *config.Config) error {
 		if err != nil {
 			return jujuerrors.Annotate(err, "getting authentication token")
 		}
-		if resp.Status == string(controlplane.ResponseStatusERROR) {
+		if resp.Status == string(controlplane.ResponseStatusError) {
 			return jujuerrors.Annotate(jujuerrors.New(resp.Message), "authentication failed")
 		}
 		if resp.Data == nil {
 			return jujuerrors.New("no data received from control plane, please try again")
 		}
-		if resp.Data.Token == nil {
+		if resp.Data.Token == "" {
 			return jujuerrors.New("no authentication token received from control plane, please try again")
 		}
-		token = *resp.Data.Token
-		organization = cmp.Or(ptr.ZeroIfNil(resp.Data.OrganizationName), cmd.Organization)
+		token = resp.Data.Token
+		organization = cmp.Or(resp.Data.OrganizationName, cmd.Organization)
 	}
 	tempProfile.Token = token
 
@@ -249,9 +248,9 @@ func (cmd *LoginCmd) getMetros(ctx context.Context, profile *config.Profile) ([]
 	var metros []config.Metro
 	for _, metro := range metroResp.Data.Metros {
 		metros = append(metros, config.Metro{
-			Name:     ptr.ZeroIfNil(metro.Name),
-			Endpoint: ptr.ZeroIfNil(metro.Endpoint),
-			Country:  ptr.ZeroIfNil(metro.Country),
+			Name:     metro.Name,
+			Endpoint: metro.Endpoint,
+			Country:  metro.Country,
 		})
 	}
 	return metros, nil
@@ -278,12 +277,12 @@ func (cmd *LoginCmd) getAuth(ctx context.Context, profile *config.Profile) (*con
 		log.G(ctx).Info().Msg(" ")
 		log.G(ctx).Info().Msg("to authenticate, please visit:")
 		log.G(ctx).Info().Msg(" ")
-		log.G(ctx).Info().Msgf("  %s", *signinResp.Data.AuthorizationUrl)
+		log.G(ctx).Info().Msgf("  %s", signinResp.Data.AuthorizationUrl)
 		log.G(ctx).Info().Msg(" ")
 	} else {
 		log.G(ctx).
 			Info().
-			Str("url", *signinResp.Data.AuthorizationUrl).
+			Str("url", signinResp.Data.AuthorizationUrl).
 			Msg("login")
 	}
 
@@ -322,7 +321,7 @@ func (cmd *LoginCmd) getAuth(ctx context.Context, profile *config.Profile) (*con
 	}()
 
 	if !cmd.NoBrowser {
-		if err := browser.OpenURL(*signinResp.Data.AuthorizationUrl); err != nil {
+		if err := browser.OpenURL(signinResp.Data.AuthorizationUrl); err != nil {
 			log.G(ctx).
 				Debug().
 				Err(err).
@@ -354,8 +353,8 @@ func (cmd *LoginCmd) getOrg(ctx context.Context, profile *config.Profile) (strin
 	if err != nil {
 		return "", jujuerrors.Annotate(err, "getting authorization")
 	}
-	if resp.Data == nil || resp.Data.OrganizationName == nil {
+	if resp.Data == nil || resp.Data.OrganizationName == "" {
 		return "", jujuerrors.New("no organization name received from control plane")
 	}
-	return *resp.Data.OrganizationName, nil
+	return resp.Data.OrganizationName, nil
 }

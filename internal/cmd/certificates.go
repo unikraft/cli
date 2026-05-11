@@ -17,7 +17,6 @@ import (
 	"unikraft.com/cloud/sdk/platform/group"
 	"unikraft.com/x/kingkong"
 	"unikraft.com/x/log"
-	"unikraft.com/x/ptr"
 
 	"unikraft.com/cli/internal/config"
 	"unikraft.com/cli/internal/mirror"
@@ -166,13 +165,13 @@ func (Certificate) load(ref *group.Ref, certificate platform.Certificate, metro 
 	if ref == nil {
 		ref = &group.Ref{
 			Metro: metro.Name,
-			Name:  ptr.ZeroIfNil(certificate.Name),
-			UUID:  ptr.ZeroIfNil(certificate.Uuid),
+			Name:  certificate.Name,
+			UUID:  certificate.Uuid,
 		}
 	} else {
 		ref.Metro = cmp.Or(ref.Metro, metro.Name)
-		ref.Name = cmp.Or(ref.Name, ptr.ZeroIfNil(certificate.Name))
-		ref.UUID = cmp.Or(ref.UUID, ptr.ZeroIfNil(certificate.Uuid))
+		ref.Name = cmp.Or(ref.Name, certificate.Name)
+		ref.UUID = cmp.Or(ref.UUID, certificate.Uuid)
 	}
 
 	result := Certificate{
@@ -206,13 +205,13 @@ func (Certificate) Delete(ctx context.Context, targets []resource.Resource) erro
 		}
 		var deleted []group.Ref
 		for _, certificate := range resp.Data.Certificates {
-			if certificate.Status == nil || *certificate.Status != platform.ResponseStatusSUCCESS {
+			if certificate.Status != platform.ResponseStatusSuccess {
 				continue
 			}
 			deleted = append(deleted, group.Ref{
 				Metro: c.Metro.Name,
-				Name:  ptr.ZeroIfNil(certificate.Name),
-				UUID:  ptr.ZeroIfNil(certificate.Uuid),
+				Name:  certificate.Name,
+				UUID:  certificate.Uuid,
 			})
 		}
 		return deleted, nil
@@ -257,8 +256,8 @@ func (Certificate) Create(ctx context.Context, fields []resource.Field) ([]resou
 		for _, certificate := range resp.Data.Certificates {
 			key := multimetro.Key{
 				Metro: c.Metro.Name,
-				UUID:  ptr.ZeroIfNil(certificate.Uuid),
-				Name:  ptr.ZeroIfNil(certificate.Name),
+				UUID:  certificate.Uuid,
+				Name:  certificate.Name,
 			}
 			created = append(created, key)
 		}

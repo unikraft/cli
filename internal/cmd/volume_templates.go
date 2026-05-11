@@ -165,7 +165,7 @@ func (VolumeTemplate) Get(ctx context.Context, keys []string) ([]resource.Resour
 		var results []resource.Resource
 		var errs []error
 		for i, volume := range resp.Data.Volumes {
-			if volume.Status == nil || *volume.Status != platform.ResponseStatusSUCCESS {
+			if volume.Status == nil || *volume.Status != platform.ResponseStatusSuccess {
 				continue
 			}
 			result, err := VolumeTemplate{}.load(&refs[i], volume, &c.Metro, profile)
@@ -188,13 +188,13 @@ func (VolumeTemplate) load(ref *group.Ref, volume platform.Volume, metro *config
 	if ref == nil {
 		ref = &group.Ref{
 			Metro: metro.Name,
-			Name:  ptr.ZeroIfNil(volume.Name),
-			UUID:  ptr.ZeroIfNil(volume.Uuid),
+			Name:  volume.Name,
+			UUID:  volume.Uuid,
 		}
 	} else {
 		ref.Metro = cmp.Or(ref.Metro, metro.Name)
-		ref.Name = cmp.Or(ref.Name, ptr.ZeroIfNil(volume.Name))
-		ref.UUID = cmp.Or(ref.UUID, ptr.ZeroIfNil(volume.Uuid))
+		ref.Name = cmp.Or(ref.Name, volume.Name)
+		ref.UUID = cmp.Or(ref.UUID, volume.Uuid)
 	}
 
 	result := VolumeTemplate{
@@ -229,14 +229,14 @@ func (VolumeTemplate) Delete(ctx context.Context, targets []resource.Resource) e
 		}
 		var deleted []group.Ref
 		for _, template := range templates.Data.Volumes {
-			status := ptr.ZeroIfNil(template.Status)
-			if status != "" && status != platform.ResponseStatusSUCCESS {
+			status := template.Status
+			if status != "" && status != platform.ResponseStatusSuccess {
 				continue
 			}
 			deleted = append(deleted, group.Ref{
 				Metro: c.Metro.Name,
-				Name:  ptr.ZeroIfNil(template.Name),
-				UUID:  ptr.ZeroIfNil(template.Uuid),
+				Name:  template.Name,
+				UUID:  template.Uuid,
 			})
 		}
 		return deleted, nil
@@ -253,7 +253,7 @@ func (VolumeTemplate) Edit(ctx context.Context, target resource.Resource, fields
 	for _, patch := range patches {
 		reqs = append(reqs, platform.UpdateTemplateVolumesRequestItem{
 			Uuid:  &template.UUID,
-			Op:    platform.UpdateTemplateVolumesRequestItemOp(patch.Op),
+			Op:    platform.MutableTemplateVolumeOperation(patch.Op),
 			Prop:  patch.Prop,
 			Value: new(patch.Value),
 		})
@@ -278,20 +278,20 @@ func (VolumeTemplate) Edit(ctx context.Context, target resource.Resource, fields
 	return results[0], nil
 }
 
-func volumeTemplatePatchSpec(path string, op patchOp, value any) (platform.UpdateTemplateVolumesRequestItemProp, any, error) {
-	var zero platform.UpdateTemplateVolumesRequestItemProp
+func volumeTemplatePatchSpec(path string, op patchOp, value any) (platform.MutableTemplateVolumeProperty, any, error) {
+	var zero platform.MutableTemplateVolumeProperty
 	switch path {
 	case "tags":
-		return platform.UpdateTemplateVolumesRequestItemPropTags, value.([]string), nil
+		return platform.MutableTemplateVolumePropertyTags, value.([]string), nil
 	case "delete-lock":
 		if value == nil {
 			return zero, nil, nil
 		}
 		switch v := value.(type) {
 		case bool:
-			return platform.UpdateTemplateVolumesRequestItemPropDelete_lock, v, nil
+			return platform.MutableTemplateVolumePropertyDelete_lock, v, nil
 		case *bool:
-			return platform.UpdateTemplateVolumesRequestItemPropDelete_lock, *v, nil
+			return platform.MutableTemplateVolumePropertyDelete_lock, *v, nil
 		}
 		return zero, nil, nil
 	default:
@@ -357,9 +357,9 @@ func (VolumeTemplate) Create(ctx context.Context, fields []resource.Field) ([]re
 					continue
 				}
 				for _, tmpl := range resp.Data.Volumes {
-					status := ptr.ZeroIfNil(tmpl.Status)
-					if status != "" && status != platform.ResponseStatusSUCCESS {
-						name := cmp.Or(ptr.ZeroIfNil(tmpl.Name), ptr.ZeroIfNil(tmpl.Uuid))
+					status := tmpl.Status
+					if status != "" && status != platform.ResponseStatusSuccess {
+						name := cmp.Or(tmpl.Name, tmpl.Uuid)
 						message := ptr.ZeroIfNil(tmpl.Message)
 						if message == "" {
 							message = "unknown error"
@@ -369,8 +369,8 @@ func (VolumeTemplate) Create(ctx context.Context, fields []resource.Field) ([]re
 					}
 					created = append(created, multimetro.Key{
 						Metro: c.Metro.Name,
-						UUID:  ptr.ZeroIfNil(tmpl.Uuid),
-						Name:  ptr.ZeroIfNil(tmpl.Name),
+						UUID:  tmpl.Uuid,
+						Name:  tmpl.Name,
 					})
 				}
 			}

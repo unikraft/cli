@@ -20,7 +20,6 @@ import (
 	"unikraft.com/cloud/sdk/platform/group"
 	"unikraft.com/x/kingkong"
 	"unikraft.com/x/log"
-	"unikraft.com/x/ptr"
 
 	"unikraft.com/cli/internal/config"
 	"unikraft.com/cli/internal/mirror"
@@ -119,9 +118,9 @@ type ServiceGroup struct {
 }
 
 type Service struct {
-	Source      uint32                     `mirror:"port" json:"source" field:",short"`
-	Destination uint32                     `mirror:"destination_port" json:"destination" field:",short"`
-	Handlers    []platform.ServiceHandlers `mirror:"handlers" json:"handlers" field:",short"`
+	Source      uint32                       `mirror:"port" json:"source" field:",short"`
+	Destination uint32                       `mirror:"destination_port" json:"destination" field:",short"`
+	Handlers    []platform.ConnectionHandler `mirror:"handlers" json:"handlers" field:",short"`
 }
 
 func (s *Service) MarshalText() ([]byte, error) {
@@ -179,7 +178,7 @@ func (s *Service) UnmarshalText(text []byte) error {
 
 	if handlers != "" {
 		for handler := range strings.SplitSeq(handlers, "+") {
-			s.Handlers = append(s.Handlers, platform.ServiceHandlers(handler))
+			s.Handlers = append(s.Handlers, platform.ConnectionHandler(handler))
 		}
 	}
 
@@ -297,7 +296,7 @@ func (ServiceGroup) Get(ctx context.Context, keys []string) ([]resource.Resource
 		var results []resource.Resource
 		var errs []error
 		for i, serviceGroup := range resp.Data.ServiceGroups {
-			if serviceGroup.Status == nil || *serviceGroup.Status != platform.ResponseStatusSUCCESS {
+			if serviceGroup.Status == nil || *serviceGroup.Status != platform.ResponseStatusSuccess {
 				continue
 			}
 			result, err := ServiceGroup{}.load(&refs[i], serviceGroup, &c.Metro)
@@ -320,13 +319,13 @@ func (ServiceGroup) load(ref *group.Ref, serviceGroup platform.ServiceGroup, met
 	if ref == nil {
 		ref = &group.Ref{
 			Metro: metro.Name,
-			Name:  ptr.ZeroIfNil(serviceGroup.Name),
-			UUID:  ptr.ZeroIfNil(serviceGroup.Uuid),
+			Name:  serviceGroup.Name,
+			UUID:  serviceGroup.Uuid,
 		}
 	} else {
 		ref.Metro = cmp.Or(ref.Metro, metro.Name)
-		ref.Name = cmp.Or(ref.Name, ptr.ZeroIfNil(serviceGroup.Name))
-		ref.UUID = cmp.Or(ref.UUID, ptr.ZeroIfNil(serviceGroup.Uuid))
+		ref.Name = cmp.Or(ref.Name, serviceGroup.Name)
+		ref.UUID = cmp.Or(ref.UUID, serviceGroup.Uuid)
 	}
 
 	result := ServiceGroup{
@@ -393,7 +392,7 @@ func (ServiceGroup) Create(ctx context.Context, fields []resource.Field) ([]reso
 				for _, svc := range field.Create.Set.([]*Service) {
 					req.Services = append(req.Services, platform.Service{
 						Port:            svc.Source,
-						DestinationPort: &svc.Destination,
+						DestinationPort: svc.Destination,
 						Handlers:        svc.Handlers,
 					})
 				}
@@ -418,8 +417,8 @@ func (ServiceGroup) Create(ctx context.Context, fields []resource.Field) ([]reso
 		for _, group := range resp.Data.ServiceGroups {
 			key := multimetro.Key{
 				Metro: c.Metro.Name,
-				UUID:  ptr.ZeroIfNil(group.Uuid),
-				Name:  ptr.ZeroIfNil(group.Name),
+				UUID:  group.Uuid,
+				Name:  group.Name,
 			}
 			created = append(created, key)
 		}
@@ -445,7 +444,7 @@ func (ServiceGroup) Edit(ctx context.Context, target resource.Resource, fields [
 	for _, patch := range patches {
 		reqs = append(reqs, platform.UpdateServiceGroupsRequestItem{
 			Uuid:  &sg.UUID,
-			Op:    platform.UpdateServiceGroupsRequestItemOp(patch.Op),
+			Op:    platform.MutableServiceGroupOperation(patch.Op),
 			Prop:  patch.Prop,
 			Value: new(patch.Value),
 		})
@@ -519,13 +518,13 @@ func (ServiceGroup) Examples() map[cmd.CmdType][]kingkong.Example {
 	}
 }
 
-func serviceGroupPatchSpec(path string, _ patchOp, value any) (platform.UpdateServiceGroupsRequestItemProp, any, error) {
-	var zero platform.UpdateServiceGroupsRequestItemProp
+func serviceGroupPatchSpec(path string, _ patchOp, value any) (platform.MutableServiceGroupProperty, any, error) {
+	var zero platform.MutableServiceGroupProperty
 	switch path {
 	case "limits.soft":
-		return platform.UpdateServiceGroupsRequestItemPropSoft_limit, value.(uint64), nil
+		return platform.MutableServiceGroupPropertySoft_limit, value.(uint64), nil
 	case "limits.hard":
-		return platform.UpdateServiceGroupsRequestItemPropHard_limit, value.(uint64), nil
+		return platform.MutableServiceGroupPropertyHard_limit, value.(uint64), nil
 	case "domains":
 		nvalue := []platform.CreateServiceGroupRequestDomain{}
 		for _, domain := range value.([]Domain) {
@@ -537,17 +536,17 @@ func serviceGroupPatchSpec(path string, _ patchOp, value any) (platform.UpdateSe
 				Name: name,
 			})
 		}
-		return platform.UpdateServiceGroupsRequestItemPropDomains, nvalue, nil
+		return platform.MutableServiceGroupPropertyDomains, nvalue, nil
 	case "services":
 		nvalue := []platform.Service{}
 		for _, svc := range value.([]*Service) {
 			nvalue = append(nvalue, platform.Service{
 				Port:            svc.Source,
-				DestinationPort: &svc.Destination,
+				DestinationPort: svc.Destination,
 				Handlers:        svc.Handlers,
 			})
 		}
-		return platform.UpdateServiceGroupsRequestItemPropServices, nvalue, nil
+		return platform.MutableServiceGroupPropertyServices, nvalue, nil
 	default:
 		return zero, nil, nil
 	}

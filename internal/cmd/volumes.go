@@ -201,8 +201,8 @@ func (c *VolumesCloneCmd) Run(ctx context.Context, stdio config.Stdio, sandbox *
 		for _, vol := range resp.Data.Volumes {
 			created = append(created, multimetro.Key{
 				Metro: client.Metro.Name,
-				UUID:  ptr.ZeroIfNil(vol.Uuid),
-				Name:  ptr.ZeroIfNil(vol.Name),
+				UUID:  vol.Uuid,
+				Name:  vol.Name,
 			})
 		}
 		return created, nil
@@ -324,7 +324,7 @@ func (Volume) Get(ctx context.Context, keys []string) ([]resource.Resource, erro
 		var results []resource.Resource
 		var errs []error
 		for i, volume := range resp.Data.Volumes {
-			if volume.Status == nil || *volume.Status != platform.ResponseStatusSUCCESS {
+			if volume.Status == nil || *volume.Status != platform.ResponseStatusSuccess {
 				continue
 			}
 			result, err := Volume{}.load(&refs[i], volume, &c.Metro)
@@ -347,13 +347,13 @@ func (Volume) load(ref *group.Ref, volume platform.Volume, metro *config.Metro) 
 	if ref == nil {
 		ref = &group.Ref{
 			Metro: metro.Name,
-			Name:  ptr.ZeroIfNil(volume.Name),
-			UUID:  ptr.ZeroIfNil(volume.Uuid),
+			Name:  volume.Name,
+			UUID:  volume.Uuid,
 		}
 	} else {
 		ref.Metro = cmp.Or(ref.Metro, metro.Name)
-		ref.Name = cmp.Or(ref.Name, ptr.ZeroIfNil(volume.Name))
-		ref.UUID = cmp.Or(ref.UUID, ptr.ZeroIfNil(volume.Uuid))
+		ref.Name = cmp.Or(ref.Name, volume.Name)
+		ref.UUID = cmp.Or(ref.UUID, volume.Uuid)
 	}
 
 	result := Volume{
@@ -387,13 +387,13 @@ func (Volume) Delete(ctx context.Context, targets []resource.Resource) error {
 		}
 		var deleted []group.Ref
 		for _, volume := range resp.Data.Volumes {
-			if volume.Status == nil || *volume.Status != platform.ResponseStatusSUCCESS {
+			if volume.Status != platform.ResponseStatusSuccess {
 				continue
 			}
 			deleted = append(deleted, group.Ref{
 				Metro: c.Metro.Name,
-				Name:  ptr.ZeroIfNil(volume.Name),
-				UUID:  ptr.ZeroIfNil(volume.Uuid),
+				Name:  volume.Name,
+				UUID:  volume.Uuid,
 			})
 		}
 		return deleted, nil
@@ -462,8 +462,8 @@ func (Volume) Create(ctx context.Context, fields []resource.Field) ([]resource.R
 		for _, volume := range resp.Data.Volumes {
 			key := multimetro.Key{
 				Metro: c.Metro.Name,
-				UUID:  ptr.ZeroIfNil(volume.Uuid),
-				Name:  ptr.ZeroIfNil(volume.Name),
+				UUID:  volume.Uuid,
+				Name:  volume.Name,
 			}
 			created = append(created, key)
 		}
@@ -489,7 +489,7 @@ func (Volume) Edit(ctx context.Context, target resource.Resource, fields []resou
 	for _, patch := range patches {
 		reqs = append(reqs, platform.UpdateVolumesRequestItem{
 			Uuid:  &volume.UUID,
-			Op:    platform.UpdateVolumesRequestItemOp(patch.Op),
+			Op:    platform.MutableVolumeOperation(patch.Op),
 			Prop:  patch.Prop,
 			Value: new(patch.Value),
 		})
@@ -561,13 +561,13 @@ func (Volume) Examples() map[cmd.CmdType][]kingkong.Example {
 	}
 }
 
-func volumePatchSpec(path string, _ patchOp, value any) (platform.UpdateVolumesRequestItemProp, any, error) {
-	var zero platform.UpdateVolumesRequestItemProp
+func volumePatchSpec(path string, _ patchOp, value any) (platform.MutableVolumeProperty, any, error) {
+	var zero platform.MutableVolumeProperty
 	switch path {
 	case "size":
-		return platform.UpdateVolumesRequestItemPropSize_mb, int64(value.(types.SizeMebibytes)), nil
+		return platform.MutableVolumePropertySize_mb, int64(value.(types.SizeMebibytes)), nil
 	case "quota-policy":
-		return platform.UpdateVolumesRequestItemPropQuota_policy, value.(string), nil
+		return platform.MutableVolumePropertyQuota_policy, value.(string), nil
 	default:
 		return zero, nil, nil
 	}

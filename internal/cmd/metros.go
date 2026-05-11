@@ -313,53 +313,53 @@ func (q *metroQuotas) Lazy(ctx context.Context) (any, error) {
 
 	result := new(metroQuotas)
 	result.Instances.Active = types.Usage[int64]{
-		Used:  ptr.ZeroIfNil(quotas.Used.LiveInstances),
-		Limit: ptr.ZeroIfNil(quotas.Hard.LiveInstances),
+		Used:  quotas.Used.LiveInstances,
+		Limit: quotas.Hard.LiveInstances,
 	}
 	result.Instances.Total = types.Usage[int64]{
-		Used:  ptr.ZeroIfNil(quotas.Used.Instances),
-		Limit: ptr.ZeroIfNil(quotas.Hard.Instances),
+		Used:  quotas.Used.Instances,
+		Limit: quotas.Hard.Instances,
 	}
 	result.Vcpus.Active = types.Usage[int64]{
-		Used:  ptr.ZeroIfNil(quotas.Used.LiveVcpus),
-		Limit: ptr.ZeroIfNil(quotas.Hard.LiveVcpus),
+		Used:  quotas.Used.LiveVcpus,
+		Limit: quotas.Hard.LiveVcpus,
 	}
 	result.Memory.Active = types.Usage[types.SizeMebibytes]{
-		Used:  types.SizeMebibytes(ptr.ZeroIfNil(quotas.Used.LiveMemoryMb)),
-		Limit: types.SizeMebibytes(ptr.ZeroIfNil(quotas.Hard.LiveMemoryMb)),
+		Used:  types.SizeMebibytes(quotas.Used.LiveMemoryMb),
+		Limit: types.SizeMebibytes(quotas.Hard.LiveMemoryMb),
 	}
 	result.Services.Groups = types.Usage[int64]{
-		Used:  ptr.ZeroIfNil(quotas.Used.ServiceGroups),
-		Limit: ptr.ZeroIfNil(quotas.Hard.ServiceGroups),
+		Used:  quotas.Used.ServiceGroups,
+		Limit: quotas.Hard.ServiceGroups,
 	}
 	result.Services.Exposed = types.Usage[int64]{
-		Used:  ptr.ZeroIfNil(quotas.Used.Services),
-		Limit: ptr.ZeroIfNil(quotas.Hard.Services),
+		Used:  quotas.Used.Services,
+		Limit: quotas.Hard.Services,
 	}
 	result.Volumes.Count = types.Usage[int64]{
-		Used:  ptr.ZeroIfNil(quotas.Used.Volumes),
-		Limit: ptr.ZeroIfNil(quotas.Hard.Volumes),
+		Used:  quotas.Used.Volumes,
+		Limit: quotas.Hard.Volumes,
 	}
 	result.Volumes.Total = types.Usage[types.SizeMebibytes]{
-		Used:  types.SizeMebibytes(ptr.ZeroIfNil(quotas.Used.TotalVolumeMb)),
-		Limit: types.SizeMebibytes(ptr.ZeroIfNil(quotas.Hard.TotalVolumeMb)),
+		Used:  types.SizeMebibytes(quotas.Used.TotalVolumeMb),
+		Limit: types.SizeMebibytes(quotas.Hard.TotalVolumeMb),
 	}
 
 	result.Limits.Vcpus = types.Range[int64]{
-		Min: ptr.ZeroIfNil(quotas.Limits.MinVcpus),
-		Max: ptr.ZeroIfNil(quotas.Limits.MaxVcpus),
+		Min: quotas.Limits.MinVcpus,
+		Max: quotas.Limits.MaxVcpus,
 	}
 	result.Limits.Memory = types.Range[types.SizeMebibytes]{
-		Min: types.SizeMebibytes(ptr.ZeroIfNil(quotas.Limits.MinMemoryMb)),
-		Max: types.SizeMebibytes(ptr.ZeroIfNil(quotas.Limits.MaxMemoryMb)),
+		Min: types.SizeMebibytes(quotas.Limits.MinMemoryMb),
+		Max: types.SizeMebibytes(quotas.Limits.MaxMemoryMb),
 	}
 	result.Limits.Volume = types.Range[types.SizeMebibytes]{
-		Min: types.SizeMebibytes(ptr.ZeroIfNil(quotas.Limits.MinVolumeMb)),
-		Max: types.SizeMebibytes(ptr.ZeroIfNil(quotas.Limits.MaxVolumeMb)),
+		Min: types.SizeMebibytes(quotas.Limits.MinVolumeMb),
+		Max: types.SizeMebibytes(quotas.Limits.MaxVolumeMb),
 	}
 	result.Limits.Autoscale = types.Range[int64]{
-		Min: ptr.ZeroIfNil(quotas.Limits.MinAutoscaleSize),
-		Max: ptr.ZeroIfNil(quotas.Limits.MaxAutoscaleSize),
+		Min: quotas.Limits.MinAutoscaleSize,
+		Max: quotas.Limits.MaxAutoscaleSize,
 	}
 
 	return result, nil

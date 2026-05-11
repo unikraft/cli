@@ -18,7 +18,7 @@ func getFingerprint() (controlplane.RequestSigninRequest, error) {
 	}
 
 	req := controlplane.RequestSigninRequest{
-		Hostname:       &fp.Hostname,
+		Hostname:       fp.Hostname,
 		Os:             &fp.Os,
 		OsVersion:      fp.OsVersion,
 		Container:      &fp.Container,
