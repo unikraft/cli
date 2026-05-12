@@ -193,4 +193,45 @@ cmd: ["sh", "/entrypoint.sh"]
 			})
 		}
 	})
+
+	t.Run("busybox-custom-dockerfile", func(t *testing.T) {
+		r := runner(t, true)
+		imagePrefix := r.Config.Profile.Organization + "/busybox-custom-df-e2e"
+		imageTag := uniq()
+		instName := uniq()
+		image := imagePrefix + ":" + imageTag
+
+		dir := t.TempDir()
+		require.NoError(t, fstest.Apply(
+			fstest.CreateFile("App.dockerfile", []byte(`
+FROM busybox:latest
+COPY <<EOF /entrypoint.sh
+#!/bin/sh
+echo UNIKRAFT_E2E_OK
+EOF
+RUN chmod +x /entrypoint.sh
+`), 0o644),
+			fstest.CreateFile("Kraftfile", []byte(`
+spec: v0.7
+name: busybox-custom-df-e2e
+runtime: base-compat:latest
+rootfs:
+  format: erofs
+  source:
+    path: .
+    dockerfile: App.dockerfile
+cmd: ["sh", "/entrypoint.sh"]
+`), 0o644),
+		).Apply(dir))
+
+		r.Run(t, []string{"unikraft", "build", ".", "--output", image}, integ.WithWorkDir(dir))
+		r.Run(t, []string{"unikraft", "run", "--name", "test-" + instName, "--metro", r.Config.MetroName, "--output", "quiet", "--image", image})
+		r.Run(t, []string{"unikraft", "instance", "wait", "--until", "state==stopped", "--timeout", "10s", "test-" + instName})
+
+		out := r.Run(t, []string{"unikraft", "instance", "logs", "test-" + instName})
+		assert.Regexp(t, `UNIKRAFT_E2E_OK`, out)
+
+		r.Run(t, []string{"unikraft", "instance", "delete", "test-" + instName})
+		r.Run(t, []string{"unikraft", "image", "delete", image})
+	})
 }

@@ -25,7 +25,9 @@ func TestKraftfileToBuildOpts(t *testing.T) {
 		Runtime: &runtime,
 		Rootfs: &kraftfile.FS{
 			Format: kraftfile.FsTypeErofs,
-			Source: rootfsPath,
+			Source: &kraftfile.FSSource{
+				Path: rootfsPath,
+			},
 		},
 		Targets: []kraftfile.Target{
 			{
@@ -67,7 +69,9 @@ func TestKraftfileToBuildOptsRootfsSourceError(t *testing.T) {
 		Runtime: &runtime,
 		Rootfs: &kraftfile.FS{
 			Format: kraftfile.FsTypeCpio,
-			Source: rootfsPath,
+			Source: &kraftfile.FSSource{
+				Path: rootfsPath,
+			},
 		},
 	}
 
@@ -83,7 +87,9 @@ func TestKraftfileToBuildOptsRootfsPathJoined(t *testing.T) {
 		Runtime: &runtime,
 		Rootfs: &kraftfile.FS{
 			Format: kraftfile.FsTypeErofs,
-			Source: "Dockerfile",
+			Source: &kraftfile.FSSource{
+				Path: "Dockerfile",
+			},
 		},
 	}
 
@@ -91,6 +97,100 @@ func TestKraftfileToBuildOptsRootfsPathJoined(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, rootfsDir+"/Dockerfile", opts.Rootfs.Path,
 		"rootfs path must be joined with the kraftfile directory")
+}
+
+func TestKraftfileToBuildOptsDockerfileWithType(t *testing.T) {
+	rootfsDir := t.TempDir()
+
+	runtime := kraftfile.Runtime("unikraft.io/unikraft.org/base")
+	kf := &kraftfile.Kraftfile{
+		Runtime: &runtime,
+		Rootfs: &kraftfile.FS{
+			Format: kraftfile.FsTypeErofs,
+			Source: &kraftfile.FSSource{
+				Path:       "context",
+				Dockerfile: "MyDockerfile",
+				Type:       kraftfile.SourceTypeDockerfile,
+			},
+		},
+	}
+
+	opts, err := KraftfileToBuildOpts(rootfsDir, kf)
+	require.NoError(t, err)
+	require.Equal(t, rootfsDir+"/context", opts.Rootfs.Path)
+	require.Equal(t, "MyDockerfile", opts.Rootfs.Dockerfile)
+	require.Equal(t, kraftfile.SourceTypeDockerfile, opts.Rootfs.Type)
+	require.Equal(t, kraftfile.FsTypeErofs, opts.Rootfs.Format)
+}
+
+func TestKraftfileToBuildOptsDockerfileWithoutType(t *testing.T) {
+	rootfsDir := t.TempDir()
+
+	runtime := kraftfile.Runtime("unikraft.io/unikraft.org/base")
+	kf := &kraftfile.Kraftfile{
+		Runtime: &runtime,
+		Rootfs: &kraftfile.FS{
+			Format: kraftfile.FsTypeErofs,
+			Source: &kraftfile.FSSource{
+				Path:       "context",
+				Dockerfile: "MyDockerfile",
+			},
+		},
+	}
+
+	opts, err := KraftfileToBuildOpts(rootfsDir, kf)
+	require.NoError(t, err)
+	require.Equal(t, rootfsDir+"/context", opts.Rootfs.Path)
+	require.Equal(t, "MyDockerfile", opts.Rootfs.Dockerfile)
+	require.Equal(t, kraftfile.SourceTypeDockerfile, opts.Rootfs.Type,
+		"type must be inferred as dockerfile when dockerfile field is set")
+	require.Equal(t, kraftfile.FsTypeErofs, opts.Rootfs.Format)
+}
+
+func TestKraftfileToBuildOptsAllFields(t *testing.T) {
+	rootfsDir := t.TempDir()
+
+	runtime := kraftfile.Runtime("unikraft.io/unikraft.org/base")
+	kf := &kraftfile.Kraftfile{
+		Cmd:     kraftfile.Command{"/server", "--port", "8080"},
+		Env:     kraftfile.Map{{Key: "PORT", Value: "8080"}, {Key: "DEBUG", Value: "false"}},
+		Labels:  map[string]string{"app": "server", "version": "1.0"},
+		Runtime: &runtime,
+		Rootfs: &kraftfile.FS{
+			Format: kraftfile.FsTypeErofs,
+			Source: &kraftfile.FSSource{
+				Path:       "context",
+				Dockerfile: "MyDockerfile",
+				Type:       kraftfile.SourceTypeDockerfile,
+			},
+		},
+		Targets: []kraftfile.Target{
+			{
+				Arch: "x86_64",
+				Plat: "fc",
+				KConfig: kraftfile.Map{
+					{Key: "CONFIG_UK_FULLVERSION", Value: "1.2.3"},
+					{Key: "CONFIG_DEBUG", Value: "y"},
+				},
+			},
+		},
+	}
+
+	opts, err := KraftfileToBuildOpts(rootfsDir, kf)
+	require.NoError(t, err)
+	require.Equal(t, []string{"/server", "--port", "8080"}, opts.Cmd)
+	require.Equal(t, kraftfile.Map{{Key: "PORT", Value: "8080"}, {Key: "DEBUG", Value: "false"}}, opts.Env)
+	require.Equal(t, map[string]string{"app": "server", "version": "1.0"}, opts.Labels)
+	require.Equal(t, "unikraft.io/unikraft.org/base", opts.Runtime)
+	require.Equal(t, rootfsDir+"/context", opts.Rootfs.Path)
+	require.Equal(t, "MyDockerfile", opts.Rootfs.Dockerfile)
+	require.Equal(t, kraftfile.SourceTypeDockerfile, opts.Rootfs.Type)
+	require.Equal(t, kraftfile.FsTypeErofs, opts.Rootfs.Format)
+	require.Len(t, opts.Platform, 1)
+	require.Equal(t, "x86_64", opts.Platform[0].Architecture)
+	require.Equal(t, "fc", opts.Platform[0].OS)
+	require.Equal(t, "1.2.3", opts.Platform[0].OSVersion)
+	require.Equal(t, []string{"CONFIG_UK_FULLVERSION=1.2.3", "CONFIG_DEBUG=y"}, opts.Platform[0].OSFeatures)
 }
 
 func TestKraftfileToBuildOptsNoRootfs(t *testing.T) {

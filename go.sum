@@ -505,8 +505,8 @@ unikraft.com/x/joinerrgroup v0.0.0-20260304162956-523940cab1de h1:cm4FnPvnahRIK0
 unikraft.com/x/joinerrgroup v0.0.0-20260304162956-523940cab1de/go.mod h1:XND1VvLxwqKFGrmdwUTWps4WEpMm7HTHPQg9HWQtrxg=
 unikraft.com/x/kingkong v0.0.0-20260331102539-2c733927b46f h1:pT+qeeK2nWgSlRaIEKgkY2NoyptIrXc+Rr47ktoB5Fg=
 unikraft.com/x/kingkong v0.0.0-20260331102539-2c733927b46f/go.mod h1:x/sY2g/oA3GKDTZyOFC1xArmd6ZySwc4KZlp1MO8a2k=
-unikraft.com/x/kraftfile v0.0.0-20260501125416-502eb6c9c39d h1:x10/Kuf67r6UTYT0BuTbEkLdxHglWGY3eV+59WQFpWc=
-unikraft.com/x/kraftfile v0.0.0-20260501125416-502eb6c9c39d/go.mod h1:OYaIMOzV1IpbZCe2J3SuC5jvT4tAfR0XG9uOPPD+p50=
+unikraft.com/x/kraftfile v0.0.0-20260522102736-cac80644fc9f h1:hVVKUNRuLzZmoOA8I99TwpDhgzT4BHbL/M+pvQTFYxQ=
+unikraft.com/x/kraftfile v0.0.0-20260522102736-cac80644fc9f/go.mod h1:htyMc5oT22e2Z+yWbw1Pz61NAtEdJJTwRy5kRpKKJDE=
 unikraft.com/x/log v0.0.0-20260126171022-af62c17fcdf7 h1:kFOE7rmK33PiJ2GbWFd3v0WrE8DeAaQsPjrUQ+15CIU=
 unikraft.com/x/log v0.0.0-20260126171022-af62c17fcdf7/go.mod h1:f/+5628rnWTnRaRrCDD9mOMf7OV5QmkGIgARlTu4XGE=
 unikraft.com/x/ptr v0.0.0-20260126094137-ab6e717e5679 h1:ohptI7loX492JCbbn6yk13hAxysZHyGIZWN8hTw3080=

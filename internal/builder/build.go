@@ -32,7 +32,6 @@ type BuildOpts struct {
 	Labels map[string]string
 
 	// Buildkit params
-	// Dockerfile string
 	BuildArg []string
 	Target   string
 	Secrets  []*Secret
@@ -42,8 +41,9 @@ type BuildOpts struct {
 }
 
 type FSOpts struct {
-	Path string
-	Type kraftfile.SourceType
+	Path       string
+	Type       kraftfile.SourceType
+	Dockerfile string
 
 	// Output params
 	Format     kraftfile.FsType

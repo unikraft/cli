@@ -263,6 +263,34 @@ EOF
 	require.Equal(t, "hello\n", files["hello.txt"])
 }
 
+func TestRootfsDockerfileCustomNameIntegration(t *testing.T) {
+	ctx := rootfsIntegrationContext(t)
+	dockerfile := `
+FROM scratch
+
+COPY <<'EOF' /hello.txt
+hello
+EOF
+`
+	contextDir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(contextDir, "MyDockerfile"), []byte(dockerfile), 0o644))
+
+	imgs := runBuildRootfsIntegration(t, ctx, BuildOpts{
+		Rootfs: FSOpts{
+			Format:     kraftfile.FsTypeCpio,
+			Path:       contextDir,
+			Dockerfile: "MyDockerfile",
+			Type:       kraftfile.SourceTypeDockerfile,
+		},
+		Platform: []ocispec.Platform{{OS: "fc", Architecture: "x86_64"}},
+	})
+	require.Len(t, imgs, 1)
+
+	files := readCpioInitrd(t, imgs[0])
+	require.Contains(t, files, "./hello.txt")
+	require.Equal(t, "hello\n", files["./hello.txt"])
+}
+
 func TestRootfsDockerfileWithDeviceNodeIntegration(t *testing.T) {
 	ctx := rootfsIntegrationContext(t)
 	// Build an image that contains a device node. The local exporter
