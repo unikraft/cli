@@ -368,6 +368,8 @@ github.com/tonistiigi/vt100 v0.0.0-20240514184818-90bafcd6abab h1:H6aJ0yKQ0gF49Q
 github.com/tonistiigi/vt100 v0.0.0-20240514184818-90bafcd6abab/go.mod h1:ulncasL3N9uLrVann0m+CDlJKWsIAP34MPcOJF6VRvc=
 github.com/unikraft/go-archivefs v0.0.0-20260424155223-76f760ab1ceb h1:mmE5KAWDhmR1+4M4GM7fMERm/kg/MGVUw7k0W0c/RGU=
 github.com/unikraft/go-archivefs v0.0.0-20260424155223-76f760ab1ceb/go.mod h1:NLWtSTdsTRLGQN87zqm9+vN01Ei9JX+FWwuOme2wJXw=
+github.com/unikraft/go-archivefs v0.0.0-20260512114142-c3614828de4c h1:aUY+X4aIa2HnAEMBhMS+9lqHa2ljUmpoZoGTCLa+lzc=
+github.com/unikraft/go-archivefs v0.0.0-20260512114142-c3614828de4c/go.mod h1:NLWtSTdsTRLGQN87zqm9+vN01Ei9JX+FWwuOme2wJXw=
 github.com/unikraft/go-cpio v0.0.0-20260415131742-4f1984ca41f3 h1:C8GONmMNDK3spdZEHBIffmq1b1hjCm9nZrquv3+4H+U=
 github.com/unikraft/go-cpio v0.0.0-20260415131742-4f1984ca41f3/go.mod h1:OFJWAQVOq1qppx75rzF7qDoE5TqGjM1oCXW5N06Lftg=
 github.com/vbatts/tar-split v0.12.2 h1:w/Y6tjxpeiFMR47yzZPlPj/FcPLpXbTUi/9H7d3CPa4=

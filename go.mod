@@ -35,7 +35,7 @@ require (
 	github.com/sirupsen/logrus v1.9.4
 	github.com/stretchr/testify v1.11.1
 	github.com/tidwall/gjson v1.18.0
-	github.com/unikraft/go-archivefs v0.0.0-20260424155223-76f760ab1ceb
+	github.com/unikraft/go-archivefs v0.0.0-20260512114142-c3614828de4c
 	github.com/unikraft/go-cpio v0.0.0-20260415131742-4f1984ca41f3
 	golang.org/x/net v0.53.0
 	golang.org/x/sync v0.20.0
