@@ -9,7 +9,11 @@ stdout:
 	resources:
 	  memory:     128MiB
 	  vcpus:      1
-	service:      <SERVICE_NAME>
+	service:
+	  name:       <SERVICE_NAME>
+	  uuid:       12345678-1234-1234-1234-123456789abc
+	  domains:
+	  - fqdn:     <SERVICE_NAME>.unikraft.internal
 	networks:
 	- uuid:       12345678-1234-1234-1234-123456789abc
 	  private-ip: 10.X.X.X
@@ -35,7 +39,12 @@ stdout:
 	resources:
 	  memory:     128MiB
 	  vcpus:      1
-	service:      <SERVICE_NAME>
+	service:
+	  name:       <SERVICE_NAME>
+	  uuid:       12345678-1234-1234-1234-123456789abc
+	  domains:
+	  - fqdn:     <SERVICE_NAME>.unikraft.internal
+	  - fqdn:     <DOMAIN>.unikraft.internal
 	networks:
 	- uuid:       12345678-1234-1234-1234-123456789abc
 	  private-ip: 10.X.X.X

@@ -6,6 +6,7 @@
 package resource
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -619,6 +620,70 @@ func TestFieldsFromStruct_LinkDetection(t *testing.T) {
 		require.Len(t, result, 1)
 		assert.Empty(t, result[0].Links, "regular field should not have Links")
 	})
+}
+
+// TextMarshalerEmbed is a type that implements encoding.TextMarshaler.
+type TextMarshalerEmbed struct {
+	InnerVal string `field:",short"`
+}
+
+func (t TextMarshalerEmbed) MarshalText() ([]byte, error) {
+	return []byte("embed:" + t.InnerVal), nil
+}
+
+func TestFieldsFromStruct_PromotedTextMarshaler(t *testing.T) {
+	// When a struct's TextMarshaler is purely promoted from an embedded field,
+	// the struct should render via subfields (Value should be nil).
+	type Outer struct {
+		TextMarshalerEmbed
+		Extra string `field:",short"`
+	}
+
+	s := Outer{
+		TextMarshalerEmbed: TextMarshalerEmbed{InnerVal: "hello"},
+		Extra:              "world",
+	}
+	fields, err := FieldsFromStruct(s)
+	require.NoError(t, err)
+
+	// Should have embedded InnerVal + Extra = 2 top-level fields
+	require.Len(t, fields, 2)
+
+	result := GetFieldByPathString(fields, "extra")
+	require.Len(t, result, 1)
+	assert.Equal(t, "world", result[0].Value)
+
+	result = GetFieldByPathString(fields, "inner-val")
+	require.Len(t, result, 1)
+	assert.Equal(t, "hello", result[0].Value)
+}
+
+func TestFieldsFromStruct_OwnTextMarshaler(t *testing.T) {
+	// Even when a struct declares its own MarshalText, if it embeds a
+	// TextMarshaler, we still render via subfields. The own MarshalText
+	// exists for other contexts (list tables, shortcuts) but detailed
+	// output should expand into subfields.
+	s := OwnTextMarshaler{
+		TextMarshalerEmbed: TextMarshalerEmbed{InnerVal: "inner"},
+		Extra:              "outer",
+	}
+
+	field, err := fieldFromStruct(nil, reflect.ValueOf(s))
+	require.NoError(t, err)
+	require.NotNil(t, field)
+
+	// Value should be nil — embedded TextMarshaler means subfield rendering
+	assert.Nil(t, field.Value)
+}
+
+// OwnTextMarshaler embeds TextMarshalerEmbed but also declares its own MarshalText.
+type OwnTextMarshaler struct {
+	TextMarshalerEmbed
+	Extra string `field:",short"`
+}
+
+func (o OwnTextMarshaler) MarshalText() ([]byte, error) {
+	return []byte("own:" + o.Extra), nil
 }
 
 // simpleKey is a helper for tests that implements the Key interface

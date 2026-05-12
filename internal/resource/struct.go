@@ -102,7 +102,27 @@ func fieldFromStruct(pf *ParsedField, v reflect.Value) (field *Field, err error)
 
 	var value any
 	if v, ok := v.Interface().(encoding.TextMarshaler); ok {
-		value = v
+		// If any anonymous (embedded) field implements TextMarshaler, the
+		// implementation is (at least partially) promoted and we skip setting
+		// Value so the struct renders via its subfields instead. This applies
+		// even when the outer struct also declares its own MarshalText — such
+		// types (e.g. InstanceVolume) define MarshalText for other contexts
+		// (list tables, shortcuts) but should expand into subfields for
+		// detailed output.
+		promoted := false
+		for field := range t.Fields() {
+			if !field.Anonymous {
+				continue
+			}
+			ft := field.Type
+			if ft.Implements(textMarshalerType) || reflect.PointerTo(ft).Implements(textMarshalerType) {
+				promoted = true
+				break
+			}
+		}
+		if !promoted {
+			value = v
+		}
 	}
 
 	verbosity := FieldVerbosity(0)
@@ -117,6 +137,8 @@ func fieldFromStruct(pf *ParsedField, v reflect.Value) (field *Field, err error)
 		Links:     links,
 	}, nil
 }
+
+var textMarshalerType = reflect.TypeFor[encoding.TextMarshaler]()
 
 func fieldFromValue(pf *ParsedField, v reflect.Value) (*Field, error) {
 	var createPatch, editPatch *Patch

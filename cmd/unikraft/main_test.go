@@ -478,7 +478,7 @@ var cleaners = []cleaner{
 	},
 	{
 		// auto-generated domain names like "foo.ukp-stable.apw.unikraft.internal"
-		pattern: regexp.MustCompile(`\.[a-z0-9.\-]+\.unikraft\.(app|internal)\b`),
+		pattern: regexp.MustCompile(`[.-][a-z0-9.\-]+\.unikraft\.(app|internal)\b`),
 		repl:    ".unikraft.internal",
 	},
 }

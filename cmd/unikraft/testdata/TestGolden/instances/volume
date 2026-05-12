@@ -15,7 +15,9 @@ stdout:
 	  memory:     128MiB
 	  vcpus:      1
 	volumes:
-	- test-<VOL>:/mnt
+	- name:       test-<VOL>
+	  uuid:       12345678-1234-1234-1234-123456789abc
+	  at:         /mnt
 	networks:
 	- uuid:       12345678-1234-1234-1234-123456789abc
 	  private-ip: 10.X.X.X
@@ -35,7 +37,9 @@ stdout:
 	  memory:     128MiB
 	  vcpus:      1
 	volumes:
-	- test-<VOL>:/mnt
+	- name:       test-<VOL>
+	  uuid:       12345678-1234-1234-1234-123456789abc
+	  at:         /mnt
 	networks:
 	- uuid:       12345678-1234-1234-1234-123456789abc
 	  private-ip: 10.X.X.X
