@@ -49,7 +49,7 @@ type GettableListableResource interface {
 
 type EditableResource interface {
 	GettableResource
-	Edit(ctx context.Context, target Resource, fields []Field) (Resource, error)
+	Edit(ctx context.Context, key string, fields []Field) error
 }
 
 type CreatableResource interface {
@@ -59,7 +59,7 @@ type CreatableResource interface {
 
 type DeletableResource interface {
 	GettableResource
-	Delete(ctx context.Context, targets []Resource) error
+	Delete(ctx context.Context, keys []string) error
 }
 
 type DefaultResource interface {

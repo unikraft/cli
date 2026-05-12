@@ -227,18 +227,14 @@ func (InstanceTemplate) load(ref *group.Ref, instance platform.Instance, metro *
 	return result, nil
 }
 
-func (InstanceTemplate) Delete(ctx context.Context, targets []resource.Resource) error {
-	keys := make(multimetro.Keys, 0, len(targets))
-	for _, target := range targets {
-		template := target.(InstanceTemplate)
-		keys = append(keys, template.key)
-	}
+func (InstanceTemplate) Delete(ctx context.Context, keys []string) error {
+	parsedKeys := multimetro.ParseKeys(keys)
 
 	g, err := multimetro.NewClient(ctx)
 	if err != nil {
 		return err
 	}
-	return group.DoRefs(ctx, g, keys.Refs(), func(ctx context.Context, c multimetro.MetroClient, refs group.Refs) (group.Refs, error) {
+	return group.DoRefs(ctx, g, parsedKeys.Refs(), func(ctx context.Context, c multimetro.MetroClient, refs group.Refs) (group.Refs, error) {
 		log.G(ctx).Trace().Msg("deleting instance templates")
 		templates, err := c.DeleteTemplateInstances(ctx, refs.NameOrUUIDs())
 		if err != nil && !platform.ErrorContainsOnly(err, platform.APIHTTPErrorNotFound) {
@@ -260,39 +256,44 @@ func (InstanceTemplate) Delete(ctx context.Context, targets []resource.Resource)
 	})
 }
 
-func (InstanceTemplate) Edit(ctx context.Context, target resource.Resource, fields []resource.Field) (resource.Resource, error) {
-	template := target.(InstanceTemplate)
+func (InstanceTemplate) Edit(ctx context.Context, key string, fields []resource.Field) error {
+	parsedKeys := multimetro.ParseKeys([]string{key})
 	patches, err := patchRequests(fields, instanceTemplatePatchSpec)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	reqs := make([]platform.UpdateTemplateInstancesRequestItem, 0, len(patches))
-	for _, patch := range patches {
-		reqs = append(reqs, platform.UpdateTemplateInstancesRequestItem{
-			Uuid:  &template.UUID,
-			Op:    platform.MutableTemplateInstanceOperation(patch.Op),
-			Prop:  patch.Prop,
-			Value: new(patch.Value),
-		})
+	for _, ref := range parsedKeys.Refs() {
+		for _, patch := range patches {
+			req := platform.UpdateTemplateInstancesRequestItem{
+				Op:    platform.MutableTemplateInstanceOperation(patch.Op),
+				Prop:  patch.Prop,
+				Value: new(patch.Value),
+			}
+			if ref.UUID != "" {
+				req.Uuid = &ref.UUID
+			} else {
+				req.Name = &ref.Name
+			}
+			reqs = append(reqs, req)
+		}
 	}
 
 	g, err := multimetro.NewClient(ctx)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	err = group.DoMetro(ctx, g, template.key.Metro, func(ctx context.Context, c multimetro.MetroClient) error {
+	return group.DoRefs(ctx, g, parsedKeys.Refs(), func(ctx context.Context, c multimetro.MetroClient, refs group.Refs) (group.Refs, error) {
 		log.G(ctx).Trace().Msg("updating instance template")
 		_, err := c.UpdateTemplateInstances(ctx, reqs)
-		return err
+		if err != nil {
+			if platform.ErrorContainsOnly(err, platform.APIHTTPErrorNotFound) {
+				return nil, nil
+			}
+			return nil, err
+		}
+		return refs, nil
 	})
-	if err != nil {
-		return nil, err
-	}
-	results, err := InstanceTemplate{}.Get(ctx, []string{template.Key().String()})
-	if err != nil {
-		return nil, err
-	}
-	return results[0], nil
 }
 
 func instanceTemplatePatchSpec(path string, op patchOp, value any) (platform.MutableTemplateInstanceProperty, any, error) {

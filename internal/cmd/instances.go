@@ -652,18 +652,14 @@ func (Instance) load(ref *group.Ref, instance platform.Instance, metro *config.M
 	return result, nil
 }
 
-func (Instance) Delete(ctx context.Context, targets []resource.Resource) error {
-	keys := make(multimetro.Keys, 0, len(targets))
-	for _, target := range targets {
-		instance := target.(Instance)
-		keys = append(keys, instance.key)
-	}
+func (Instance) Delete(ctx context.Context, keys []string) error {
+	parsedKeys := multimetro.ParseKeys(keys)
 
 	g, err := multimetro.NewClient(ctx)
 	if err != nil {
 		return err
 	}
-	return group.DoRefs(ctx, g, keys.Refs(), func(ctx context.Context, c multimetro.MetroClient, refs group.Refs) (group.Refs, error) {
+	return group.DoRefs(ctx, g, parsedKeys.Refs(), func(ctx context.Context, c multimetro.MetroClient, refs group.Refs) (group.Refs, error) {
 		log.G(ctx).Trace().Msg("deleting instances")
 		reqs := make([]platform.DeleteInstanceRequestItem, len(refs))
 		for i, ref := range refs.NameOrUUIDs() {
@@ -699,63 +695,84 @@ func (Instance) Delete(ctx context.Context, targets []resource.Resource) error {
 	})
 }
 
-func (Instance) Edit(ctx context.Context, target resource.Resource, fields []resource.Field) (resource.Resource, error) {
-	instance := target.(Instance)
+func (Instance) Edit(ctx context.Context, key string, fields []resource.Field) error {
+	parsedKeys := multimetro.ParseKeys([]string{key})
 
-	targetState := instance.State
-	if fields := resource.GetFieldByPath(fields, resource.FieldPath{"state"}); len(fields) > 0 {
-		field := fields[0]
+	// Check if there's a state transition requested - if so, we need current state.
+	var targetState types.InstanceState
+	var hasStateChange bool
+	if stateFields := resource.GetFieldByPath(fields, resource.FieldPath{"state"}); len(stateFields) > 0 {
+		field := stateFields[0]
 		if field.Edit != nil && field.Edit.Set != nil {
 			targetState = field.Edit.Set.(types.InstanceState)
 			field.Edit = nil
+			hasStateChange = true
 		}
+	}
+
+	var currentState types.InstanceState
+	if hasStateChange {
+		resources, err := Instance{}.Get(ctx, []string{key})
+		if err != nil {
+			return err
+		}
+		currentState = resources[0].(Instance).State
 	}
 
 	patches, err := patchRequests(fields, instancePatchSpec)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	reqs := make([]platform.UpdateInstancesRequestItem, 0, len(patches))
-	for _, patch := range patches {
-		reqs = append(reqs, platform.UpdateInstancesRequestItem{
-			Uuid:  &instance.UUID,
-			Op:    platform.MutableInstanceOperation(patch.Op),
-			Prop:  patch.Prop,
-			Value: new(patch.Value),
-		})
+	for _, ref := range parsedKeys.Refs() {
+		for _, patch := range patches {
+			req := platform.UpdateInstancesRequestItem{
+				Op:    platform.MutableInstanceOperation(patch.Op),
+				Prop:  patch.Prop,
+				Value: new(patch.Value),
+			}
+			if ref.UUID != "" {
+				req.Uuid = &ref.UUID
+			} else {
+				req.Name = &ref.Name
+			}
+			reqs = append(reqs, req)
+		}
 	}
 
 	g, err := multimetro.NewClient(ctx)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	if instance.State.IsRunning() && !targetState.IsRunning() {
-		_, err := stopInstances(ctx, g, multimetro.Keys{instance.key}, StopOpts{DrainTimeout: -1})
+	if hasStateChange && currentState.IsRunning() && !targetState.IsRunning() {
+		_, err := stopInstances(ctx, g, parsedKeys, StopOpts{DrainTimeout: -1})
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 	if len(reqs) > 0 {
-		err = group.DoMetro(ctx, g, instance.key.Metro, func(ctx context.Context, c multimetro.MetroClient) error {
+		err = group.DoRefs(ctx, g, parsedKeys.Refs(), func(ctx context.Context, c multimetro.MetroClient, refs group.Refs) (group.Refs, error) {
 			log.G(ctx).Trace().Msg("updating instance")
 			_, err := c.UpdateInstances(ctx, reqs)
-			return err
+			if err != nil {
+				if platform.ErrorContainsOnly(err, platform.APIHTTPErrorNotFound) {
+					return nil, nil
+				}
+				return nil, err
+			}
+			return refs, nil
 		})
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
-	if !instance.State.IsRunning() && targetState.IsRunning() {
-		_, err := startInstances(ctx, g, multimetro.Keys{instance.key})
+	if hasStateChange && !currentState.IsRunning() && targetState.IsRunning() {
+		_, err := startInstances(ctx, g, parsedKeys)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
-	results, err := Instance{}.Get(ctx, []string{instance.Key().String()})
-	if err != nil {
-		return nil, err
-	}
-	return results[0], nil
+	return nil
 }
 
 func instancePatchSpec(path string, op patchOp, value any) (platform.MutableInstanceProperty, any, error) {
@@ -1185,21 +1202,7 @@ func (cmd InstancesLogsCmd) Examples() []kingkong.Example {
 }
 
 func (cmd *InstancesLogsCmd) Run(ctx context.Context, stdio config.Stdio) error {
-	// HACK: we resolve the keys early, so that we can assume that all the
-	// instances actually exist (this is a potential race condition, but it's
-	// acceptable for now)
-	instances, err := Instance{}.Get(ctx, cmd.Targets)
-	if err != nil {
-		return err
-	}
-	keys := make(multimetro.Keys, 0, len(instances))
-	for _, instance := range instances {
-		key := instance.(Instance).key
-		if key.Metro == "" {
-			return fmt.Errorf("key %q not fully resolved", key)
-		}
-		keys = append(keys, key)
-	}
+	keys := multimetro.ParseKeys(cmd.Targets)
 
 	g, err := multimetro.NewClient(ctx)
 	if err != nil {
@@ -1265,15 +1268,8 @@ func (c *InstancesStartCmd) Run(ctx context.Context, stdio config.Stdio) error {
 	if err != nil {
 		return err
 	}
-	var targetKeys multimetro.Keys
-	for _, res := range before {
-		targetKeys = append(targetKeys, res.(Instance).key)
-	}
-	if len(targetKeys) == 0 {
-		targetKeys = keys
-	}
 
-	started, startErr := startInstances(ctx, g, targetKeys)
+	started, startErr := startInstances(ctx, g, keys)
 	opErr = errors.Join(opErr, startErr)
 	if len(started) == 0 {
 		return opErr
@@ -1342,14 +1338,7 @@ func (c *InstancesStopCmd) Run(ctx context.Context, stdio config.Stdio) error {
 	if err != nil {
 		return err
 	}
-	var targetKeys multimetro.Keys
-	for _, res := range before {
-		targetKeys = append(targetKeys, res.(Instance).key)
-	}
-	if len(targetKeys) == 0 {
-		targetKeys = keys
-	}
-	stopped, stopErr := stopInstances(ctx, g, targetKeys, c.StopOpts)
+	stopped, stopErr := stopInstances(ctx, g, keys, c.StopOpts)
 	opErr = errors.Join(opErr, stopErr)
 	if len(stopped) == 0 {
 		return opErr
@@ -1412,12 +1401,8 @@ func (c *InstancesRestartCmd) Run(ctx context.Context, stdio config.Stdio) error
 	if err != nil {
 		return err
 	}
-	var targetKeys multimetro.Keys
-	for _, res := range before {
-		targetKeys = append(targetKeys, res.(Instance).key)
-	}
 
-	stopped, stopErr := stopInstances(ctx, g, targetKeys, c.StopOpts)
+	stopped, stopErr := stopInstances(ctx, g, keys, c.StopOpts)
 	opErr = errors.Join(opErr, stopErr)
 	if len(stopped) == 0 {
 		return opErr
@@ -1563,14 +1548,7 @@ func (c *InstancesSuspendCmd) Run(ctx context.Context, stdio config.Stdio) error
 	if err != nil {
 		return err
 	}
-	var targetKeys multimetro.Keys
-	for _, res := range before {
-		targetKeys = append(targetKeys, res.(Instance).key)
-	}
-	if len(targetKeys) == 0 {
-		targetKeys = keys
-	}
-	suspended, suspendErr := suspendInstances(ctx, g, targetKeys, c.DrainTimeout)
+	suspended, suspendErr := suspendInstances(ctx, g, keys, c.DrainTimeout)
 	opErr = errors.Join(opErr, suspendErr)
 	if len(suspended) == 0 {
 		return opErr

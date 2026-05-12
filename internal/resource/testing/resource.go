@@ -89,7 +89,7 @@ type Hooks struct {
 	List          func(context.Context, func(context.Context) ([]resource.Resource, error)) ([]resource.Resource, error)
 	Get           func(context.Context, []string, func(context.Context, []string) ([]resource.Resource, error)) ([]resource.Resource, error)
 	Create        func(context.Context, []resource.Field, func(context.Context, []resource.Field) ([]resource.Resource, error)) ([]resource.Resource, error)
-	Delete        func(context.Context, []resource.Resource, func(context.Context, []resource.Resource) error) error
+	Delete        func(context.Context, []string, func(context.Context, []string) error) error
 	OnLazyResolve func(resourceName string)
 }
 
@@ -328,9 +328,13 @@ func (TestResource) Create(ctx context.Context, fields []resource.Field) ([]reso
 	return original(ctx, fields)
 }
 
-func (TestResource) Edit(ctx context.Context, target resource.Resource, fields []resource.Field) (resource.Resource, error) {
+func (TestResource) Edit(ctx context.Context, key string, fields []resource.Field) error {
 	env := testEnvFrom(ctx)
-	r := target.(TestResource)
+	resources, err := TestResource{}.Get(ctx, []string{key})
+	if err != nil {
+		return err
+	}
+	r := resources[0].(TestResource)
 
 	for key, field := range resource.IterFields(fields) {
 		if field.Edit == nil || field.Edit.Set == nil {
@@ -345,20 +349,19 @@ func (TestResource) Edit(ctx context.Context, target resource.Resource, fields [
 	}
 
 	env.Store[r.Name] = r
-	return r, nil
+	return nil
 }
 
-func (TestResource) Delete(ctx context.Context, targets []resource.Resource) error {
+func (TestResource) Delete(ctx context.Context, keys []string) error {
 	env := testEnvFrom(ctx)
-	original := func(_ context.Context, targets []resource.Resource) error {
-		for _, target := range targets {
-			r := target.(TestResource)
-			delete(env.Store, r.Name)
+	original := func(_ context.Context, keys []string) error {
+		for _, key := range keys {
+			delete(env.Store, key)
 		}
 		return nil
 	}
 	if env.Hooks.Delete != nil {
-		return env.Hooks.Delete(ctx, targets, original)
+		return env.Hooks.Delete(ctx, keys, original)
 	}
-	return original(ctx, targets)
+	return original(ctx, keys)
 }

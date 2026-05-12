@@ -517,14 +517,17 @@ func (cmd ResourceRemoveCmd[R]) Examples() []kingkong.Example {
 func (cmd *ResourceRemoveCmd[R]) Run(ctx context.Context, stdio config.Stdio, sandbox *resource.Sandbox) error {
 	var empty R
 	r := sandbox.WrapDeletable(empty)
+
+	// Get resources for display purposes.
 	resources, getErr := r.Get(ctx, cmd.Targets)
 	if getErr != nil && len(resources) == 0 {
 		return getErr
 	}
 
+	// Delete using keys directly.
 	deleteErr := error(nil)
-	if len(resources) > 0 {
-		deleteErr = r.Delete(ctx, resources)
+	if len(cmd.Targets) > 0 {
+		deleteErr = r.Delete(ctx, cmd.Targets)
 	}
 
 	toPrint := resources
@@ -648,20 +651,25 @@ func (cmd *ResourceBulkRemoveCmd[R]) Run(ctx context.Context, stdio config.Stdio
 		}
 
 		dr := sandbox.WrapDeletable(empty)
-		err = dr.Delete(ctx, resources)
+		keys := make([]string, len(resources))
+		for i, res := range resources {
+			keys[i] = res.Key().String()
+		}
+		err = dr.Delete(ctx, keys)
 		if err != nil {
 			return err
 		}
 		return nil
 	} else if len(cmd.Targets) > 0 {
 		r := sandbox.WrapDeletable(empty)
-		var err error
-		resources, err = r.Get(ctx, cmd.Targets)
+
+		// Get resources for display purposes.
+		resources, err := r.Get(ctx, cmd.Targets)
 		if err != nil {
 			return err
 		}
 
-		err = r.Delete(ctx, resources)
+		err = r.Delete(ctx, cmd.Targets)
 		if err != nil {
 			return err
 		}
@@ -814,11 +822,22 @@ func (cmd *ResourceEditCmd[R]) Run(ctx context.Context, stdio config.Stdio, sand
 
 	updated := []resource.Resource{res}
 	if len(patched) > 0 {
-		result, err := r.Edit(ctx, res, patched)
+		editKey := res.Key().String()
+		if err := r.Edit(ctx, editKey, patched); err != nil {
+			return err
+		}
+		// Re-fetch the resource to get the updated state.
+		getKey := cmd.Target
+		if getKey == "" {
+			getKey = res.Key().String()
+		}
+		results, err := r.Get(ctx, []string{getKey})
 		if err != nil {
 			return err
 		}
-		updated = []resource.Resource{result}
+		if len(results) > 0 {
+			updated = results[:1]
+		}
 	} else {
 		log.G(ctx).Warn().
 			Str("resource", res.Key().String()).

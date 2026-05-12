@@ -340,18 +340,14 @@ func (ServiceGroup) load(ref *group.Ref, serviceGroup platform.ServiceGroup, met
 	return result, nil
 }
 
-func (ServiceGroup) Delete(ctx context.Context, targets []resource.Resource) error {
-	keys := make(multimetro.Keys, len(targets))
-	for i, target := range targets {
-		sg := target.(ServiceGroup)
-		keys[i] = sg.key
-	}
+func (ServiceGroup) Delete(ctx context.Context, keys []string) error {
+	parsedKeys := multimetro.ParseKeys(keys)
 
 	g, err := multimetro.NewClient(ctx)
 	if err != nil {
 		return err
 	}
-	return group.DoRefs(ctx, g, keys.Refs(), func(ctx context.Context, c multimetro.MetroClient, refs group.Refs) (group.Refs, error) {
+	return group.DoRefs(ctx, g, parsedKeys.Refs(), func(ctx context.Context, c multimetro.MetroClient, refs group.Refs) (group.Refs, error) {
 		log.G(ctx).Trace().Msg("deleting service groups")
 		_, err := c.DeleteServiceGroups(ctx, refs.NameOrUUIDs())
 		if err != nil && !platform.ErrorContainsOnly(err, platform.APIHTTPErrorNotFound) {
@@ -434,39 +430,44 @@ func (ServiceGroup) Create(ctx context.Context, fields []resource.Field) ([]reso
 	return results, nil
 }
 
-func (ServiceGroup) Edit(ctx context.Context, target resource.Resource, fields []resource.Field) (resource.Resource, error) {
-	sg := target.(ServiceGroup)
+func (ServiceGroup) Edit(ctx context.Context, key string, fields []resource.Field) error {
+	parsedKeys := multimetro.ParseKeys([]string{key})
 	patches, err := patchRequests(fields, serviceGroupPatchSpec)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	reqs := make([]platform.UpdateServiceGroupsRequestItem, 0, len(patches))
-	for _, patch := range patches {
-		reqs = append(reqs, platform.UpdateServiceGroupsRequestItem{
-			Uuid:  &sg.UUID,
-			Op:    platform.MutableServiceGroupOperation(patch.Op),
-			Prop:  patch.Prop,
-			Value: new(patch.Value),
-		})
+	for _, ref := range parsedKeys.Refs() {
+		for _, patch := range patches {
+			req := platform.UpdateServiceGroupsRequestItem{
+				Op:    platform.MutableServiceGroupOperation(patch.Op),
+				Prop:  patch.Prop,
+				Value: new(patch.Value),
+			}
+			if ref.UUID != "" {
+				req.Uuid = &ref.UUID
+			} else {
+				req.Name = &ref.Name
+			}
+			reqs = append(reqs, req)
+		}
 	}
 
 	g, err := multimetro.NewClient(ctx)
 	if err != nil {
-		return nil, err
-	}
-	err = group.DoMetro(ctx, g, sg.key.Metro, func(ctx context.Context, metroClient multimetro.MetroClient) error {
-		log.G(ctx).Trace().Msg("updating service group")
-		_, err := metroClient.UpdateServiceGroups(ctx, reqs)
 		return err
+	}
+	return group.DoRefs(ctx, g, parsedKeys.Refs(), func(ctx context.Context, c multimetro.MetroClient, refs group.Refs) (group.Refs, error) {
+		log.G(ctx).Trace().Msg("updating service group")
+		_, err := c.UpdateServiceGroups(ctx, reqs)
+		if err != nil {
+			if platform.ErrorContainsOnly(err, platform.APIHTTPErrorNotFound) {
+				return nil, nil
+			}
+			return nil, err
+		}
+		return refs, nil
 	})
-	if err != nil {
-		return nil, err
-	}
-	results, err := ServiceGroup{}.Get(ctx, []string{sg.Key().String()})
-	if err != nil {
-		return nil, err
-	}
-	return results[0], nil
 }
 
 func (ServiceGroup) Examples() map[cmd.CmdType][]kingkong.Example {

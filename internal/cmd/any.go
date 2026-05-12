@@ -129,7 +129,7 @@ func (k anyResourceKey) String() string {
 }
 
 func (k anyResourceKey) Canonical() string {
-	return k.String()
+	return k.key
 }
 
 func (k *anyResourceKey) UnmarshalText(text []byte) error {
@@ -143,9 +143,21 @@ func (k *anyResourceKey) UnmarshalText(text []byte) error {
 	return nil
 }
 
+// parseAnyResourceKey parses a key string into its type and underlying key
+// components. Returns the type prefix, underlying key, and whether the type
+// was present.
+func parseAnyResourceKey(key string) (typ, underlyingKey string, hasType bool) {
+	var k anyResourceKey
+	_ = k.UnmarshalText([]byte(key))
+	return k.typ, k.key, k.typ != ""
+}
+
 func (a AnyResource) Key() resource.Key {
 	if a.underlying != nil {
-		return a.underlying.Key()
+		return anyResourceKey{
+			typ: a.underlying.Type().Name,
+			key: a.underlying.Key().String(),
+		}
 	}
 	return anyResourceKey{
 		typ: a.Type_,
@@ -267,32 +279,26 @@ func (a AnyResource) List(ctx context.Context) ([]resource.Resource, error) {
 	return xslices.Flatten(perBackend), err
 }
 
-func (a AnyResource) Edit(ctx context.Context, target resource.Resource, fields []resource.Field) (resource.Resource, error) {
-	anyRes, ok := target.(AnyResource)
-	if !ok {
-		return nil, fmt.Errorf("expected AnyResource, got %T", target)
-	}
-	if anyRes.underlying == nil {
-		return nil, fmt.Errorf("cannot edit resource without underlying resource")
+func (a AnyResource) Edit(ctx context.Context, key string, fields []resource.Field) error {
+	typ, underlyingKey, hasType := parseAnyResourceKey(key)
+	if !hasType {
+		return fmt.Errorf("resource key %q must include resource type prefix", key)
 	}
 
-	typ := anyRes.underlying.Type().Name
 	backend, ok := backendByType(typ)
 	if !ok {
-		return nil, fmt.Errorf("unknown resource type: %s", typ)
+		return fmt.Errorf("unknown resource type: %s", typ)
 	}
 
 	editable, ok := backend.(resource.EditableResource)
 	if !ok {
-		return nil, fmt.Errorf("resource type %s does not support Edit", typ)
+		return fmt.Errorf("resource type %s does not support Edit", typ)
 	}
 
-	result, err := editable.Edit(ctx, anyRes.underlying, fields)
-	if err != nil {
-		return nil, fmt.Errorf("failed to edit %s resource: %w", typ, err)
+	if err := editable.Edit(ctx, underlyingKey, fields); err != nil {
+		return fmt.Errorf("failed to edit %s resource: %w", typ, err)
 	}
-
-	return wrapAnyResource(result), nil
+	return nil
 }
 
 func (a AnyResource) Create(ctx context.Context, fields []resource.Field) ([]resource.Resource, error) {
@@ -333,18 +339,14 @@ func (a AnyResource) underlyingFields(fields []resource.Field) []resource.Field 
 	return filtered
 }
 
-func (a AnyResource) Delete(ctx context.Context, targets []resource.Resource) error {
-	targetsByBackend := make([][]resource.Resource, len(resourceBackends))
-	for _, target := range targets {
-		anyRes, ok := target.(AnyResource)
-		if !ok {
-			return fmt.Errorf("expected AnyResource, got %T", target)
-		}
-		if anyRes.underlying == nil {
-			return fmt.Errorf("cannot delete resource without underlying resource")
+func (a AnyResource) Delete(ctx context.Context, keys []string) error {
+	keysByBackend := make([][]string, len(resourceBackends))
+	for _, key := range keys {
+		typ, underlyingKey, hasType := parseAnyResourceKey(key)
+		if !hasType {
+			return fmt.Errorf("resource key %q must include resource type prefix", key)
 		}
 
-		typ := anyRes.underlying.Type().Name
 		idx := backendIndexByType(typ)
 		if idx < 0 {
 			return fmt.Errorf("unknown resource type: %s", typ)
@@ -353,22 +355,22 @@ func (a AnyResource) Delete(ctx context.Context, targets []resource.Resource) er
 		if _, ok := backend.(resource.DeletableResource); !ok {
 			return fmt.Errorf("resource type %s does not support Delete", typ)
 		}
-		targetsByBackend[idx] = append(targetsByBackend[idx], anyRes.underlying)
+		keysByBackend[idx] = append(keysByBackend[idx], underlyingKey)
 	}
 
 	// Delete in backend order.
 	// HACK: This is intentionally NOT parallelized because backend order matters
 	// (e.g. dependencies between resource types).
 	var errs []error
-	for i, typeTargets := range targetsByBackend {
-		if len(typeTargets) == 0 {
+	for i, typeKeys := range keysByBackend {
+		if len(typeKeys) == 0 {
 			continue
 		}
 		backend := resourceBackends[i]
 		typ := backend.Type().Name
 		deletable := backend.(resource.DeletableResource)
 
-		if err := deletable.Delete(ctx, typeTargets); err != nil {
+		if err := deletable.Delete(ctx, typeKeys); err != nil {
 			errs = append(errs, fmt.Errorf("failed to delete %s resources: %w", typ, err))
 		}
 	}

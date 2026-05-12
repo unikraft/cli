@@ -368,18 +368,14 @@ func (Volume) load(ref *group.Ref, volume platform.Volume, metro *config.Metro) 
 	return result, nil
 }
 
-func (Volume) Delete(ctx context.Context, targets []resource.Resource) error {
-	keys := make(multimetro.Keys, 0, len(targets))
-	for _, target := range targets {
-		volume := target.(Volume)
-		keys = append(keys, volume.key)
-	}
+func (Volume) Delete(ctx context.Context, keys []string) error {
+	parsedKeys := multimetro.ParseKeys(keys)
 
 	g, err := multimetro.NewClient(ctx)
 	if err != nil {
 		return err
 	}
-	return group.DoRefs(ctx, g, keys.Refs(), func(ctx context.Context, c multimetro.MetroClient, refs group.Refs) (group.Refs, error) {
+	return group.DoRefs(ctx, g, parsedKeys.Refs(), func(ctx context.Context, c multimetro.MetroClient, refs group.Refs) (group.Refs, error) {
 		log.G(ctx).Trace().Msg("deleting volumes")
 		resp, err := c.DeleteVolumes(ctx, refs.NameOrUUIDs())
 		if err != nil && !platform.ErrorContainsOnly(err, platform.APIHTTPErrorNotFound) {
@@ -479,39 +475,44 @@ func (Volume) Create(ctx context.Context, fields []resource.Field) ([]resource.R
 	return results, nil
 }
 
-func (Volume) Edit(ctx context.Context, target resource.Resource, fields []resource.Field) (resource.Resource, error) {
-	volume := target.(Volume)
+func (Volume) Edit(ctx context.Context, key string, fields []resource.Field) error {
+	parsedKeys := multimetro.ParseKeys([]string{key})
 	patches, err := patchRequests(fields, volumePatchSpec)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	reqs := make([]platform.UpdateVolumesRequestItem, 0, len(patches))
-	for _, patch := range patches {
-		reqs = append(reqs, platform.UpdateVolumesRequestItem{
-			Uuid:  &volume.UUID,
-			Op:    platform.MutableVolumeOperation(patch.Op),
-			Prop:  patch.Prop,
-			Value: new(patch.Value),
-		})
+	for _, ref := range parsedKeys.Refs() {
+		for _, patch := range patches {
+			req := platform.UpdateVolumesRequestItem{
+				Op:    platform.MutableVolumeOperation(patch.Op),
+				Prop:  patch.Prop,
+				Value: new(patch.Value),
+			}
+			if ref.UUID != "" {
+				req.Uuid = &ref.UUID
+			} else {
+				req.Name = &ref.Name
+			}
+			reqs = append(reqs, req)
+		}
 	}
 
 	g, err := multimetro.NewClient(ctx)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	err = group.DoMetro(ctx, g, volume.key.Metro, func(ctx context.Context, c multimetro.MetroClient) error {
+	return group.DoRefs(ctx, g, parsedKeys.Refs(), func(ctx context.Context, c multimetro.MetroClient, refs group.Refs) (group.Refs, error) {
 		log.G(ctx).Trace().Msg("updating volume")
 		_, err := c.UpdateVolumes(ctx, reqs)
-		return err
+		if err != nil {
+			if platform.ErrorContainsOnly(err, platform.APIHTTPErrorNotFound) {
+				return nil, nil
+			}
+			return nil, err
+		}
+		return refs, nil
 	})
-	if err != nil {
-		return nil, err
-	}
-	results, err := Volume{}.Get(ctx, []string{volume.Key().String()})
-	if err != nil {
-		return nil, err
-	}
-	return results[0], nil
 }
 
 func (Volume) Examples() map[cmd.CmdType][]kingkong.Example {

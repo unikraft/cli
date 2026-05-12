@@ -210,18 +210,14 @@ func (VolumeTemplate) load(ref *group.Ref, volume platform.Volume, metro *config
 	return result, nil
 }
 
-func (VolumeTemplate) Delete(ctx context.Context, targets []resource.Resource) error {
-	keys := make(multimetro.Keys, 0, len(targets))
-	for _, target := range targets {
-		template := target.(VolumeTemplate)
-		keys = append(keys, template.key)
-	}
+func (VolumeTemplate) Delete(ctx context.Context, keys []string) error {
+	parsedKeys := multimetro.ParseKeys(keys)
 
 	g, err := multimetro.NewClient(ctx)
 	if err != nil {
 		return err
 	}
-	return group.DoRefs(ctx, g, keys.Refs(), func(ctx context.Context, c multimetro.MetroClient, refs group.Refs) (group.Refs, error) {
+	return group.DoRefs(ctx, g, parsedKeys.Refs(), func(ctx context.Context, c multimetro.MetroClient, refs group.Refs) (group.Refs, error) {
 		log.G(ctx).Trace().Msg("deleting volume templates")
 		templates, err := c.DeleteTemplateVolumes(ctx, refs.NameOrUUIDs())
 		if err != nil && !platform.ErrorContainsOnly(err, platform.APIHTTPErrorNotFound) {
@@ -243,39 +239,44 @@ func (VolumeTemplate) Delete(ctx context.Context, targets []resource.Resource) e
 	})
 }
 
-func (VolumeTemplate) Edit(ctx context.Context, target resource.Resource, fields []resource.Field) (resource.Resource, error) {
-	template := target.(VolumeTemplate)
+func (VolumeTemplate) Edit(ctx context.Context, key string, fields []resource.Field) error {
+	parsedKeys := multimetro.ParseKeys([]string{key})
 	patches, err := patchRequests(fields, volumeTemplatePatchSpec)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	reqs := make([]platform.UpdateTemplateVolumesRequestItem, 0, len(patches))
-	for _, patch := range patches {
-		reqs = append(reqs, platform.UpdateTemplateVolumesRequestItem{
-			Uuid:  &template.UUID,
-			Op:    platform.MutableTemplateVolumeOperation(patch.Op),
-			Prop:  patch.Prop,
-			Value: new(patch.Value),
-		})
+	for _, ref := range parsedKeys.Refs() {
+		for _, patch := range patches {
+			req := platform.UpdateTemplateVolumesRequestItem{
+				Op:    platform.MutableTemplateVolumeOperation(patch.Op),
+				Prop:  patch.Prop,
+				Value: new(patch.Value),
+			}
+			if ref.UUID != "" {
+				req.Uuid = &ref.UUID
+			} else {
+				req.Name = &ref.Name
+			}
+			reqs = append(reqs, req)
+		}
 	}
 
 	g, err := multimetro.NewClient(ctx)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	err = group.DoMetro(ctx, g, template.key.Metro, func(ctx context.Context, c multimetro.MetroClient) error {
+	return group.DoRefs(ctx, g, parsedKeys.Refs(), func(ctx context.Context, c multimetro.MetroClient, refs group.Refs) (group.Refs, error) {
 		log.G(ctx).Trace().Msg("updating volume template")
 		_, err := c.UpdateTemplateVolumes(ctx, reqs)
-		return err
+		if err != nil {
+			if platform.ErrorContainsOnly(err, platform.APIHTTPErrorNotFound) {
+				return nil, nil
+			}
+			return nil, err
+		}
+		return refs, nil
 	})
-	if err != nil {
-		return nil, err
-	}
-	results, err := VolumeTemplate{}.Get(ctx, []string{template.Key().String()})
-	if err != nil {
-		return nil, err
-	}
-	return results[0], nil
 }
 
 func volumeTemplatePatchSpec(path string, op patchOp, value any) (platform.MutableTemplateVolumeProperty, any, error) {

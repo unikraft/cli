@@ -134,90 +134,90 @@ func (Image) Get(ctx context.Context, keys []string) ([]resource.Resource, error
 		return nil, err
 	}
 
-	resources := make([]resource.Resource, 0, len(keys))
-	for _, key := range keys {
-		src, err := imagespec.GuessURI(key)
-		if err != nil {
-			return nil, fmt.Errorf("parsing image reference %q: %w", key, err)
-		}
-		imgs, err := access.LoadAll(ctx, src, platforms.All)
-		if err != nil {
-			if errdefs.IsNotFound(err) {
-				return resources, group.ErrRefNotFound{Refs: group.Refs{{Name: key}}}
+	perKey := make([][]resource.Resource, len(keys))
+	eg := joinerrgroup.Group{}
+	for i, key := range keys {
+		eg.Go(func() error {
+			src, err := imagespec.GuessURI(key)
+			if err != nil {
+				return fmt.Errorf("parsing image reference %q: %w", key, err)
 			}
-			return nil, fmt.Errorf("failed to resolve image %q: %w", key, err)
-		}
-		defer func() {
-			for _, img := range imgs {
-				img.Close()
-			}
-		}()
-
-		for _, img := range imgs {
-			config := img.Image
-			envs := make(map[string]string, len(config.Config.Env))
-			for _, entry := range config.Config.Env {
-				if key, val, ok := strings.Cut(entry, "="); ok {
-					envs[key] = val
+			imgs, err := access.LoadAll(ctx, src, platforms.All)
+			if err != nil {
+				if errdefs.IsNotFound(err) {
+					return group.ErrRefNotFound{Refs: group.Refs{{Name: key}}}
 				}
+				return fmt.Errorf("failed to resolve image %q: %w", key, err)
 			}
+			defer func() {
+				for _, img := range imgs {
+					img.Close()
+				}
+			}()
 
-			meta := img.Metadata()
-			resource := Image{
-				Ref: types.ImageRef[reference.Named]{
-					Reference: img.Name,
-				},
-				Digest: img.Descriptor.Digest,
-				Config: ImageConfig{
-					Cmd:      config.Config.Cmd,
-					Env:      envs,
-					Platform: types.Platform(config.Platform),
-				},
-				Metadata: ImageMetadata{
-					Author:  meta.Author,
-					Created: meta.Created,
-				},
-				Kernel:      imageFileFrom(img.Kernel),
-				KernelDebug: imageFileFrom(img.KernelDebug),
-				Initrd:      imageFileFrom(img.Initrd),
-				Roms:        imageRomsFrom(img.Roms),
-				Image:       *img,
+			for _, img := range imgs {
+				config := img.Image
+				envs := make(map[string]string, len(config.Config.Env))
+				for _, entry := range config.Config.Env {
+					if key, val, ok := strings.Cut(entry, "="); ok {
+						envs[key] = val
+					}
+				}
+
+				meta := img.Metadata()
+				resource := Image{
+					Ref: types.ImageRef[reference.Named]{
+						Reference: img.Name,
+					},
+					Digest: img.Descriptor.Digest,
+					Config: ImageConfig{
+						Cmd:      config.Config.Cmd,
+						Env:      envs,
+						Platform: types.Platform(config.Platform),
+					},
+					Metadata: ImageMetadata{
+						Author:  meta.Author,
+						Created: meta.Created,
+					},
+					Kernel:      imageFileFrom(img.Kernel),
+					KernelDebug: imageFileFrom(img.KernelDebug),
+					Initrd:      imageFileFrom(img.Initrd),
+					Roms:        imageRomsFrom(img.Roms),
+					Image:       *img,
+				}
+				perKey[i] = append(perKey[i], &resource)
 			}
-			resources = append(resources, &resource)
-		}
+			return nil
+		})
 	}
-	return resources, nil
+	err = eg.Wait()
+	return slices.Concat(perKey...), err
 }
 
-func (Image) Delete(ctx context.Context, targets []resource.Resource) error {
+func (Image) Delete(ctx context.Context, keys []string) error {
 	access, err := images.Accessor(ctx)
 	if err != nil {
 		return err
 	}
 
-	var errs []error
-	for _, target := range targets {
-		var image Image
-		switch typed := target.(type) {
-		case Image:
-			image = typed
-		case *Image:
-			image = *typed
-		default:
-			errs = append(errs, fmt.Errorf("unexpected resource type %T", target))
-			continue
-		}
-		ref := image.Ref.Reference.String()
-		uri, err := imagespec.GuessURI(ref)
-		if err != nil {
-			errs = append(errs, fmt.Errorf("parsing image reference %q: %w", ref, err))
-			continue
-		}
-		if err := access.Delete(ctx, uri); err != nil {
-			errs = append(errs, fmt.Errorf("deleting image %q: %w", ref, err))
-		}
+	eg := joinerrgroup.Group{}
+	for _, key := range keys {
+		eg.Go(func() error {
+			uri, err := imagespec.GuessURI(key)
+			if err != nil {
+				return fmt.Errorf("parsing image reference %q: %w", key, err)
+			}
+			if err := access.Delete(ctx, uri); err != nil {
+				if errdefs.IsNotFound(err) {
+					return group.ErrRefNotFound{Refs: group.Refs{{Name: key}}}
+				}
+				return fmt.Errorf("deleting image %q: %w", key, err)
+			}
+
+			return nil
+		})
 	}
-	return errors.Join(errs...)
+	return eg.Wait()
 }
 
 func (Image) Examples() map[cmd.CmdType][]kingkong.Example {

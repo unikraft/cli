@@ -132,20 +132,12 @@ func (s *Sandbox) Teardown(ctx context.Context) (rerr error) {
 			continue
 		}
 
-		resources, err := r.Get(ctx, targets)
+		err := r.Delete(ctx, targets)
 		if err != nil {
 			var notFoundErr group.ErrRefNotFound
 			if !errors.As(err, &notFoundErr) {
-				// HACK: some resources may have been deleted through other mysterious means
-				rerr = errors.Join(rerr, fmt.Errorf("failed to get resources for cleanup: %w", err))
+				rerr = errors.Join(rerr, fmt.Errorf("failed to delete resources for cleanup: %w", err))
 			}
-		}
-		if len(resources) == 0 {
-			continue
-		}
-		err = r.Delete(ctx, resources)
-		if err != nil {
-			rerr = errors.Join(rerr, fmt.Errorf("failed to delete resources for cleanup: %w", err))
 			continue
 		}
 
@@ -196,7 +188,7 @@ func (s *Sandbox) add(ctx context.Context, r Resource, visited map[string]struct
 			if !strong {
 				continue
 			}
-			key := linkKey.String()
+			key := linkKey.Canonical()
 			if key == "" {
 				continue
 			}
@@ -229,14 +221,14 @@ func (s *Sandbox) add(ctx context.Context, r Resource, visited map[string]struct
 	return nil
 }
 
-func (s *Sandbox) Remove(r Resource) {
+func (s *Sandbox) Remove(typeName string, key string) {
 	if s == nil {
 		return
 	}
-	if _, ok := s.Keys[r.Type().Name]; !ok {
+	if _, ok := s.Keys[typeName]; !ok {
 		return
 	}
-	delete(s.Keys[r.Type().Name], r.Key().Canonical())
+	delete(s.Keys[typeName], key)
 }
 
 func (s *Sandbox) Has(r Resource) bool {
@@ -350,18 +342,8 @@ func (r sandboxedEditableResource) Get(ctx context.Context, keys []string) ([]Re
 	}.Get(ctx, keys)
 }
 
-func (r sandboxedEditableResource) Edit(ctx context.Context, target Resource, fields []Field) (Resource, error) {
-	if r.sandbox.Missing(target) {
-		return nil, fmt.Errorf("resource %s is not in the sandbox", target.Key())
-	}
-	resource, err := r.EditableResource.Edit(ctx, target, fields)
-	if err != nil {
-		return nil, err
-	}
-	if err := r.sandbox.Add(ctx, resource); err != nil {
-		return nil, err
-	}
-	return resource, nil
+func (r sandboxedEditableResource) Edit(ctx context.Context, key string, fields []Field) error {
+	return r.EditableResource.Edit(ctx, key, fields)
 }
 
 type sandboxedCreatableResource struct {
@@ -401,18 +383,23 @@ func (r sandboxedDeletableResource) Get(ctx context.Context, keys []string) ([]R
 	}.Get(ctx, keys)
 }
 
-func (r sandboxedDeletableResource) Delete(ctx context.Context, targets []Resource) error {
-	for _, res := range targets {
-		if r.sandbox.Missing(res) {
-			return fmt.Errorf("resource %s is not in the sandbox", res.Key())
-		}
-	}
-	err := r.DeletableResource.Delete(ctx, targets)
+func (r sandboxedDeletableResource) Delete(ctx context.Context, keys []string) error {
+	resources, err := r.DeletableResource.Get(ctx, keys)
 	if err != nil {
 		return err
 	}
-	for _, res := range targets {
-		r.sandbox.Remove(res)
+	deleteKeys := make([]string, len(resources))
+	for i, res := range resources {
+		deleteKeys[i] = res.Key().String()
+	}
+
+	err = r.DeletableResource.Delete(ctx, deleteKeys)
+	if err != nil {
+		return err
+	}
+	typeName := r.DeletableResource.Type().Name
+	for _, res := range resources {
+		r.sandbox.Remove(typeName, res.Key().Canonical())
 	}
 	return nil
 }

@@ -662,8 +662,7 @@ func TestPartialResultsPrintedBeforeError(t *testing.T) {
 		env := resourcet.NewTestEnv()
 		env.Add(resourcet.TestResource{Name: "ok", ID: "id-ok"})
 		env.Add(resourcet.TestResource{Name: "fail", ID: "id-fail"})
-		env.Hooks.Delete = func(ctx context.Context, targets []resource.Resource, _ func(context.Context, []resource.Resource) error) error {
-			_ = targets
+		env.Hooks.Delete = func(ctx context.Context, _ []string, _ func(context.Context, []string) error) error {
 			return group.ErrRefNotFound{Refs: group.Refs{{Name: "fail"}}}
 		}
 		ctx := resourcet.WithTestEnv(context.Background(), env)
@@ -736,8 +735,7 @@ func TestPartialResultsOrderWhenCallerPrintsError(t *testing.T) {
 		env := resourcet.NewTestEnv()
 		env.Add(resourcet.TestResource{Name: "ok", ID: "id-ok"})
 		env.Add(resourcet.TestResource{Name: "fail", ID: "id-fail"})
-		env.Hooks.Delete = func(ctx context.Context, targets []resource.Resource, _ func(context.Context, []resource.Resource) error) error {
-			_ = targets
+		env.Hooks.Delete = func(ctx context.Context, _ []string, _ func(context.Context, []string) error) error {
 			return group.ErrRefNotFound{Refs: group.Refs{{Name: "fail"}}}
 		}
 		ctx := resourcet.WithTestEnv(context.Background(), env)
@@ -1366,10 +1364,14 @@ func TestEdit(t *testing.T) {
 		}
 	}
 
-	res, err := empty.Edit(ctx, target, templateFields)
+	err = empty.Edit(ctx, target.Key().String(), templateFields)
 	require.NoError(t, err)
 
-	edited := res.(resourcet.TestResource)
+	results, err := empty.Get(ctx, []string{target.Key().String()})
+	require.NoError(t, err)
+	require.Len(t, results, 1)
+
+	edited := results[0].(resourcet.TestResource)
 	assert.Equal(t, "test-edit", edited.Name)
 	assert.Equal(t, "id-edit", edited.ID)
 	assert.Equal(t, 999, edited.Settings.Foo)
@@ -1579,7 +1581,7 @@ func TestDelete(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, resources, 1)
 
-	err = empty.Delete(ctx, resources)
+	err = empty.Delete(ctx, []string{"test-delete"})
 	require.NoError(t, err)
 
 	assert.NotContains(t, env.Store, "test-delete")

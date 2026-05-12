@@ -186,18 +186,14 @@ func (Certificate) load(ref *group.Ref, certificate platform.Certificate, metro 
 	return result, nil
 }
 
-func (Certificate) Delete(ctx context.Context, targets []resource.Resource) error {
-	keys := make(multimetro.Keys, 0, len(targets))
-	for _, target := range targets {
-		certificate := target.(Certificate)
-		keys = append(keys, certificate.key)
-	}
+func (Certificate) Delete(ctx context.Context, keys []string) error {
+	parsedKeys := multimetro.ParseKeys(keys)
 
 	g, err := multimetro.NewClient(ctx)
 	if err != nil {
 		return err
 	}
-	return group.DoRefs(ctx, g, keys.Refs(), func(ctx context.Context, c multimetro.MetroClient, refs group.Refs) (group.Refs, error) {
+	return group.DoRefs(ctx, g, parsedKeys.Refs(), func(ctx context.Context, c multimetro.MetroClient, refs group.Refs) (group.Refs, error) {
 		log.G(ctx).Trace().Msg("deleting certificates")
 		resp, err := c.DeleteCertificates(ctx, refs.NameOrUUIDs())
 		if err != nil && !platform.ErrorContainsOnly(err, platform.APIHTTPErrorNotFound) {
