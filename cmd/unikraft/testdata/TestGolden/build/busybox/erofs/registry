@@ -91,7 +91,7 @@ $ unikraft image inspect test/busybox-e2e:$UNIQ_IMAGE
 stderr:
 	│  
 	│ error:
-	│   failed to resolve image "unikraft.io/test/busybox-e2e:<IMAGE>": unikraft.io/test/busybox-e2e:<IMAGE>: not found
+	│   references not found: [test/busybox-e2e:<IMAGE>]
 	│
 
 exit code: 1

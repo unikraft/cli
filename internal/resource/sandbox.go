@@ -189,8 +189,11 @@ func (s *Sandbox) add(ctx context.Context, r Resource, visited map[string]struct
 			if link == nil {
 				continue
 			}
-			linkType, linkKey := link.Link()
+			linkType, linkKey, strong := link.Link()
 			if linkType == "" || linkKey == nil {
+				continue
+			}
+			if !strong {
 				continue
 			}
 			key := linkKey.String()

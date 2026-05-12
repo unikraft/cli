@@ -78,7 +78,7 @@ func fieldFromStruct(pf *ParsedField, v reflect.Value) (field *Field, err error)
 				links = append(links, embedded.Links...)
 			}
 			if link, ok := fieldVal.Interface().(Link); ok {
-				if t, k := link.Link(); t != "" && k != nil && k.String() != "" {
+				if t, k, _ := link.Link(); t != "" && k != nil && k.String() != "" {
 					links = append(links, link)
 				}
 			}
@@ -174,7 +174,7 @@ func fieldFromValue(pf *ParsedField, v reflect.Value) (*Field, error) {
 	// Check if this value implements the Link interface
 	// This is the ONE place where we check for links on field values
 	if link, ok := v.Interface().(Link); ok {
-		if t, k := link.Link(); t != "" && k != nil && k.String() != "" {
+		if t, k, _ := link.Link(); t != "" && k != nil && k.String() != "" {
 			result.Links = append(result.Links, link)
 		}
 	}

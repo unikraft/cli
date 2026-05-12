@@ -575,11 +575,11 @@ type mockLink struct {
 	linkKey  string
 }
 
-func (m mockLink) Link() (string, Key) {
+func (m mockLink) Link() (string, Key, bool) {
 	if m.linkType == "" || m.linkKey == "" {
-		return "", nil
+		return "", nil, false
 	}
-	return m.linkType, simpleKey(m.linkKey)
+	return m.linkType, simpleKey(m.linkKey), false
 }
 
 func TestFieldsFromStruct_LinkDetection(t *testing.T) {
@@ -603,7 +603,7 @@ func TestFieldsFromStruct_LinkDetection(t *testing.T) {
 		require.Len(t, result, 1)
 		require.Len(t, result[0].Links, 1, "populated link should create a Link entry")
 
-		linkType, linkKey := result[0].Links[0].Link()
+		linkType, linkKey, _ := result[0].Links[0].Link()
 		assert.Equal(t, "instance", linkType)
 		assert.Equal(t, "my-instance", linkKey.String())
 	})
@@ -661,7 +661,7 @@ func TestFieldsFromStruct_EmbeddedLinkDetection(t *testing.T) {
 	require.Len(t, item, 1)
 	require.Len(t, item[0].Links, 1, "embedded link should bubble up to containing field")
 
-	linkType, linkKey := item[0].Links[0].Link()
+	linkType, linkKey, _ := item[0].Links[0].Link()
 	assert.Equal(t, "service", linkType)
 	assert.Equal(t, "svc-123", linkKey.String())
 }

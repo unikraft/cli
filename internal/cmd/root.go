@@ -352,6 +352,7 @@ func NewParser(cli *UnikraftCLI) (*kong.Kong, error) {
 }
 
 var SandboxedResources = []resource.Resource{
+	Image{},
 	Instance{},
 	InstanceTemplate{},
 	Volume{},

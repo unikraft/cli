@@ -200,7 +200,7 @@ func (p *detailPanel) openSelected() tea.Cmd {
 	if link == nil {
 		return nil
 	}
-	linkType, linkKey := link.Link()
+	linkType, linkKey, _ := link.Link()
 	if linkType == "" || linkKey == nil {
 		return nil
 	}

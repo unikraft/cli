@@ -27,16 +27,16 @@ func (l Link[T]) Ref() group.Ref {
 	}
 }
 
-func (l Link[T]) Link() (string, resource.Key) {
+func (l Link[T]) Link() (string, resource.Key, bool) {
 	if l.Name == "" && l.UUID == "" {
-		return "", nil
+		return "", nil, false
 	}
 	var zero T
 	return zero.Type().Name, multimetro.Key{
 		Metro: l.Metro,
 		Name:  l.Name,
 		UUID:  l.UUID,
-	}
+	}, true
 }
 
 // MarshalText implements encoding.TextMarshaler.
@@ -64,14 +64,14 @@ func (l *Link[T]) UnmarshalText(text []byte) error {
 // LinkName models a simple name-only link.
 type LinkName[T resource.Resource] string
 
-func (l LinkName[T]) Link() (string, resource.Key) {
+func (l LinkName[T]) Link() (string, resource.Key, bool) {
 	if l == "" {
-		return "", nil
+		return "", nil, false
 	}
 	var zero T
 	return zero.Type().Name, multimetro.Key{
 		Name: string(l),
-	}
+	}, true
 }
 
 // MarshalText implements encoding.TextMarshaler.

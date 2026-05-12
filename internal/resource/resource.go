@@ -68,7 +68,11 @@ type DefaultResource interface {
 }
 
 type Link interface {
-	Link() (string, Key)
+	// Link returns the resource type name, the key, and whether the link is
+	// strong. A strong link implies ownership (e.g. an instance owning a
+	// volume). A non-strong link is a weak reference that does not imply
+	// ownership (e.g. an instance referencing a shared base image).
+	Link() (string, Key, bool)
 }
 
 type Field struct {
@@ -148,7 +152,7 @@ func (f Field) MarshalJSON() ([]byte, error) {
 		if link == nil {
 			continue
 		}
-		linkType, linkKey := link.Link()
+		linkType, linkKey, _ := link.Link()
 		if linkType == "" || linkKey == nil {
 			continue
 		}

@@ -43,12 +43,12 @@ func (ir *ImageRef[T]) UnmarshalText(text []byte) error {
 	return nil
 }
 
-func (ir ImageRef[T]) Link() (string, resource.Key) {
+func (ir ImageRef[T]) Link() (string, resource.Key, bool) {
 	var zero T
 	if ir.Reference == zero {
-		return "", nil
+		return "", nil, false
 	}
 	return "image", multimetro.Key{
 		Name: ir.Reference.String(),
-	}
+	}, false
 }

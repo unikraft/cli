@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/containerd/errdefs"
 	"github.com/containerd/platforms"
 	"github.com/distribution/reference"
 	"github.com/opencontainers/go-digest"
@@ -141,7 +142,10 @@ func (Image) Get(ctx context.Context, keys []string) ([]resource.Resource, error
 		}
 		imgs, err := access.LoadAll(ctx, src, platforms.All)
 		if err != nil {
-			return nil, err
+			if errdefs.IsNotFound(err) {
+				return resources, group.ErrRefNotFound{Refs: group.Refs{{Name: key}}}
+			}
+			return nil, fmt.Errorf("failed to resolve image %q: %w", key, err)
 		}
 		defer func() {
 			for _, img := range imgs {
@@ -644,7 +648,7 @@ type ImagesGetCmd struct {
 	Insecure []string `help:"Allow insecure (HTTP/unverified TLS) connections to registries. Specify hostnames to restrict, or omit to apply to all." type:"optional"`
 }
 
-func (c *ImagesGetCmd) Run(ctx context.Context, stdio config.Stdio, sandbox *resource.Sandbox) error {
+func (c *ImagesGetCmd) Run(ctx context.Context, stdio config.Stdio) error {
 	if c.Insecure != nil {
 		var opts []images.AccessorOpt
 		if len(c.Insecure) > 0 {
@@ -654,7 +658,7 @@ func (c *ImagesGetCmd) Run(ctx context.Context, stdio config.Stdio, sandbox *res
 		}
 		ctx = images.WithInsecureContext(ctx, opts...)
 	}
-	return c.ResourceGetCmd.Run(ctx, stdio, sandbox)
+	return c.ResourceGetCmd.Run(ctx, stdio, nil)
 }
 
 type ImagesDeleteCmd struct {
@@ -672,7 +676,10 @@ func (c *ImagesDeleteCmd) Run(ctx context.Context, stdio config.Stdio, sandbox *
 		}
 		ctx = images.WithInsecureContext(ctx, opts...)
 	}
-	return c.ResourceRemoveCmd.Run(ctx, stdio, sandbox)
+	// HACK: don't sandbox-filter the delete: image references may not match the
+	// canonical form stored in the sandbox. The sandbox teardown handles cleanup
+	// of images that weren't manually deleted.
+	return c.ResourceRemoveCmd.Run(ctx, stdio, nil)
 }
 
 type ImagesCopyCmd struct {
@@ -705,7 +712,7 @@ func (cmd ImagesCopyCmd) Examples() []kingkong.Example {
 	}
 }
 
-func (cmd ImagesCopyCmd) Run(ctx context.Context) error {
+func (cmd ImagesCopyCmd) Run(ctx context.Context, sandbox *resource.Sandbox) error {
 	var opts []images.AccessorOpt
 	if cmd.Insecure != nil {
 		if len(cmd.Insecure) > 0 {
@@ -744,5 +751,26 @@ func (cmd ImagesCopyCmd) Run(ctx context.Context) error {
 		return fmt.Errorf("saving image to destination: %w", err)
 	}
 
+	if sandbox != nil && dest.Scheme == imagespec.URISchemeOCI {
+		if err := addImageToSandbox(ctx, sandbox, dest.Path); err != nil {
+			return fmt.Errorf("adding copied image to sandbox: %w", err)
+		}
+	}
+
 	return nil
+}
+
+// addImageToSandbox registers an image reference with the sandbox so it gets
+// cleaned up during teardown.
+func addImageToSandbox(ctx context.Context, sandbox *resource.Sandbox, ref string) error {
+	named, err := images.ParseNormalizedNamed(ref)
+	if err != nil {
+		return fmt.Errorf("parsing image reference %q: %w", ref, err)
+	}
+	img := &Image{
+		Ref: types.ImageRef[reference.Named]{
+			Reference: named,
+		},
+	}
+	return sandbox.Add(ctx, img)
 }

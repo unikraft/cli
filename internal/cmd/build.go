@@ -7,11 +7,13 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 
 	"golang.org/x/mod/semver"
 	"unikraft.com/cli/internal/builder"
 	"unikraft.com/cli/internal/config"
 	"unikraft.com/cli/internal/images"
+	"unikraft.com/cli/internal/resource"
 	imagespec "unikraft.com/x/image-spec"
 	"unikraft.com/x/kingkong"
 	"unikraft.com/x/kraftfile"
@@ -66,7 +68,7 @@ func (BuildCmd) Examples() []kingkong.Example {
 	}
 }
 
-func (c *BuildCmd) Run(ctx context.Context, cfg *config.Config) error {
+func (c *BuildCmd) Run(ctx context.Context, cfg *config.Config, sandbox *resource.Sandbox) error {
 	kf, err := kraftfile.ParseDirectory(c.Input, kraftfile.WithSkippedVersionCheck())
 	if err != nil {
 		return err
@@ -141,6 +143,12 @@ func (c *BuildCmd) Run(ctx context.Context, cfg *config.Config) error {
 	err = access.Save(ctx, output, imgs...)
 	if err != nil {
 		return err
+	}
+
+	if sandbox != nil && output.Scheme == imagespec.URISchemeOCI {
+		if err := addImageToSandbox(ctx, sandbox, output.Path); err != nil {
+			return fmt.Errorf("adding built image to sandbox: %w", err)
+		}
 	}
 
 	return nil
