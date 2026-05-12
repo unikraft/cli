@@ -179,6 +179,7 @@ func BuildRootfs(ctx context.Context, opts BuildOpts) (_ []*imagespec.Image, rer
 			}
 			return nil, fmt.Errorf("checking dockerfile path %q: %w", opts.Rootfs.Path, err)
 		} else if !f.IsDir() {
+			opts.Rootfs.DockerfileName = filepath.Base(opts.Rootfs.Path)
 			opts.Rootfs.Path = filepath.Dir(opts.Rootfs.Path)
 		}
 		return buildRootfsDockerfile(ctx, opts)
@@ -520,6 +521,9 @@ func applyBuildOpts(attrs map[string]string, localDirs map[string]string, sessio
 
 	localDirs["context"] = opts.Rootfs.Path
 	localDirs["dockerfile"] = opts.Rootfs.Path
+	if opts.Rootfs.DockerfileName != "" && opts.Rootfs.DockerfileName != "Dockerfile" {
+		attrs["filename"] = opts.Rootfs.DockerfileName
+	}
 	if opts.Target != "" {
 		attrs["target"] = opts.Target
 	}

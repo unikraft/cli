@@ -41,8 +41,9 @@ type BuildOpts struct {
 }
 
 type FSOpts struct {
-	Path string
-	Type kraftfile.SourceType
+	Path           string
+	Type           kraftfile.SourceType
+	DockerfileName string
 
 	// Output params
 	Format     kraftfile.FsType
