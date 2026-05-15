@@ -128,40 +128,46 @@ func (c *RunCmd) Run(ctx context.Context, stdio config.Stdio, sandbox *resource.
 		keys = append(keys, instance.key)
 	}
 
-	return streamInstanceLogs(ctx, stdio, keys, 0, true)
-}
-
-func streamInstanceLogs(ctx context.Context, stdio config.Stdio, keys multimetro.Keys, tail int, follow bool) error {
-	g, err := multimetro.NewClient(ctx)
+	mux, cancel, err := newInstanceLogMux(ctx, keys, nil, c.Follow)
 	if err != nil {
 		return err
 	}
-
-	mux := muxreader.New()
+	defer cancel()
 	defer mux.Close()
 
+	_, err = io.Copy(stdio.Stdout, mux)
+	if errors.Is(err, context.Canceled) {
+		return nil
+	}
+	return err
+}
+
+func newInstanceLogMux(ctx context.Context, keys multimetro.Keys, tail *int, follow bool) (*muxreader.Mux, context.CancelFunc, error) {
+	g, err := multimetro.NewClient(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	mux := muxreader.New()
+
 	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
 
 	err = group.DoRefs(ctx, g, keys.Refs(), func(_ context.Context, c multimetro.MetroClient, refs group.Refs) (group.Refs, error) {
 		for _, ref := range refs {
-			key := multimetro.Key(ref)
-			r, err := logs.InstanceLogs(ctx, c).Reader(ref.NameOrUUID(), &tail, follow)
+			r, err := logs.InstanceLogs(ctx, c).Reader(ref.NameOrUUID(), tail, follow)
 			if err != nil {
 				return nil, err
 			}
-			mux.With(key.String(), r)
+			mux.With(multimetro.Key(ref).String(), r)
 		}
 		return refs, nil
 	})
 	if err != nil {
-		return err
+		cancel()
+		mux.Close()
+		return nil, nil, err
 	}
 	mux.Seal()
 
-	_, err = io.Copy(stdio.Stdout, mux)
-	if follow && errors.Is(err, context.Canceled) {
-		return nil
-	}
-	return err
+	return mux, cancel, nil
 }

@@ -7,12 +7,14 @@ package integration
 
 import (
 	"bytes"
+	"context"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/charmbracelet/x/ansi"
 	"github.com/stretchr/testify/require"
@@ -57,6 +59,7 @@ type cmdConfig struct {
 	workDir    string
 	expectFail bool
 	allowFail  bool
+	timeout    time.Duration
 }
 
 func WithWorkDir(dir string) CmdOption {
@@ -71,6 +74,13 @@ func AllowFail() CmdOption {
 	return func(c *cmdConfig) { c.allowFail = true }
 }
 
+// WithTimeout kills the command after d. The caller is responsible for
+// handling the resulting error (e.g. by also passing AllowFail).
+// Use for commands that run indefinitely (e.g. --follow).
+func WithTimeout(d time.Duration) CmdOption {
+	return func(c *cmdConfig) { c.timeout = d }
+}
+
 func (env *TestEnv) RunRaw(t *testing.T, args []string, opts ...CmdOption) (string, error) {
 	t.Helper()
 	var cfg cmdConfig
@@ -80,11 +90,18 @@ func (env *TestEnv) RunRaw(t *testing.T, args []string, opts ...CmdOption) (stri
 
 	t.Logf("executing: %s", strings.Join(args, " "))
 
+	cmdCtx := t.Context()
+	if cfg.timeout > 0 {
+		var cancel context.CancelFunc
+		cmdCtx, cancel = context.WithTimeout(cmdCtx, cfg.timeout)
+		defer cancel()
+	}
+
 	var c *exec.Cmd
 	if args[0] == "unikraft" {
-		c = exec.CommandContext(t.Context(), env.unikraftPath, args[1:]...)
+		c = exec.CommandContext(cmdCtx, env.unikraftPath, args[1:]...)
 	} else {
-		c = exec.CommandContext(t.Context(), args[0], args[1:]...)
+		c = exec.CommandContext(cmdCtx, args[0], args[1:]...)
 	}
 
 	var output bytes.Buffer

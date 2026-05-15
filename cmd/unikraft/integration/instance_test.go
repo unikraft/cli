@@ -146,6 +146,139 @@ func TestInstances(t *testing.T) {
 		r.Run(t, []string{"unikraft", "instance", "delete", "test-" + instName})
 	})
 
+	t.Run("start-follow", func(t *testing.T) {
+		r := runner(t, true)
+		instName := uniq()
+		volName := uniq()
+		imageTag := uniq()
+
+		baseImagePrefix := r.Config.Profile.Organization + "/busybox-start-follow-e2e"
+		baseImage := baseImagePrefix + ":" + imageTag
+
+		dir := t.TempDir()
+		require.NoError(t, fstest.Apply(
+			fstest.CreateDir("base", 0o755),
+			fstest.CreateFile("base/Dockerfile", []byte(`FROM busybox:latest`), 0o644),
+			fstest.CreateFile("base/Kraftfile", []byte(`
+spec: v0.7
+name: busybox-start-follow-e2e
+runtime: base-compat:latest
+rootfs:
+  format: erofs
+  source: ./Dockerfile
+cmd: ["cat", "/rom/hello.txt"]
+`), 0o644),
+		).Apply(dir))
+
+		r.Run(t, []string{"unikraft", "build", "base", "--output", baseImage}, integ.WithWorkDir(dir))
+
+		// Volume provides persistent counter across boots.
+		r.Run(t, []string{
+			"unikraft", "volume", "create",
+			"--output", "quiet",
+			"--set", "name=test-" + volName,
+			"--set", "size=20",
+			"--set", "metro=" + r.Config.MetroName,
+		})
+
+		// On each boot, increment /data/n and echo "starting N".
+		script := `n=$(cat /data/n 2>/dev/null || echo 0); n=$((n+1)); echo $n > /data/n; echo starting $n; sleep 30`
+		r.Run(t, []string{
+			"unikraft", "instance", "create",
+			"--output", "quiet",
+			"--set", "name=test-" + instName,
+			"--set", "metro=" + r.Config.MetroName,
+			"--set", "image=" + baseImage,
+			"--set", "autostart=false",
+			"--set", "resources.memory=128",
+			"--set", "resources.vcpus=1",
+			"--set", "volumes=test-" + volName + ":/data",
+			"--set", `runtime.args=["sh","-c","` + script + `"]`,
+		})
+
+		// First boot ("starting 1"): start, wait running, then stop.
+		r.Run(t, []string{"unikraft", "instance", "start", "test-" + instName})
+		r.Run(t, []string{"unikraft", "instance", "wait", "--until", "state==running", "--timeout", "30s", "test-" + instName})
+		r.Run(t, []string{"unikraft", "instance", "stop", "test-" + instName})
+		r.Run(t, []string{"unikraft", "instance", "wait", "--until", "state==stopped", "--timeout", "30s", "test-" + instName})
+
+		// Second boot via start --follow: output must contain "starting 2" only.
+		out := r.Run(t, []string{
+			"unikraft", "instance", "start",
+			"--follow",
+			"test-" + instName,
+		}, integ.WithTimeout(5*time.Second), integ.AllowFail())
+		assert.Contains(t, out, "starting 2")
+		assert.NotContains(t, out, "starting 1")
+
+		r.Run(t, []string{"unikraft", "instance", "delete", "test-" + instName})
+		r.Run(t, []string{"unikraft", "volume", "delete", "test-" + volName})
+	})
+
+	t.Run("restart-follow", func(t *testing.T) {
+		r := runner(t, true)
+		instName := uniq()
+		volName := uniq()
+		imageTag := uniq()
+
+		baseImagePrefix := r.Config.Profile.Organization + "/busybox-restart-follow-e2e"
+		baseImage := baseImagePrefix + ":" + imageTag
+
+		dir := t.TempDir()
+		require.NoError(t, fstest.Apply(
+			fstest.CreateDir("base", 0o755),
+			fstest.CreateFile("base/Dockerfile", []byte(`FROM busybox:latest`), 0o644),
+			fstest.CreateFile("base/Kraftfile", []byte(`
+spec: v0.7
+name: busybox-restart-follow-e2e
+runtime: base-compat:latest
+rootfs:
+  format: erofs
+  source: ./Dockerfile
+cmd: ["cat", "/rom/hello.txt"]
+`), 0o644),
+		).Apply(dir))
+
+		r.Run(t, []string{"unikraft", "build", "base", "--output", baseImage}, integ.WithWorkDir(dir))
+
+		// Volume provides persistent counter across boots.
+		r.Run(t, []string{
+			"unikraft", "volume", "create",
+			"--output", "quiet",
+			"--set", "name=test-" + volName,
+			"--set", "size=20",
+			"--set", "metro=" + r.Config.MetroName,
+		})
+
+		// On each boot, increment /data/n and echo "starting N".
+		script := `n=$(cat /data/n 2>/dev/null || echo 0); n=$((n+1)); echo $n > /data/n; echo starting $n; sleep 30`
+		r.Run(t, []string{
+			"unikraft", "instance", "create",
+			"--output", "quiet",
+			"--set", "name=test-" + instName,
+			"--set", "metro=" + r.Config.MetroName,
+			"--set", "image=" + baseImage,
+			"--set", "autostart=true",
+			"--set", "resources.memory=128",
+			"--set", "resources.vcpus=1",
+			"--set", "volumes=test-" + volName + ":/data",
+			"--set", `runtime.args=["sh","-c","` + script + `"]`,
+		})
+		r.Run(t, []string{"unikraft", "instance", "wait", "--until", "state==running", "--timeout", "30s", "test-" + instName})
+
+		// Second boot via restart --follow: output must contain "starting 2" only.
+		out := r.Run(t, []string{
+			"unikraft", "instance", "restart",
+			"--follow",
+			"test-" + instName,
+		}, integ.WithTimeout(5*time.Second), integ.AllowFail())
+		assert.Contains(t, out, "starting 2")
+		assert.NotContains(t, out, "starting 1")
+
+		r.Run(t, []string{"unikraft", "instance", "delete", "test-" + instName})
+		r.Run(t, []string{"unikraft", "volume", "delete", "test-" + volName})
+	})
+
 	t.Run("edit", func(t *testing.T) {
 		r := runner(t, true)
 		instName := uniq()

@@ -1258,6 +1258,8 @@ func (cmd *InstancesLogsCmd) Run(ctx context.Context, stdio config.Stdio) error 
 type InstancesStartCmd struct {
 	Targets []string `arg:"" name:"target" completion-predictor:"resource-key-instance" help:"Target instances to start."`
 
+	Follow bool `help:"Follow log output after starting."`
+
 	cmd.FormatOpts
 }
 
@@ -1267,6 +1269,12 @@ func (cmd InstancesStartCmd) Examples() []kingkong.Example {
 			Description: "Start an instance",
 			Commands: []string{
 				"unikraft instance start demo-instance",
+			},
+		},
+		{
+			Description: "Start an instance and follow its logs",
+			Commands: []string{
+				"unikraft instance start demo-instance --follow",
 			},
 		},
 	}
@@ -1281,6 +1289,17 @@ func (c *InstancesStartCmd) Run(ctx context.Context, stdio config.Stdio) error {
 	g, err := multimetro.NewClient(ctx)
 	if err != nil {
 		return err
+	}
+
+	var mux *muxreader.Mux
+	if c.Follow {
+		var cancel context.CancelFunc
+		mux, cancel, err = newInstanceLogMux(ctx, keys, new(0), true)
+		if err != nil {
+			return err
+		}
+		defer mux.Close()
+		defer cancel()
 	}
 
 	started, startErr := startInstances(ctx, g, keys)
@@ -1309,7 +1328,19 @@ func (c *InstancesStartCmd) Run(ctx context.Context, stdio config.Stdio) error {
 	})
 
 	diffErr := cmd.Diff(ctx, stdio.Stdout, c.FormatOpts, Instance{}, before, updated)
-	return errors.Join(opErr, diffErr)
+	if err := errors.Join(opErr, diffErr); err != nil {
+		return err
+	}
+	if !c.Follow || len(started) == 0 {
+		return nil
+	}
+	fmt.Fprintln(stdio.Stdout)
+
+	_, err = io.Copy(stdio.Stdout, mux)
+	if mux != nil && errors.Is(err, context.Canceled) {
+		return nil
+	}
+	return err
 }
 
 type InstancesStopCmd struct {
@@ -1389,6 +1420,8 @@ type InstancesRestartCmd struct {
 	Targets []string `arg:"" name:"target" completion-predictor:"resource-key-instance" help:"Target instances to restart."`
 	StopOpts
 
+	Follow bool `help:"Follow log output after restarting."`
+
 	cmd.FormatOpts
 }
 
@@ -1404,6 +1437,12 @@ func (cmd InstancesRestartCmd) Examples() []kingkong.Example {
 			Description: "Force restart an instance",
 			Commands: []string{
 				"unikraft instance restart demo-instance --force",
+			},
+		},
+		{
+			Description: "Restart an instance and follow its logs",
+			Commands: []string{
+				"unikraft instance restart demo-instance --follow",
 			},
 		},
 	}
@@ -1424,6 +1463,19 @@ func (c *InstancesRestartCmd) Run(ctx context.Context, stdio config.Stdio) error
 	opErr = errors.Join(opErr, stopErr)
 	if len(stopped) == 0 {
 		return opErr
+	}
+
+	var (
+		mux    *muxreader.Mux
+		cancel context.CancelFunc
+	)
+	if c.Follow {
+		mux, cancel, err = newInstanceLogMux(ctx, stopped, new(0), true)
+		if err != nil {
+			return err
+		}
+		defer mux.Close()
+		defer cancel()
 	}
 
 	started, startErr := startInstances(ctx, g, stopped)
@@ -1456,7 +1508,19 @@ func (c *InstancesRestartCmd) Run(ctx context.Context, stdio config.Stdio) error
 	})
 
 	diffErr := cmd.Diff(ctx, stdio.Stdout, c.FormatOpts, Instance{}, before, updated)
-	return errors.Join(opErr, diffErr)
+	if err := errors.Join(opErr, diffErr); err != nil {
+		return err
+	}
+	if !c.Follow || len(started) == 0 {
+		return nil
+	}
+	fmt.Fprintln(stdio.Stdout)
+
+	_, err = io.Copy(stdio.Stdout, mux)
+	if errors.Is(err, context.Canceled) {
+		return nil
+	}
+	return err
 }
 
 type StopOpts struct {
