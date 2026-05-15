@@ -1092,7 +1092,12 @@ stdout:
 	  # Start an instance
 	  unikraft instance start demo-instance
 
+	  # Start an instance and follow its logs
+	  unikraft instance start demo-instance --follow
+
 	Flags:
+	      --follow
+	          Follow log output after starting.
 	  -f, --field
 	          Specify which fields to include in the output.
 	  -o, --output
@@ -1229,12 +1234,17 @@ stdout:
 	  # Force restart an instance
 	  unikraft instance restart demo-instance --force
 
+	  # Restart an instance and follow its logs
+	  unikraft instance restart demo-instance --follow
+
 	Flags:
 	      --force
 	          Force stop the instance immediately.
 	      --drain-timeout
 	          Timeout in milliseconds for draining connections before stopping.
 	          [default: -1]
+	      --follow
+	          Follow log output after restarting.
 	  -f, --field
 	          Specify which fields to include in the output.
 	  -o, --output

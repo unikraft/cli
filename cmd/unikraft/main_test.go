@@ -58,6 +58,7 @@ type command struct {
 	args       []string
 	err        commandErr
 	captureEnv string
+	timeout time.Duration
 }
 
 type commandErr int
@@ -201,12 +202,18 @@ func (b *testBuilder) run(t *testing.T, commands []command) {
 			Strs("args", args).
 			Msg("executing command")
 
+		cmdCtx := ctx
+		var cmdCancel context.CancelFunc
+		if command.timeout > 0 {
+			cmdCtx, cmdCancel = context.WithTimeout(ctx, command.timeout)
+		}
+
 		var cmd *exec.Cmd
 		if args[0] == unikraftCmd {
-			cmd = exec.CommandContext(ctx, r.unikraftPath, args[1:]...)
+			cmd = exec.CommandContext(cmdCtx, r.unikraftPath, args[1:]...)
 			cmd.Args[0] = r.unikraftPath
 		} else {
-			cmd = exec.CommandContext(ctx, args[0], args[1:]...)
+			cmd = exec.CommandContext(cmdCtx, args[0], args[1:]...)
 		}
 
 		var stdout, stderr bytes.Buffer
@@ -229,6 +236,12 @@ func (b *testBuilder) run(t *testing.T, commands []command) {
 		}
 
 		err := cmd.Run()
+		if cmdCancel != nil {
+			cmdCancel()
+		}
+		if command.timeout > 0 && errors.Is(cmdCtx.Err(), context.DeadlineExceeded) {
+			err = nil
+		}
 		if command.captureEnv != "" {
 			value := strings.TrimSpace(stdout.String())
 			if value == "" {

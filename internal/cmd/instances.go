@@ -1244,6 +1244,8 @@ func (cmd *InstancesLogsCmd) Run(ctx context.Context, stdio config.Stdio) error 
 type InstancesStartCmd struct {
 	Targets []string `arg:"" name:"target" completion-predictor:"resource-key-instance" help:"Target instances to start."`
 
+	Follow bool `help:"Follow log output after starting."`
+
 	cmd.FormatOpts
 }
 
@@ -1253,6 +1255,12 @@ func (cmd InstancesStartCmd) Examples() []kingkong.Example {
 			Description: "Start an instance",
 			Commands: []string{
 				"unikraft instance start demo-instance",
+			},
+		},
+		{
+			Description: "Start an instance and follow its logs",
+			Commands: []string{
+				"unikraft instance start demo-instance --follow",
 			},
 		},
 	}
@@ -1295,7 +1303,14 @@ func (c *InstancesStartCmd) Run(ctx context.Context, stdio config.Stdio) error {
 	})
 
 	diffErr := cmd.Diff(ctx, stdio.Stdout, c.FormatOpts, Instance{}, before, updated)
-	return errors.Join(opErr, diffErr)
+	if err := errors.Join(opErr, diffErr); err != nil {
+		return err
+	}
+	if !c.Follow || len(started) == 0 {
+		return nil
+	}
+	fmt.Fprintln(stdio.Stdout)
+	return streamInstanceLogs(ctx, stdio, started, 0, true)
 }
 
 type InstancesStopCmd struct {
@@ -1371,6 +1386,8 @@ type InstancesRestartCmd struct {
 	Targets []string `arg:"" name:"target" completion-predictor:"resource-key-instance" help:"Target instances to restart."`
 	StopOpts
 
+	Follow bool `help:"Follow log output after restarting."`
+
 	cmd.FormatOpts
 }
 
@@ -1386,6 +1403,12 @@ func (cmd InstancesRestartCmd) Examples() []kingkong.Example {
 			Description: "Force restart an instance",
 			Commands: []string{
 				"unikraft instance restart demo-instance --force",
+			},
+		},
+		{
+			Description: "Restart an instance and follow its logs",
+			Commands: []string{
+				"unikraft instance restart demo-instance --follow",
 			},
 		},
 	}
@@ -1434,7 +1457,14 @@ func (c *InstancesRestartCmd) Run(ctx context.Context, stdio config.Stdio) error
 	})
 
 	diffErr := cmd.Diff(ctx, stdio.Stdout, c.FormatOpts, Instance{}, before, updated)
-	return errors.Join(opErr, diffErr)
+	if err := errors.Join(opErr, diffErr); err != nil {
+		return err
+	}
+	if !c.Follow || len(started) == 0 {
+		return nil
+	}
+	fmt.Fprintln(stdio.Stdout)
+	return streamInstanceLogs(ctx, stdio, started, 0, true)
 }
 
 type StopOpts struct {

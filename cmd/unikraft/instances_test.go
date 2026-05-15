@@ -8,6 +8,7 @@ package main
 import (
 	"regexp"
 	"testing"
+	"time"
 )
 
 func instancesTests(t *testing.T, r *testRunner) {
@@ -165,6 +166,66 @@ func instancesTests(t *testing.T, r *testRunner) {
 				// {args: []string{unikraftCmd, "instance", "restart", "test-$UNIQ_INST"}},
 				// {args: []string{unikraftCmd, "instance", "inspect", "test-$UNIQ_INST"}},
 
+				{args: []string{unikraftCmd, "instance", "delete", "test-$UNIQ_INST"}},
+			})
+	})
+
+
+	t.Run("start-follow", func(t *testing.T) {
+		r.
+			online().
+			withCleaners(instanceCleaners).
+			run(t, []command{
+				// Create a stopped instance
+				{args: []string{
+					unikraftCmd, "instance", "create",
+					"--output", "quiet",
+					"--set", "name=test-$UNIQ_INST",
+					"--set", "metro=" + metroName,
+					"--set", "image=nginx:latest",
+					"--set", "autostart=false",
+					"--set", "resources.memory=128",
+					"--set", "resources.vcpus=1",
+				}},
+				// Start it and follow logs for up to 5 seconds
+				{
+					args: []string{
+						unikraftCmd, "instance", "start",
+						"--follow",
+						"test-$UNIQ_INST",
+					},
+					timeout: 5 * time.Second,
+				},
+				{args: []string{unikraftCmd, "instance", "delete", "test-$UNIQ_INST"}},
+			})
+	})
+
+	t.Run("restart-follow", func(t *testing.T) {
+		r.
+			online().
+			withCleaners(instanceCleaners).
+			run(t, []command{
+				// Create and start an instance
+				{args: []string{
+					unikraftCmd, "instance", "create",
+					"--output", "quiet",
+					"--set", "name=test-$UNIQ_INST",
+					"--set", "metro=" + metroName,
+					"--set", "image=nginx:latest",
+					"--set", "autostart=true",
+					"--set", "resources.memory=128",
+					"--set", "resources.vcpus=1",
+				}},
+				{args: []string{unikraftCmd, "instance", "wait", "--until", "state==running", "--timeout", "30s", "test-$UNIQ_INST"}},
+				// Restart it and follow logs for up to 5 seconds
+				{
+					args: []string{
+						unikraftCmd, "instance", "restart",
+						"--follow",
+						"test-$UNIQ_INST",
+					},
+					timeout: 5 * time.Second,
+				},
 				{args: []string{unikraftCmd, "instance", "delete", "test-$UNIQ_INST"}},
 			})
 	})
