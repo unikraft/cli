@@ -31,6 +31,7 @@ import (
 	"unikraft.com/cli/internal/multimetro"
 	"unikraft.com/cli/internal/resource"
 	"unikraft.com/cli/internal/resource/cmd"
+	"unikraft.com/cli/internal/tui/progdl"
 	"unikraft.com/cli/internal/types"
 	xreference "unikraft.com/cli/internal/x/reference"
 )
@@ -712,7 +713,7 @@ func (cmd ImagesCopyCmd) Examples() []kingkong.Example {
 	}
 }
 
-func (cmd ImagesCopyCmd) Run(ctx context.Context, sandbox *resource.Sandbox) error {
+func (cmd ImagesCopyCmd) Run(ctx context.Context, stdio config.Stdio, sandbox *resource.Sandbox) error {
 	var opts []images.AccessorOpt
 	if cmd.Insecure != nil {
 		if len(cmd.Insecure) > 0 {
@@ -736,7 +737,12 @@ func (cmd ImagesCopyCmd) Run(ctx context.Context, sandbox *resource.Sandbox) err
 		return fmt.Errorf("parsing destination image reference: %w", err)
 	}
 
-	imgs, err := access.LoadAll(ctx, src, platforms.All)
+	var imgs []*imagespec.Image
+	err = progdl.RunWithImageProgress(ctx, stdio.Stderr, func(ctx context.Context) error {
+		var loadErr error
+		imgs, loadErr = access.LoadAll(ctx, src, platforms.All)
+		return loadErr
+	})
 	if err != nil {
 		return fmt.Errorf("loading image from source: %w", err)
 	}
@@ -746,7 +752,9 @@ func (cmd ImagesCopyCmd) Run(ctx context.Context, sandbox *resource.Sandbox) err
 		}
 	}()
 
-	err = access.Save(ctx, dest, imgs...)
+	err = progdl.RunWithImageProgress(ctx, stdio.Stderr, func(ctx context.Context) error {
+		return access.Save(ctx, dest, imgs...)
+	})
 	if err != nil {
 		return fmt.Errorf("saving image to destination: %w", err)
 	}
