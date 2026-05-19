@@ -175,7 +175,7 @@ type Instance struct {
 
 	Timing struct {
 		Uptime   types.DurationMS `mirror:"instance.uptime_ms"`
-		BootTime types.DurationUS `mirror:"instance.boot_time_us"`
+		BootTime types.DurationUS `mirror:"instance.boot_time_us" field:",short"`
 		NetTime  types.DurationUS `mirror:"instance.net_time_us"`
 	}
 
