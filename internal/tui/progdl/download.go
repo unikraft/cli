@@ -11,6 +11,7 @@ import (
 	"io"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/colorprofile"
 	"github.com/charmbracelet/x/term"
 )
 
@@ -18,11 +19,26 @@ import (
 var ErrDownloadInterrupted = errors.New("download interrupted")
 
 func isTerminal(out io.Writer) bool {
-	fdWriter, ok := out.(interface{ Fd() uintptr })
-	if !ok {
-		return false
+	return unwrapToTTY(out) != nil
+}
+
+// unwrapToTTY follows the writer chain and returns the first writer that has Fd().
+// Returns nil if no terminal writer is found.
+func unwrapToTTY(out io.Writer) io.Writer {
+	for {
+		if fdWriter, ok := out.(interface{ Fd() uintptr }); ok {
+			if term.IsTerminal(fdWriter.Fd()) {
+				return out
+			}
+			return nil
+		}
+
+		if cw, ok := out.(*colorprofile.Writer); ok {
+			out = cw.Forward
+			continue
+		}
+		return nil
 	}
-	return term.IsTerminal(fdWriter.Fd())
 }
 
 // DownloadWithProgress downloads from reader to writer with a progress bar.
@@ -60,7 +76,7 @@ func DownloadWithProgress(ctx context.Context, out io.Writer, reader io.ReadClos
 	// Create and run the bubbletea program
 	m := New()
 	p := tea.NewProgram(m,
-		tea.WithOutput(out),
+		tea.WithOutput(unwrapToTTY(out)),
 		tea.WithContext(ctx),
 	)
 
