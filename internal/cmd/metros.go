@@ -28,6 +28,8 @@ type MetrosCmd struct {
 	cmd.ResourceCmd[Metro]
 	cmd.GettableResourceCmd[Metro]
 	cmd.ListableResourceCmd[Metro]
+
+	Quotas MetroQuotasCmd `cmd:"" help:"Display quota usage for metros."`
 }
 
 type Metro struct {
