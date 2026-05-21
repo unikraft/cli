@@ -42,6 +42,7 @@ func TestHelp(t *testing.T) {
 	run("resources", resourceHelpTests)
 	run("build", buildHelpTests)
 	run("config", configHelpTests)
+	run("api", apiHelpTests)
 }
 
 // TestVersion checks that `unikraft version` output contains expected fields.
@@ -190,6 +191,13 @@ func configHelpTests(t *testing.T, unikraftPath string) {
 	integ.Gild(t, cli(r),
 		[]string{"unikraft", "config", "--help"},
 		[]string{"unikraft", "config", "get", "--help"},
+	)
+}
+
+func apiHelpTests(t *testing.T, unikraftPath string) {
+	r := integ.NewTestEnv(t, unikraftPath)
+	integ.Gild(t, cli(r),
+		[]string{"unikraft", "api", "--help"},
 	)
 }
 

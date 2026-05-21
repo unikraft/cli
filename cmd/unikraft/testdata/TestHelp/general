@@ -33,6 +33,16 @@ Resources:
   images, image, img, imgs
           Manage Unikraft Cloud images.
 
+Utilities:
+  api
+          Make an authenticated HTTP request to the Unikraft Cloud API.
+  completion
+          Outputs shell code for initialising tab completions.
+  version, ver, v
+          Show version information.
+  upgrade
+          Upgrade the Unikraft CLI to the latest version.
+
 Config:
   login
           Login to Unikraft Cloud.
@@ -42,14 +52,6 @@ Config:
           Manage Unikraft Cloud profiles.
   config, conf, cfg
           Manage CLI configuration.
-
-Utilities:
-  completion
-          Outputs shell code for initialising tab completions.
-  version, ver, v
-          Show version information.
-  upgrade
-          Upgrade the Unikraft CLI to the latest version.
 
 Examples:
   # Login to Unikraft Cloud
@@ -129,6 +131,16 @@ Resources:
   images, image, img, imgs
           Manage Unikraft Cloud images.
 
+Utilities:
+  api
+          Make an authenticated HTTP request to the Unikraft Cloud API.
+  completion
+          Outputs shell code for initialising tab completions.
+  version, ver, v
+          Show version information.
+  upgrade
+          Upgrade the Unikraft CLI to the latest version.
+
 Config:
   login
           Login to Unikraft Cloud.
@@ -138,14 +150,6 @@ Config:
           Manage Unikraft Cloud profiles.
   config, conf, cfg
           Manage CLI configuration.
-
-Utilities:
-  completion
-          Outputs shell code for initialising tab completions.
-  version, ver, v
-          Show version information.
-  upgrade
-          Upgrade the Unikraft CLI to the latest version.
 
 Examples:
   # Login to Unikraft Cloud
@@ -227,6 +231,16 @@ Resources:
   images, image, img, imgs
           Manage Unikraft Cloud images.
 
+Utilities:
+  api
+          Make an authenticated HTTP request to the Unikraft Cloud API.
+  completion
+          Outputs shell code for initialising tab completions.
+  version, ver, v
+          Show version information.
+  upgrade
+          Upgrade the Unikraft CLI to the latest version.
+
 Config:
   login
           Login to Unikraft Cloud.
@@ -236,14 +250,6 @@ Config:
           Manage Unikraft Cloud profiles.
   config, conf, cfg
           Manage CLI configuration.
-
-Utilities:
-  completion
-          Outputs shell code for initialising tab completions.
-  version, ver, v
-          Show version information.
-  upgrade
-          Upgrade the Unikraft CLI to the latest version.
 
 Examples:
   # Login to Unikraft Cloud
@@ -322,6 +328,16 @@ Resources:
   images, image, img, imgs
           Manage Unikraft Cloud images.
 
+Utilities:
+  api
+          Make an authenticated HTTP request to the Unikraft Cloud API.
+  completion
+          Outputs shell code for initialising tab completions.
+  version, ver, v
+          Show version information.
+  upgrade
+          Upgrade the Unikraft CLI to the latest version.
+
 Config:
   login
           Login to Unikraft Cloud.
@@ -331,14 +347,6 @@ Config:
           Manage Unikraft Cloud profiles.
   config, conf, cfg
           Manage CLI configuration.
-
-Utilities:
-  completion
-          Outputs shell code for initialising tab completions.
-  version, ver, v
-          Show version information.
-  upgrade
-          Upgrade the Unikraft CLI to the latest version.
 
 Examples:
   # Login to Unikraft Cloud

@@ -1,0 +1,64 @@
+$ unikraft api --help
+
+Make an authenticated HTTP request to the Unikraft Cloud API.
+
+Usage:
+  unikraft api <endpoint> [flags]
+
+Arguments:
+  <endpoint>
+          API endpoint path (e.g. /v1/instances). May be a full URL, in which case the metro endpoint is ignored.
+
+Examples:
+  # List instances in the default metro
+  unikraft api /v1/instances
+
+  # Get the current user's quotas
+  unikraft api /v1/users/quotas
+
+  # Inspect a specific instance by UUID
+  unikraft api /v1/instances/abc123-...-def456
+
+  # Create a new 256MB volume in a specific metro
+  unikraft api /v1/volumes --metro=fra -d '{"name":"data","size_mb":256}'
+
+  # Create resources from a JSON file
+  unikraft api /v1/volumes -d @volume.json
+
+  # Delete an instance by UUID
+  unikraft api /v1/instances/abc123-...-def456 -X DELETE
+
+  # Pipe a request body in from stdin
+  echo '{"name":"data","size_mb":256}' | unikraft api /v1/volumes -d @-
+
+  # Check the health of the API
+  unikraft api /v1/healthz
+
+Flags:
+  -X, --method=<method>
+          HTTP method to use. Defaults to GET, or POST if --data is set.
+      --metro=<name>
+          Metro to target. Defaults to the profile's default metro.
+  -H, --header
+          Add an HTTP header in 'Key: Value' format. May be repeated.
+  -d, --data
+          HTTP request body. Use @path to read from a file, or @- to read from stdin.
+  -k, --insecure
+          Skip TLS certificate verification.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
