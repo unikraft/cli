@@ -325,17 +325,25 @@ func (ImageEntry) List(ctx context.Context) ([]resource.Resource, error) {
 		return nil, err
 	}
 
+	// Normalize to path:tag for comparison.
+	refPathTag := func(e ImageEntry) string {
+		key := reference.Path(e.Ref.Reference)
+		if tagged, ok := e.Ref.Reference.(reference.Tagged); ok {
+			key += ":" + tagged.Tag()
+		}
+		return key
+	}
 	seen := make(map[string]struct{}, len(controlplaneResults))
 	for _, r := range controlplaneResults {
-		seen[r.(ImageEntry).Ref.Reference.String()] = struct{}{}
+		seen[refPathTag(r.(ImageEntry))] = struct{}{}
 	}
 	results := controlplaneResults
 	for _, r := range platformResults {
-		ref := r.(ImageEntry).Ref.Reference.String()
-		if _, ok := seen[ref]; ok {
+		key := refPathTag(r.(ImageEntry))
+		if _, ok := seen[key]; ok {
 			continue
 		}
-		seen[ref] = struct{}{}
+		seen[key] = struct{}{}
 		results = append(results, r)
 	}
 
