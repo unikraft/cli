@@ -15,6 +15,7 @@ import (
 	"unikraft.com/cli/internal/resource"
 	resourcetui "unikraft.com/cli/internal/resource/tui"
 	"unikraft.com/cli/internal/tui/uitui"
+	xio "unikraft.com/cli/internal/x/io"
 )
 
 type TUICmd struct {
@@ -69,7 +70,7 @@ func (cmd *TUICmd) Run(ctx context.Context, stdio config.Stdio) error {
 	program := tea.NewProgram(
 		model,
 		tea.WithInput(stdio.Stdin),
-		tea.WithOutput(stdio.Stdout),
+		tea.WithOutput(xio.Unwrap(stdio.Stdout)),
 	)
 	_, err = program.Run()
 	return err

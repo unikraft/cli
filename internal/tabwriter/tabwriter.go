@@ -10,7 +10,6 @@ import (
 	"io"
 
 	"github.com/charmbracelet/x/ansi"
-	"unikraft.com/x/guesstermwidth"
 
 	"unikraft.com/cli/internal/tableutil"
 	xio "unikraft.com/cli/internal/x/io"
@@ -59,19 +58,19 @@ func WithMaxWidth(width int) TabWriterOpt {
 
 func WithMaxScreenWidth() TabWriterOpt {
 	return func(t *tabWriter) {
-		if !guesstermwidth.IsTTY(t.w) {
+		if !xio.IsTTY(t.w) {
 			return
 		}
-		t.maxwidth = max(0, guesstermwidth.GuessTermWidth(t.w))
+		t.maxwidth = max(0, xio.TermWidth(t.w))
 	}
 }
 
 func WithMinScreenWidth() TabWriterOpt {
 	return func(t *tabWriter) {
-		if !guesstermwidth.IsTTY(t.w) {
+		if !xio.IsTTY(t.w) {
 			return
 		}
-		t.minwidth = max(0, guesstermwidth.GuessTermWidth(t.w))
+		t.minwidth = max(0, xio.TermWidth(t.w))
 	}
 }
 

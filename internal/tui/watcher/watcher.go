@@ -13,12 +13,13 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/charmbracelet/x/term"
+
+	xio "unikraft.com/cli/internal/x/io"
 )
 
 func WatchOutput(ctx context.Context, interval time.Duration, out io.Writer, render func(io.Writer) error) error {
-	if isTerminal(out) {
-		return watchOutputPretty(ctx, interval, out, render)
+	if xio.IsTTY(out) {
+		return watchOutputPretty(ctx, interval, xio.Unwrap(out), render)
 	}
 	return watchOutputPlain(ctx, interval, out, render)
 }
@@ -70,12 +71,4 @@ func watchOutputPlain(ctx context.Context, interval time.Duration, out io.Writer
 		case <-ticker.C:
 		}
 	}
-}
-
-func isTerminal(out io.Writer) bool {
-	fdWriter, ok := out.(interface{ Fd() uintptr })
-	if !ok {
-		return false
-	}
-	return term.IsTerminal(fdWriter.Fd())
 }

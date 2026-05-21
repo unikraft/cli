@@ -11,19 +11,12 @@ import (
 	"io"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/charmbracelet/x/term"
+
+	xio "unikraft.com/cli/internal/x/io"
 )
 
 // ErrDownloadInterrupted is returned when the download is interrupted by the user.
 var ErrDownloadInterrupted = errors.New("download interrupted")
-
-func isTerminal(out io.Writer) bool {
-	fdWriter, ok := out.(interface{ Fd() uintptr })
-	if !ok {
-		return false
-	}
-	return term.IsTerminal(fdWriter.Fd())
-}
 
 // DownloadWithProgress downloads from reader to writer with a progress bar.
 // If out is not a terminal, it falls back to a simple download without progress display.
@@ -35,7 +28,7 @@ func DownloadWithProgress(ctx context.Context, out io.Writer, reader io.ReadClos
 	// Wrap reader to respect context cancellation
 	ctxReader := newContextReader(downloadCtx, reader)
 
-	if !isTerminal(out) {
+	if !xio.IsTTY(out) {
 		// Fallback: just copy without progress display
 		_, err := io.Copy(writer, ctxReader)
 		return err
@@ -60,7 +53,7 @@ func DownloadWithProgress(ctx context.Context, out io.Writer, reader io.ReadClos
 	// Create and run the bubbletea program
 	m := New()
 	p := tea.NewProgram(m,
-		tea.WithOutput(out),
+		tea.WithOutput(xio.Unwrap(out)),
 		tea.WithContext(ctx),
 	)
 

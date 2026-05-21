@@ -11,8 +11,8 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/x/ansi"
-	"github.com/charmbracelet/x/term"
-	"unikraft.com/x/guesstermwidth"
+
+	xio "unikraft.com/cli/internal/x/io"
 )
 
 type wrappedWriter struct {
@@ -26,10 +26,10 @@ func newWrappedWriter(out io.Writer, width int) io.Writer {
 }
 
 func newScreenWrappedWriter(out io.Writer) io.Writer {
-	if !isTTY(out) {
+	if !xio.IsTTY(out) {
 		return out
 	}
-	return newWrappedWriter(out, guesstermwidth.GuessTermWidth(out))
+	return newWrappedWriter(out, xio.TermWidth(out))
 }
 
 func (w *wrappedWriter) Write(p []byte) (int, error) {
@@ -90,12 +90,4 @@ func splitLogPrefix(line string) (string, string) {
 		return "", line
 	}
 	return ss[0], ss[1]
-}
-
-func isTTY(out io.Writer) bool {
-	fdWriter, ok := out.(interface{ Fd() uintptr })
-	if !ok {
-		return false
-	}
-	return term.IsTerminal(fdWriter.Fd())
 }

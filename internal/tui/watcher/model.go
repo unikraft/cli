@@ -14,6 +14,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+
+	xio "unikraft.com/cli/internal/x/io"
 )
 
 type watchModel struct {
@@ -97,7 +99,7 @@ func (model watchModel) watchStatusTickCmd() tea.Cmd {
 }
 
 func wrapFdWriter(w io.Writer, fdw io.Writer) io.Writer {
-	if fdw, ok := fdw.(interface{ Fd() uintptr }); ok {
+	if fdw, ok := xio.Unwrap(fdw).(interface{ Fd() uintptr }); ok {
 		return fdWriter{Writer: w, fd: fdw.Fd()}
 	}
 	return w
