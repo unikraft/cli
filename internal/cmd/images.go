@@ -353,8 +353,13 @@ func listPlatformImages(ctx context.Context) ([]resource.Resource, error) {
 
 		resp, err := c.GetImageStore(ctx, nil, platform.GetImageStoreOpts{})
 		if err != nil {
-			log.G(ctx).Trace().Err(err).Msg("skipping image-store listing")
-			return nil, nil
+			log.G(ctx).Debug().Err(err).Msg("image-store listing failed, falling back to /v1/images")
+			var fallbackErr error
+			resp, fallbackErr = c.GetImages(ctx, nil, platform.GetImagesOpts{})
+			if fallbackErr != nil {
+				log.G(ctx).Trace().Err(fallbackErr).Msg("skipping image listing")
+				return nil, nil
+			}
 		}
 
 		var results []resource.Resource
