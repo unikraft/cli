@@ -146,7 +146,7 @@ func streamInstanceLogs(ctx context.Context, stdio config.Stdio, keys multimetro
 	err = group.DoRefs(ctx, g, keys.Refs(), func(_ context.Context, c multimetro.MetroClient, refs group.Refs) (group.Refs, error) {
 		for _, ref := range refs {
 			key := multimetro.Key(ref)
-			r, err := logs.InstanceLogs(ctx, c).Reader(ref.NameOrUUID(), tail, follow)
+			r, err := logs.InstanceLogs(ctx, c).Reader(ref.NameOrUUID(), &tail, follow)
 			if err != nil {
 				return nil, err
 			}

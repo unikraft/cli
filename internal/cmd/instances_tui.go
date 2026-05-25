@@ -31,7 +31,7 @@ func (Instance) Subpanels(ctx context.Context, key string) []tea.Model {
 		if err != nil {
 			return nil, err
 		}
-		r, err := logs.InstanceLogs(ctx, client).Reader(id, 100, true)
+		r, err := logs.InstanceLogs(ctx, client).Reader(id, new(100), true)
 		if err != nil {
 			return nil, err
 		}

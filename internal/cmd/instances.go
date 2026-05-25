@@ -980,7 +980,7 @@ func (Instance) Create(ctx context.Context, fields []resource.Field) ([]resource
 				for _, svc := range services {
 					req.ServiceGroup.Services = append(req.ServiceGroup.Services, platform.Service{
 						Port:            svc.Source,
-						DestinationPort: svc.Destination,
+						DestinationPort: &svc.Destination,
 						Handlers:        svc.Handlers,
 					})
 				}
@@ -1227,7 +1227,7 @@ func (cmd *InstancesLogsCmd) Run(ctx context.Context, stdio config.Stdio) error 
 	err = group.DoRefs(ctx, g, keys.Refs(), func(_ context.Context, c multimetro.MetroClient, refs group.Refs) (group.Refs, error) {
 		for _, ref := range refs {
 			key := multimetro.Key(ref)
-			r, err := logs.InstanceLogs(ctx, c).Reader(ref.NameOrUUID(), cmd.Tail, cmd.Follow)
+			r, err := logs.InstanceLogs(ctx, c).Reader(ref.NameOrUUID(), &cmd.Tail, cmd.Follow)
 			if err != nil {
 				return nil, err
 			}
