@@ -37,6 +37,7 @@ Fields:
   filesystem
   quota-policy
   persistent
+  access-mode
   timestamps, timestamps.created
   attached-to, attached-to.*, attached-to.*.name, attached-to.*.uuid
   mounted-by, mounted-by.*, mounted-by.*.name, mounted-by.*.uuid, mounted-
@@ -84,6 +85,7 @@ Fields:
   filesystem
   quota-policy
   persistent
+  access-mode
   timestamps, timestamps.created
   attached-to, attached-to.*, attached-to.*.name, attached-to.*.uuid
   mounted-by, mounted-by.*, mounted-by.*.name, mounted-by.*.uuid, mounted-
@@ -139,6 +141,7 @@ Fields:
   filesystem
   quota-policy
   persistent
+  access-mode
   timestamps, timestamps.created
   attached-to, attached-to.*, attached-to.*.name, attached-to.*.uuid
   mounted-by, mounted-by.*, mounted-by.*.name, mounted-by.*.uuid, mounted-
@@ -196,6 +199,7 @@ Fields:
   filesystem
   quota-policy
   persistent
+  access-mode
   timestamps, timestamps.created
   attached-to, attached-to.*, attached-to.*.name, attached-to.*.uuid
   mounted-by, mounted-by.*, mounted-by.*.name, mounted-by.*.uuid, mounted-
@@ -245,7 +249,8 @@ Examples:
   unikraft volume create \
   	  --name demo-volume \
   	  --size 10 \
-  	  --metro fra
+  	  --metro fra \
+  	  --access-mode rwo
 
 Fields:
   metro
@@ -257,6 +262,7 @@ Fields:
   filesystem
   quota-policy
   persistent
+  access-mode
   timestamps, timestamps.created
   attached-to, attached-to.*, attached-to.*.name, attached-to.*.uuid
   mounted-by, mounted-by.*, mounted-by.*.name, mounted-by.*.uuid, mounted-
@@ -310,6 +316,9 @@ Create flags:
       --quota-policy=<quota-policy>
           Volume quota policy.
           [examples: static, dynamic]
+      --access-mode=<access-mode>
+          Volume access mode.
+          [examples: rwo, rox, rwx]
 
 $ unikraft volume clone --help
 
@@ -430,6 +439,7 @@ Fields:
   filesystem
   quota-policy
   persistent
+  access-mode
   timestamps, timestamps.created
   attached-to, attached-to.*, attached-to.*.name, attached-to.*.uuid
   mounted-by, mounted-by.*, mounted-by.*.name, mounted-by.*.uuid, mounted-
@@ -505,6 +515,7 @@ Fields:
   filesystem
   quota-policy
   persistent
+  access-mode
   timestamps, timestamps.created
   attached-to, attached-to.*, attached-to.*.name, attached-to.*.uuid
   mounted-by, mounted-by.*, mounted-by.*.name, mounted-by.*.uuid, mounted-

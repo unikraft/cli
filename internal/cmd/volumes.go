@@ -66,6 +66,7 @@ type VolumeCreateCmd struct {
 	Size        types.SizeMebibytes `group:"flag-create" shortcut:"size" help:"Volume size." placeholder:"size" example:"10GiB,100MiB"`
 	Filesystem  string              `group:"flag-create" shortcut:"filesystem" help:"Volume filesystem." placeholder:"filesystem" example:"ext4"`
 	QuotaPolicy string              `group:"flag-create" shortcut:"quota-policy" help:"Volume quota policy." placeholder:"quota-policy" example:"static,dynamic"`
+	AccessMode  types.AccessMode    `group:"flag-create" shortcut:"access-mode" help:"Volume access mode." placeholder:"access-mode" example:"rwo,rox,rwx"`
 }
 
 func (c *VolumeCreateCmd) Run(ctx context.Context, stdio config.Stdio, sandbox *resource.Sandbox, kctx *kong.Context) error {
@@ -244,6 +245,7 @@ type Volume struct {
 	Filesystem  string              `mirror:"volume.filesystem" field:",long" create:"set"`
 	QuotaPolicy string              `mirror:"volume.quota_policy" field:"quota-policy,long" create:"set" edit:"set"`
 	Persistent  bool                `mirror:"volume.persistent" field:",long"`
+	AccessMode  types.AccessMode    `mirror:"volume.access_mode" field:"access-mode,long" create:"set"`
 
 	Timestamps struct {
 		Created types.RelativeTime `mirror:"volume.created_at" field:",short"`
@@ -437,6 +439,12 @@ func (Volume) Create(ctx context.Context, fields []resource.Field) ([]resource.R
 					}
 					req.AdditionalProperties["quota_policy"] = data
 				}
+			case "access-mode":
+				accessMode := field.Create.Set.(types.AccessMode)
+				if accessMode != "" {
+					am := platform.VolumeAccessMode(accessMode)
+					req.AccessMode = &am
+				}
 			}
 		}
 	}
@@ -540,7 +548,8 @@ func (Volume) Examples() map[cmd.CmdType][]kingkong.Example {
 					`unikraft volume create \
 	  --name demo-volume \
 	  --size 10 \
-	  --metro fra`,
+	  --metro fra \
+	  --access-mode rwo`,
 				},
 			},
 		},

@@ -69,6 +69,73 @@ func TestVolumes(t *testing.T) {
 		r.Run(t, []string{"unikraft", "volume", "delete", "test-" + cloneName})
 	})
 
+	t.Run("access-mode-rwo", func(t *testing.T) {
+		r := runner(t, true)
+		volName := uniq()
+
+		out := r.Run(t, []string{
+			"unikraft", "volume", "create",
+			"--set", "name=test-" + volName,
+			"--set", "size=10",
+			"--set", "metro=" + r.Config.MetroName,
+			"--access-mode", "rwo",
+		})
+		assert.Regexp(t, `state:\s+available`, out)
+		assert.Regexp(t, `access-mode:\s+rwo`, out)
+
+		out = r.Run(t, []string{"unikraft", "volume", "inspect", "test-" + volName})
+		assert.Regexp(t, `access-mode:\s+rwo`, out)
+
+		r.Run(t, []string{"unikraft", "volume", "delete", "test-" + volName})
+	})
+
+	t.Run("access-mode-rox", func(t *testing.T) {
+		r := runner(t, true)
+		volName := uniq()
+		instName1 := uniq()
+		instName2 := uniq()
+
+		r.Run(t, []string{
+			"unikraft", "volume", "create",
+			"--output", "quiet",
+			"--set", "name=test-" + volName,
+			"--set", "size=10",
+			"--set", "metro=" + r.Config.MetroName,
+			"--access-mode", "rox",
+		})
+
+		r.Run(t, []string{
+			"unikraft", "instance", "create",
+			"--output", "quiet",
+			"--set", "name=test-" + instName1,
+			"--set", "metro=" + r.Config.MetroName,
+			"--set", "image=nginx:latest",
+			"--set", "autostart=true",
+			"--set", "resources.memory=128",
+			"--set", "resources.vcpus=1",
+			"--set", "volumes=test-" + volName + ":/mnt:ro",
+		})
+
+		r.Run(t, []string{
+			"unikraft", "instance", "create",
+			"--output", "quiet",
+			"--set", "name=test-" + instName2,
+			"--set", "metro=" + r.Config.MetroName,
+			"--set", "image=nginx:latest",
+			"--set", "autostart=true",
+			"--set", "resources.memory=128",
+			"--set", "resources.vcpus=1",
+			"--set", "volumes=test-" + volName + ":/mnt:ro",
+		})
+
+		out := r.Run(t, []string{"unikraft", "volume", "inspect", "test-" + volName})
+		assert.Regexp(t, `access-mode:\s+rox`, out)
+
+		r.Run(t, []string{"unikraft", "instance", "delete", "test-" + instName1})
+		r.Run(t, []string{"unikraft", "instance", "delete", "test-" + instName2})
+		r.Run(t, []string{"unikraft", "volume", "delete", "test-" + volName})
+	})
+
 	t.Run("import", func(t *testing.T) {
 		t.Run("missing-source", func(t *testing.T) {
 			r := runner(t, false)

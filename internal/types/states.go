@@ -190,3 +190,35 @@ func (state CertificateState) ansiFg() string {
 	}
 	return fgInfo
 }
+
+// AccessMode is a wrapper around platform.VolumeAccessMode that adds
+// input validation.
+type AccessMode platform.VolumeAccessMode
+
+func (am AccessMode) String() string {
+	return string(am)
+}
+
+func (am AccessMode) MarshalText() ([]byte, error) {
+	return []byte(am), nil
+}
+
+func (am *AccessMode) UnmarshalText(text []byte) error {
+	a := AccessMode(text)
+	if err := a.validate(); err != nil {
+		return err
+	}
+	*am = a
+	return nil
+}
+
+func (am AccessMode) validate() error {
+	switch platform.VolumeAccessMode(am) {
+	case platform.VolumeAccessModeRwo:
+	case platform.VolumeAccessModeRox:
+	case platform.VolumeAccessModeRwx:
+	default:
+		return fmt.Errorf("unknown access mode: %q (valid: rwo, rox, rwx)", string(am))
+	}
+	return nil
+}

@@ -18,6 +18,7 @@ size:         50MiB
 filesystem:   ext4
 quota-policy: hard
 persistent:   true
+access-mode:
 timestamps:
   created:    never
 attached-to:
@@ -104,6 +105,14 @@ fra    my-volume  available  50MiB  never
     "name": "persistent",
     "value": true,
     "verbosity": "long"
+  },
+  {
+    "name": "access-mode",
+    "value": "",
+    "verbosity": "long",
+    "create": {
+      "set": ""
+    }
   },
   {
     "name": "timestamps",
