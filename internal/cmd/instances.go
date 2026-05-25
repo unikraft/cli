@@ -980,7 +980,7 @@ func (Instance) Create(ctx context.Context, fields []resource.Field) ([]resource
 				for _, svc := range services {
 					req.ServiceGroup.Services = append(req.ServiceGroup.Services, platform.Service{
 						Port:            svc.Source,
-						DestinationPort: svc.Destination,
+						DestinationPort: &svc.Destination,
 						Handlers:        svc.Handlers,
 					})
 				}
@@ -1180,7 +1180,7 @@ type InstancesLogsCmd struct {
 	Targets []string `arg:"" name:"target" completion-predictor:"resource-key-instance" help:"Target instances to fetch logs for."`
 
 	Prefix bool `help:"Prefix log lines with instance name." negatable:"" default:"true"`
-	Tail   int  `help:"Number of lines to show from the end of the logs."`
+	Tail   *int `help:"Number of lines to show from the end of the logs."`
 	Follow bool `short:"f" help:"Follow log output."`
 }
 

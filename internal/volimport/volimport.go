@@ -53,7 +53,7 @@ func Start(ctx context.Context, c multimetro.MetroClient, image, volUUID, authSt
 		ServiceGroup: &platform.CreateInstanceRequestServiceGroup{
 			Services: []platform.Service{{
 				Port:            uint32(servicePort),
-				DestinationPort: destPort,
+				DestinationPort: &destPort,
 				Handlers:        []platform.ConnectionHandler{platform.ConnectionHandlerTls},
 			}},
 		},

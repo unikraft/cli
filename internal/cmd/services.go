@@ -388,7 +388,7 @@ func (ServiceGroup) Create(ctx context.Context, fields []resource.Field) ([]reso
 				for _, svc := range field.Create.Set.([]*Service) {
 					req.Services = append(req.Services, platform.Service{
 						Port:            svc.Source,
-						DestinationPort: svc.Destination,
+						DestinationPort: &svc.Destination,
 						Handlers:        svc.Handlers,
 					})
 				}
@@ -543,7 +543,7 @@ func serviceGroupPatchSpec(path string, _ patchOp, value any) (platform.MutableS
 		for _, svc := range value.([]*Service) {
 			nvalue = append(nvalue, platform.Service{
 				Port:            svc.Source,
-				DestinationPort: svc.Destination,
+				DestinationPort: &svc.Destination,
 				Handlers:        svc.Handlers,
 			})
 		}
