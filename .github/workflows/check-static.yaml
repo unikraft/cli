@@ -67,4 +67,4 @@ jobs:
 
     - name: Check licenses
       run: |
-        task --yes go:license-check
+        task --yes license

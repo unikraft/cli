@@ -5,7 +5,7 @@
 
 // original code imported from github.com/docker/buildx/util/buildflags/
 
-package builder
+package buildflags
 
 import (
 	"fmt"

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2017 Eyal Posener
+// Copyright (c) 2017, Eyal Posener
 //
 // This code is originally copied from the complete project.
 // (the original functions are not exported).

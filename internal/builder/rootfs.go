@@ -33,6 +33,7 @@ import (
 	goerofs "github.com/unikraft/go-archivefs/erofs"
 	gotar "github.com/unikraft/go-archivefs/tarfs"
 	gocpio "github.com/unikraft/go-cpio"
+	"unikraft.com/cli/internal/builder/buildflags"
 	"unikraft.com/cli/internal/builder/buildfs"
 	"unikraft.com/cli/internal/buildkit"
 	"unikraft.com/cli/internal/config"
@@ -549,14 +550,14 @@ func applyBuildOpts(attrs map[string]string, localDirs map[string]string, sessio
 	}
 
 	if len(opts.Secrets) > 0 {
-		provider, err := CreateSecrets(opts.Secrets)
+		provider, err := buildflags.CreateSecrets(opts.Secrets)
 		if err != nil {
 			return err
 		}
 		*sessions = append(*sessions, provider)
 	}
 	if len(opts.SSH) > 0 {
-		provider, err := CreateSSH(opts.SSH)
+		provider, err := buildflags.CreateSSH(opts.SSH)
 		if err != nil {
 			return err
 		}

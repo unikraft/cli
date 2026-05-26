@@ -49,6 +49,12 @@ tasks:
         vars:
           disable: [""]
 
+  license:
+    desc: Check the project licensing.
+    silent: true
+    cmds:
+      - task: go:license
+
   unit:
     aliases: [test]
     desc: Run unit tests.

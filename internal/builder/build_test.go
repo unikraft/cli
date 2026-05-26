@@ -19,12 +19,13 @@ import (
 	goerofs "github.com/unikraft/go-archivefs/erofs"
 	"github.com/unikraft/go-cpio"
 	imagespec "unikraft.com/x/image-spec"
+	"unikraft.com/x/kraftfile"
 	"unikraft.com/x/log"
 
+	"unikraft.com/cli/internal/builder/buildflags"
 	"unikraft.com/cli/internal/buildkit"
 	"unikraft.com/cli/internal/config"
 	"unikraft.com/cli/internal/integration"
-	"unikraft.com/x/kraftfile"
 )
 
 func TestDefaultRootfsFormatNoPlatforms(t *testing.T) {
@@ -266,7 +267,7 @@ RUN --mount=type=secret,id=api_key cat /run/secrets/api_key | grep -q s3cr3t
 `
 	rootfsPath := writeDockerfile(t, dockerfile)
 	secretPath := writeSecretFile(t, "s3cr3t\n")
-	secrets, err := ParseSecretSpecs([]string{"id=api_key,src=" + secretPath})
+	secrets, err := buildflags.ParseSecretSpecs([]string{"id=api_key,src=" + secretPath})
 	require.NoError(t, err)
 
 	opts := BuildOpts{

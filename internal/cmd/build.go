@@ -11,6 +11,7 @@ import (
 
 	"golang.org/x/mod/semver"
 	"unikraft.com/cli/internal/builder"
+	"unikraft.com/cli/internal/builder/buildflags"
 	"unikraft.com/cli/internal/config"
 	"unikraft.com/cli/internal/images"
 	"unikraft.com/cli/internal/resource"
@@ -95,14 +96,14 @@ func (c *BuildCmd) Run(ctx context.Context, cfg *config.Config, sandbox *resourc
 		buildOpts.BuildArg = append(buildOpts.BuildArg, c.BuildArg...)
 	}
 	if len(c.Secret) > 0 {
-		secrets, err := builder.ParseSecretSpecs(c.Secret)
+		secrets, err := buildflags.ParseSecretSpecs(c.Secret)
 		if err != nil {
 			return err
 		}
 		buildOpts.Secrets = secrets
 	}
 	if len(c.SSH) > 0 {
-		ssh, err := builder.ParseSSHSpecs(c.SSH)
+		ssh, err := buildflags.ParseSSHSpecs(c.SSH)
 		if err != nil {
 			return err
 		}

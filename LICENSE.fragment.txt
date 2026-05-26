@@ -1,0 +1,2 @@
+SPDX-License-Identifier: BSD-3-Clause
+Copyright (c) <<\d{4}(?:-\d{4})?>>, Unikraft GmbH<<.*>>

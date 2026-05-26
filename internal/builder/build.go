@@ -13,10 +13,11 @@ import (
 
 	"github.com/containerd/platforms"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
-	imagespec "unikraft.com/x/image-spec"
+	"unikraft.com/x/image-spec"
+	"unikraft.com/x/kraftfile"
 	"unikraft.com/x/log"
 
-	"unikraft.com/x/kraftfile"
+	"unikraft.com/cli/internal/builder/buildflags"
 )
 
 type BuildOpts struct {
@@ -35,8 +36,8 @@ type BuildOpts struct {
 	// Dockerfile string
 	BuildArg []string
 	Target   string
-	Secrets  []*Secret
-	SSH      []*SSH
+	Secrets  []*buildflags.Secret
+	SSH      []*buildflags.SSH
 
 	NoCache bool
 }

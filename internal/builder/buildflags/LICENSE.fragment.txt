@@ -1,0 +1,2 @@
+SPDX-License-Identifier: Apache-2.0
+Copyright (c) <<\d{4}(?:-\d{4})?>>, The buildx authors<<.*>>
