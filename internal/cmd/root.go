@@ -15,6 +15,7 @@ import (
 	"runtime"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/alecthomas/kong"
 	ctrdlog "github.com/containerd/log"
@@ -107,7 +108,8 @@ type globalFlags struct {
 
 	Profile string `group:"flag-global" name:"profile" env:"UNIKRAFT_PROFILE" help:"Set the current profile." placeholder:"name"`
 
-	Telemetry bool `group:"flag-global" name:"telemetry" env:"UNIKRAFT_TELEMETRY" help:"Toggle anonymous usage analytics." default:"true" negatable:""`
+	Telemetry bool          `group:"flag-global" name:"telemetry" env:"UNIKRAFT_TELEMETRY" help:"Toggle anonymous usage analytics." default:"true" negatable:""`
+	Timeout   time.Duration `group:"flag-global" name:"timeout" env:"UNIKRAFT_TIMEOUT" help:"Set a deadline for the command (e.g. 30s, 5m, 1h)." placeholder:"duration" optional:""`
 }
 
 func NewRootCmd(ctx context.Context, args []string, stdio config.Stdio) (context.Context, *kong.Context, *UnikraftCLI, func() error, error) {
@@ -209,10 +211,18 @@ func NewRootCmd(ctx context.Context, args []string, stdio config.Stdio) (context
 	ctx = config.WithConfig(ctx, cfg)
 	kctx.Bind(cfg)
 
+	var cancelTimeout context.CancelFunc = func() {}
+	if cli.globalFlags.Timeout > 0 {
+		var timeoutCtx context.Context
+		timeoutCtx, cancelTimeout = context.WithTimeout(ctx, cli.globalFlags.Timeout)
+		ctx = timedOutContext{timeoutCtx}
+	}
+
 	kctx.BindTo(ctx, (*context.Context)(nil))
 
 	sandbox, err := resource.LoadSandboxFromEnv(SandboxedResources...)
 	if err != nil {
+		cancelTimeout()
 		return ctx, nil, nil, nil, jujuerrors.Annotate(err, "loading sandbox from environment")
 	}
 	if sandbox != nil {
@@ -227,6 +237,7 @@ func NewRootCmd(ctx context.Context, args []string, stdio config.Stdio) (context
 	kctx.Bind(kctx)
 
 	cleanup := func() error {
+		cancelTimeout()
 		if err := sandbox.Save(); err != nil {
 			return jujuerrors.Annotate(err, "saving sandbox")
 		}
@@ -361,6 +372,17 @@ var SandboxedResources = []resource.Resource{
 	VolumeTemplate{},
 	ServiceGroup{},
 	Certificate{},
+}
+
+type timedOutContext struct {
+	context.Context
+}
+
+func (c timedOutContext) Err() error {
+	if errors.Is(c.Context.Err(), context.DeadlineExceeded) {
+		return fmt.Errorf("timed out")
+	}
+	return c.Context.Err()
 }
 
 type staticKey string

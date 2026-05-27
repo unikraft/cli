@@ -588,7 +588,7 @@ type VolumeImportCmd struct {
 	Force   bool   `short:"f" help:"Force import even if the data might exceed volume capacity."`
 	Port    int    `short:"p" default:"42069" help:"Port to connect to the volume import service on." placeholder:"port" hidden:"true"`
 	Image   string `default:"official/utils/volimport:1.0" help:"Volume import image to use." placeholder:"image" hidden:"true"`
-	Timeout uint64 `short:"t" default:"10" help:"Inactivity timeout in seconds for the import service." placeholder:"seconds" hidden:"true"`
+	Timeout uint64 `short:"t" name:"connection-timeout" default:"10" help:"Inactivity timeout in seconds for the import service." placeholder:"seconds" hidden:"true"`
 }
 
 func (VolumeImportCmd) Examples() []kingkong.Example {

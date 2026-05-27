@@ -279,7 +279,6 @@ type ResourceWaitCmd[R resource.GettableResource] struct {
 	Until   []string `help:"Filter expression to wait for." example:"state==running,state!=stopped" sep:"none" required:"" aliases:"filter"`
 
 	Interval time.Duration `long:"interval" default:"2s" help:"Polling interval."`
-	Timeout  time.Duration `long:"timeout" default:"0" help:"Timeout before giving up."`
 
 	FormatOpts
 }
@@ -308,12 +307,6 @@ func (cmd *ResourceWaitCmd[R]) Run(ctx context.Context, stdio config.Stdio, sand
 		return err
 	}
 	ctx = resource.WithFilter(ctx, filter)
-
-	if cmd.Timeout > 0 {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, cmd.Timeout)
-		defer cancel()
-	}
 
 	ticker := time.NewTicker(cmd.Interval)
 	defer ticker.Stop()

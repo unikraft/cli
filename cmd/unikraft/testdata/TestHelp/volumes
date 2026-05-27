@@ -59,6 +59,8 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 $ unikraft volume get --help
 
@@ -115,6 +117,8 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 $ unikraft volume list --help
 
@@ -177,6 +181,8 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 $ unikraft volume wait --help
 
@@ -212,9 +218,6 @@ Flags:
       --interval
           Polling interval.
           [default: 2s]
-      --timeout
-          Timeout before giving up.
-          [default: 0]
   -f, --field
           Specify which fields to include in the output.
   -o, --output
@@ -236,6 +239,8 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 $ unikraft volume create --help
 
@@ -299,6 +304,8 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 Create flags:
       --metro=<metro>
@@ -358,6 +365,8 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 flag-clone
   -n, --name=<name>
@@ -412,6 +421,8 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 $ unikraft volume edit --help
 
@@ -480,6 +491,8 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 Edit flags:
       --size=<size>
@@ -549,6 +562,8 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 $ unikraft volume template --help
 
@@ -598,6 +613,8 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 $ unikraft volume template get --help
 
@@ -651,6 +668,8 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 $ unikraft volume template list --help
 
@@ -710,6 +729,8 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 $ unikraft volume template create --help
 
@@ -771,6 +792,8 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 $ unikraft volume template edit --help
 
@@ -836,6 +859,8 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 Edit flags:
       --tags=<tag>
@@ -901,3 +926,5 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).

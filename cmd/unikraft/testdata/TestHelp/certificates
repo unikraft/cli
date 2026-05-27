@@ -47,6 +47,8 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 $ unikraft certificate get --help
 
@@ -101,6 +103,8 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 $ unikraft certificate list --help
 
@@ -161,6 +165,8 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 $ unikraft certificate wait --help
 
@@ -194,9 +200,6 @@ Flags:
       --interval
           Polling interval.
           [default: 2s]
-      --timeout
-          Timeout before giving up.
-          [default: 0]
   -f, --field
           Specify which fields to include in the output.
   -o, --output
@@ -218,6 +221,8 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 $ unikraft certificate create --help
 
@@ -285,6 +290,8 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 Create flags:
       --metro=<metro>
@@ -358,3 +365,5 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).

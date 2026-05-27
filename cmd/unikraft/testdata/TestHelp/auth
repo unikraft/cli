@@ -8,9 +8,6 @@ Usage:
 Flags:
       --check
           Check if the user is already logged in.
-  -t, --timeout
-          Timeout for the login request.
-          [default: 5m]
       --controlplane
           Control plane URL to use for login.
           [default: https://controlplane.unikraft.cloud]
@@ -39,6 +36,8 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 $ unikraft logout --help
 
@@ -63,6 +62,8 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 $ unikraft profile --help
 
@@ -100,6 +101,8 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 $ unikraft profile get --help
 
@@ -145,6 +148,8 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 $ unikraft profile list --help
 
@@ -196,6 +201,8 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 $ unikraft profile use --help
 
@@ -227,6 +234,8 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 $ unikraft metro --help
 
@@ -280,6 +289,8 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 $ unikraft metro get --help
 
@@ -343,6 +354,8 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 $ unikraft metro list --help
 
@@ -418,3 +431,5 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).

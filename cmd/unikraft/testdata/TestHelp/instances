@@ -79,6 +79,8 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 $ unikraft instance get --help
 
@@ -149,6 +151,8 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 $ unikraft instance list --help
 
@@ -225,6 +229,8 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 $ unikraft instance wait --help
 
@@ -274,9 +280,6 @@ Flags:
       --interval
           Polling interval.
           [default: 2s]
-      --timeout
-          Timeout before giving up.
-          [default: 0]
   -f, --field
           Specify which fields to include in the output.
   -o, --output
@@ -298,6 +301,8 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 $ unikraft instance create --help
 
@@ -384,6 +389,8 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 Create flags:
       --metro=<metro>
@@ -533,6 +540,8 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 Edit flags:
       --image=<name>:<tag>
@@ -634,6 +643,8 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 $ unikraft instance template --help
 
@@ -688,6 +699,8 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 $ unikraft instance template get --help
 
@@ -746,6 +759,8 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 $ unikraft instance template list --help
 
@@ -810,6 +825,8 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 $ unikraft instance template create --help
 
@@ -876,6 +893,8 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 $ unikraft instance template edit --help
 
@@ -946,6 +965,8 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 Edit flags:
       --tags=<tag>
@@ -1016,6 +1037,8 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 $ unikraft instance logs --help
 
@@ -1063,6 +1086,8 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 $ unikraft instance start --help
 
@@ -1101,6 +1126,8 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 $ unikraft instance stop --help
 
@@ -1150,6 +1177,8 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 $ unikraft instance suspend --help
 
@@ -1194,6 +1223,8 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 $ unikraft instance restart --help
 
@@ -1240,3 +1271,5 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).

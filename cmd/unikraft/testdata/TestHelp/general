@@ -86,6 +86,8 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 Run "unikraft <command> --help" for more information on a command.
 
@@ -184,6 +186,8 @@ Global flags:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 Run "unikraft <command> --help" for more information on a command.
 
@@ -283,6 +287,8 @@ Examples:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 Run "unikraft <command> --help" for more information on a command.
 
@@ -380,6 +386,8 @@ Examples:
       --[no-]telemetry ($UNIKRAFT_TELEMETRY)
           Toggle anonymous usage analytics.
           [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 Run "unikraft <command> --help" for more information on a command.
 
