@@ -92,6 +92,7 @@ restart:
   policy:        always
   start-count:   3
   restart-count: 1
+sched-priority:
 stop:
   reason:        crashed
   origin:        kernel
@@ -684,6 +685,17 @@ fra    my-instance  running  nginx  ["arg1", "arg2"]  256MiB  2      example.uni
       }
     ],
     "verbosity": "hidden"
+  },
+  {
+    "name": "sched-priority",
+    "value": null,
+    "verbosity": "long",
+    "create": {
+      "set": null
+    },
+    "edit": {
+      "set": null
+    }
   },
   {
     "name": "autostart",

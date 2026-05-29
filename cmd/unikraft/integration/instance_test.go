@@ -497,4 +497,35 @@ func TestInstances(t *testing.T) {
 
 		r.Run(t, []string{"unikraft", "instance", "delete", "test-" + instName})
 	})
+
+	t.Run("sched-priority", func(t *testing.T) {
+		r := runner(t, true)
+		instName := uniq()
+
+		r.Run(t, []string{
+			"unikraft", "instance", "create",
+			"--output", "quiet",
+			"--set", "name=test-" + instName,
+			"--set", "metro=" + r.Config.MetroName,
+			"--set", "image=nginx:latest",
+			"--set", "autostart=false",
+			"--set", "resources.memory=128",
+			"--set", "resources.vcpus=1",
+			"--sched-priority", "medium",
+		})
+
+		out := r.Run(t, []string{"unikraft", "instance", "inspect", "test-" + instName, "--output", "long"})
+		assert.Regexp(t, `sched-priority:\s+medium`, out)
+
+		r.Run(t, []string{
+			"unikraft", "instance", "edit", "test-" + instName,
+			"--output", "quiet",
+			"--sched-priority", "high",
+		})
+
+		out = r.Run(t, []string{"unikraft", "instance", "inspect", "test-" + instName, "--output", "long"})
+		assert.Regexp(t, `sched-priority:\s+high`, out)
+
+		r.Run(t, []string{"unikraft", "instance", "delete", "test-" + instName})
+	})
 }

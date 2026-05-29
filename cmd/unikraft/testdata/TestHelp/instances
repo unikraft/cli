@@ -55,6 +55,7 @@ Fields:
   zero.stateful, scale-to-zero.cooldown-time, scale-to-zero.notify-time
   timing, timing.uptime, timing.boot-time, timing.net-time
   restart, restart.policy, restart.start-count, restart.restart-count
+  sched-priority
   autostart
   replicas
   wait-timeout
@@ -117,6 +118,7 @@ Fields:
   zero.stateful, scale-to-zero.cooldown-time, scale-to-zero.notify-time
   timing, timing.uptime, timing.boot-time, timing.net-time
   restart, restart.policy, restart.start-count, restart.restart-count
+  sched-priority
   autostart
   replicas
   wait-timeout
@@ -187,6 +189,7 @@ Fields:
   zero.stateful, scale-to-zero.cooldown-time, scale-to-zero.notify-time
   timing, timing.uptime, timing.boot-time, timing.net-time
   restart, restart.policy, restart.start-count, restart.restart-count
+  sched-priority
   autostart
   replicas
   wait-timeout
@@ -259,6 +262,7 @@ Fields:
   zero.stateful, scale-to-zero.cooldown-time, scale-to-zero.notify-time
   timing, timing.uptime, timing.boot-time, timing.net-time
   restart, restart.policy, restart.start-count, restart.restart-count
+  sched-priority
   autostart
   replicas
   wait-timeout
@@ -344,6 +348,7 @@ Fields:
   zero.stateful, scale-to-zero.cooldown-time, scale-to-zero.notify-time
   timing, timing.uptime, timing.boot-time, timing.net-time
   restart, restart.policy, restart.start-count, restart.restart-count
+  sched-priority
   autostart
   replicas
   wait-timeout
@@ -405,6 +410,9 @@ Create flags:
       --vcpus=<n>
           Number of vCPUs.
           [examples: 1, 2, 4]
+      --sched-priority=<priority>
+          Scheduling priority for the instance.
+          [examples: normal, medium, high, admin]
   -v, --volume=<name>:<path>[:<options>]
           Attach volume.
           [examples: my-vol:/data, cache:/tmp:ro, data:/mnt:size=10GiB]
@@ -489,6 +497,7 @@ Fields:
   zero.stateful, scale-to-zero.cooldown-time, scale-to-zero.notify-time
   timing, timing.uptime, timing.boot-time, timing.net-time
   restart, restart.policy, restart.start-count, restart.restart-count
+  sched-priority
   autostart
   replicas
   wait-timeout
@@ -549,6 +558,9 @@ Edit flags:
       --vcpus=<n>
           Number of vCPUs.
           [examples: 1, 2, 4]
+      --sched-priority=<priority>
+          Scheduling priority for the instance.
+          [examples: normal, medium, high, admin]
       --rom=image=<ref>,at=<path>
           Attach ROM.
           [examples: image=myuser/my-rom:latest,at=/rom0,name=my-rom, dir=./mydata,at=/rom]
@@ -597,6 +609,7 @@ Fields:
   zero.stateful, scale-to-zero.cooldown-time, scale-to-zero.notify-time
   timing, timing.uptime, timing.boot-time, timing.net-time
   restart, restart.policy, restart.start-count, restart.restart-count
+  sched-priority
   autostart
   replicas
   wait-timeout

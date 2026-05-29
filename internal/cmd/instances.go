@@ -75,8 +75,9 @@ type InstanceCreateCmd struct {
 	Args InstanceArgs `group:"flag-create" shortcut:"runtime.args" help:"Arguments to pass to the instance." placeholder:"arg"`
 	Env  []string     `group:"flag-create" shortcut:"runtime.env" short:"e" help:"Environment variables." placeholder:"<key>=<value>" example:"DEBUG=true,PORT=8080"`
 
-	Memory types.SizeMebibytes `group:"flag-create" shortcut:"resources.memory" short:"m" help:"Memory allocation." placeholder:"size" example:"128MiB,1GiB"`
-	Vcpus  int                 `group:"flag-create" shortcut:"resources.vcpus" help:"Number of vCPUs." placeholder:"n" example:"1,2,4"`
+	Memory        types.SizeMebibytes     `group:"flag-create" shortcut:"resources.memory" short:"m" help:"Memory allocation." placeholder:"size" example:"128MiB,1GiB"`
+	Vcpus         int                     `group:"flag-create" shortcut:"resources.vcpus" help:"Number of vCPUs." placeholder:"n" example:"1,2,4"`
+	SchedPriority *platform.SchedPriority `group:"flag-create" shortcut:"sched-priority" help:"Scheduling priority for the instance." placeholder:"priority" example:"normal,medium,high,admin"`
 
 	Volume []InstanceVolume `group:"flag-create" shortcut:"volumes" short:"v" help:"Attach volume." placeholder:"<name>:<path>[:<options>]" example:"my-vol:/data,cache:/tmp:ro,data:/mnt:size=10GiB"`
 	Rom    []InstanceRom    `group:"flag-create" shortcut:"roms" sep:"none" help:"Attach ROM." placeholder:"image=<ref>,at=<path>" example:"image=myuser/my-rom:latest\\,at=/rom0\\,name=my-rom,dir=./mydata\\,at=/rom"`
@@ -119,8 +120,9 @@ type InstanceEditCmd struct {
 	Args InstanceArgs `group:"flag-edit" shortcut:"runtime.args" help:"Arguments to pass to the instance." placeholder:"arg"`
 	Env  []string     `group:"flag-edit" shortcut:"runtime.env" short:"e" help:"Environment variables." placeholder:"<key>=<value>" example:"DEBUG=true,PORT=8080"`
 
-	Memory types.SizeMebibytes `group:"flag-edit" shortcut:"resources.memory" short:"m" help:"Memory allocation." placeholder:"size" example:"128MiB,1GiB"`
-	Vcpus  int                 `group:"flag-edit" shortcut:"resources.vcpus" help:"Number of vCPUs." placeholder:"n" example:"1,2,4"`
+	Memory        types.SizeMebibytes     `group:"flag-edit" shortcut:"resources.memory" short:"m" help:"Memory allocation." placeholder:"size" example:"128MiB,1GiB"`
+	Vcpus         int                     `group:"flag-edit" shortcut:"resources.vcpus" help:"Number of vCPUs." placeholder:"n" example:"1,2,4"`
+	SchedPriority *platform.SchedPriority `group:"flag-edit" shortcut:"sched-priority" help:"Scheduling priority for the instance." placeholder:"priority" example:"normal,medium,high,admin"`
 
 	Rom []InstanceRom `group:"flag-edit" shortcut:"roms" sep:"none" help:"Attach ROM." placeholder:"image=<ref>,at=<path>" example:"image=myuser/my-rom:latest\\,at=/rom0\\,name=my-rom,dir=./mydata\\,at=/rom"`
 
@@ -181,12 +183,13 @@ type Instance struct {
 		RestartCount int    `mirror:"instance.restart_count"`
 	}
 
-	Autostart   bool            `field:"autostart,invisible,valueless" create:"set"`
-	Replicas    int64           `field:"replicas,invisible,valueless" create:"set"`
-	WaitTimeout types.DurationS `field:"wait-timeout,invisible,valueless" create:"set"`
-	Features    []string        `field:"features,invisible,valueless" create:"set"`
-	Vsock       bool            `field:"vsock,invisible,valueless" create:"set" edit:"set"`
-	Template    string          `field:"template,invisible,valueless" create:"set"`
+	SchedPriority *platform.SchedPriority `mirror:"instance.sched_priority" field:"sched-priority,long" create:"set" edit:"set"`
+	Autostart     bool                    `field:"autostart,invisible,valueless" create:"set"`
+	Replicas      int64                   `field:"replicas,invisible,valueless" create:"set"`
+	WaitTimeout   types.DurationS         `field:"wait-timeout,invisible,valueless" create:"set"`
+	Features      []string                `field:"features,invisible,valueless" create:"set"`
+	Vsock         bool                    `field:"vsock,invisible,valueless" create:"set" edit:"set"`
+	Template      string                  `field:"template,invisible,valueless" create:"set"`
 
 	Stop struct {
 		Reason string     `field:",long"`
@@ -797,6 +800,8 @@ func instancePatchSpec(path string, op patchOp, value any) (platform.MutableInst
 		return platform.MutableInstancePropertyMemory_mb, int64(value.(types.SizeMebibytes)), nil
 	case "resources.vcpus":
 		return platform.MutableInstancePropertyVcpus, value.(int), nil
+	case "sched-priority":
+		return platform.MutableInstancePropertySched_priority, string(*value.(*platform.SchedPriority)), nil
 	case "scale-to-zero":
 		value := value.(InstanceScaleToZero)
 		req := map[string]any{}
@@ -881,6 +886,9 @@ func (Instance) Create(ctx context.Context, fields []resource.Field) ([]resource
 		case "resources.vcpus":
 			vcpus := int32(field.Create.Set.(int))
 			req.Vcpus = &vcpus
+		case "sched-priority":
+			v := field.Create.Set.(*platform.SchedPriority)
+			req.SchedPriority = v
 		case "restart.policy":
 			policy := platform.InstanceRestartPolicy(field.Create.Set.(string))
 			req.RestartPolicy = &policy
