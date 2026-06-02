@@ -57,6 +57,7 @@ type cmdConfig struct {
 	workDir    string
 	expectFail bool
 	allowFail  bool
+	noSandbox  bool
 }
 
 func WithWorkDir(dir string) CmdOption {
@@ -69,6 +70,13 @@ func ExpectFail() CmdOption {
 
 func AllowFail() CmdOption {
 	return func(c *cmdConfig) { c.allowFail = true }
+}
+
+// WithNoSandbox disables sandbox tracking for the command so the built/created
+// resource is not registered in any test's sandbox and won't be torn down by
+// individual test cleanup.
+func WithNoSandbox() CmdOption {
+	return func(c *cmdConfig) { c.noSandbox = true }
 }
 
 func (env *TestEnv) RunRaw(t *testing.T, args []string, opts ...CmdOption) (string, error) {
@@ -98,7 +106,9 @@ func (env *TestEnv) RunRaw(t *testing.T, args []string, opts ...CmdOption) (stri
 	c.Env = append(c.Env, "NO_COLOR=1")
 	c.Env = append(c.Env, "UNIKRAFT_CONFIG="+env.configPath)
 	c.Env = append(c.Env, "BUILDKIT_PROGRESS=quiet")
-	c.Env = append(c.Env, resource.UnikraftSandboxEnv+"="+env.sandboxPath)
+	if !cfg.noSandbox {
+		c.Env = append(c.Env, resource.UnikraftSandboxEnv+"="+env.sandboxPath)
+	}
 
 	err := c.Run()
 	return ansi.Strip(output.String()), err
