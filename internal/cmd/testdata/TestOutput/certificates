@@ -24,7 +24,7 @@ timestamps:
 
 ==================================== table =====================================
 METRO  NAME     COMMON-NAME           STATE  CREATED  NOT-AFTER
-fra    my-cert  example.unikraft.app  valid  never    never
+fra    my-cert  example.unikraft.app  valid
 
 ==================================== debug =====================================
 [

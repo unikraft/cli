@@ -101,8 +101,8 @@ stop:
   exit-code:     1
 
 ==================================== table =====================================
-METRO  NAME         STATE    IMAGE  ARGS              MEMORY  VCPUS  FQDN                  FQDN                  CREATED
-fra    my-instance  running  nginx  ["arg1", "arg2"]  256MiB  2      example.unikraft.app  example.unikraft.app  never
+METRO  NAME         STATE    IMAGE  ARGS              MEMORY  VCPUS  FQDN                  CREATED
+fra    my-instance  running  nginx  ["arg1", "arg2"]  256MiB  2      example.unikraft.app
 
 ==================================== debug =====================================
 [

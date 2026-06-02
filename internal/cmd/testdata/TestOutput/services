@@ -43,8 +43,8 @@ services:
   handlers:    ["http", "redirect"]
 
 ==================================== table =====================================
-METRO  NAME        AUTOSCALE  CREATED  FQDN                  FQDN                  SOURCE  DESTINATION  HANDLERS         SOURCE  DESTINATION  HANDLERS              SOURCE   DESTINATION  HANDLERS
-fra    my-service  true       never    example.unikraft.app  example.unikraft.app  443     8080         ["tls", "http"]  80      443          ["http", "redirect"]  443, 80  8080, 443    ["tls", "http"], ["http", "redirect"]
+METRO  NAME        AUTOSCALE  CREATED  FQDN                  SOURCE  DESTINATION  HANDLERS         SOURCE  DESTINATION  HANDLERS
+fra    my-service  true                example.unikraft.app  443     8080         ["tls", "http"]  80      443          ["http", "redirect"]
 
 ==================================== debug =====================================
 [

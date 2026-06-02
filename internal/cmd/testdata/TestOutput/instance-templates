@@ -36,7 +36,7 @@ restart:
 
 ==================================== table =====================================
 METRO  NAME         STATE    IMAGE  ARGS  MEMORY  VCPUS  CREATED
-fra    my-template  stopped  nginx        128MiB  1      never
+fra    my-template  stopped  nginx        128MiB  1
 
 ==================================== debug =====================================
 [

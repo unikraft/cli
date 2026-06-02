@@ -345,6 +345,9 @@ func printTable(ctx context.Context, out io.Writer, fieldSpecs []string, base re
 				if field.Value == nil {
 					continue
 				}
+				if field.IsEmpty() {
+					continue
+				}
 				fieldIdx++
 
 				if fieldIdx > 0 {

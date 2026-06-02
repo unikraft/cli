@@ -27,7 +27,7 @@ mounted-by:
 
 ==================================== table =====================================
 METRO  NAME       STATE      SIZE   CREATED
-fra    my-volume  available  50MiB  never
+fra    my-volume  available  50MiB
 
 ==================================== debug =====================================
 [
