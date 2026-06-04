@@ -1158,6 +1158,9 @@ func (Instance) Create(ctx context.Context, fields []resource.Field) ([]resource
 		case "autostart":
 			autostart := field.Create.Set.(bool)
 			req.Autostart = &autostart
+			if autostart {
+				req.TimeoutS = new(int64(-1))
+			}
 		case "replicas":
 			replicas := field.Create.Set.(int64)
 			req.Replicas = &replicas
@@ -1213,6 +1216,23 @@ func (Instance) Create(ctx context.Context, fields []resource.Field) ([]resource
 	keys, err := group.CollectMetro(ctx, g, metro, func(ctx context.Context, c multimetro.MetroClient) (multimetro.Keys, error) {
 		log.G(ctx).Trace().Msg("creating instance")
 		resp, err := c.CreateInstance(ctx, req)
+		if err != nil && strings.Contains(err.Error(), "timeout_s") && strings.Contains(err.Error(), "is not a valid member") {
+			// HACK: retry with wait_timeout_ms for metros that don't support timeout_s.
+			reqRetry := req
+			if reqRetry.TimeoutS != nil {
+				timeoutS := *reqRetry.TimeoutS
+				reqRetry.TimeoutS = nil
+				if timeoutS < 0 {
+					reqRetry.WaitTimeoutMs = new(int64(-1)) //nolint:staticcheck // Required for compatibility with metros that do not support timeout_s.
+				} else {
+					waitTimeoutMs := timeoutS * 1000
+					reqRetry.WaitTimeoutMs = &waitTimeoutMs //nolint:staticcheck // Required for compatibility with metros that do not support timeout_s.
+				}
+			} else {
+				reqRetry.WaitTimeoutMs = new(int64(-1)) //nolint:staticcheck // Required for compatibility with metros that do not support timeout_s.
+			}
+			resp, err = c.CreateInstance(ctx, reqRetry)
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -1704,11 +1724,20 @@ func startInstances(ctx context.Context, g *group.Group[multimetro.MetroClient],
 		reqs := make([]platform.StartInstancesRequestItem, 0, len(refs))
 		for _, ref := range refs.NameOrUUIDs() {
 			reqs = append(reqs, platform.StartInstancesRequestItem{
-				Name: ref.Name,
-				Uuid: ref.Uuid,
+				Name:     ref.Name,
+				Uuid:     ref.Uuid,
+				TimeoutS: new(int64(-1)),
 			})
 		}
 		resp, err := c.StartInstances(ctx, reqs)
+		if err != nil && strings.Contains(err.Error(), "timeout_s") && strings.Contains(err.Error(), "is not a valid member") {
+			// HACK: retry with wait_timeout_ms for metros that don't support timeout_s.
+			for i := range reqs {
+				reqs[i].TimeoutS = nil
+				reqs[i].WaitTimeoutMs = new(int64(-1)) //nolint:staticcheck // Required for compatibility with metros that do not support timeout_s.
+			}
+			resp, err = c.StartInstances(ctx, reqs)
+		}
 		if err != nil && !platform.ErrorContainsOnly(err, platform.APIHTTPErrorNotFound) {
 			return nil, nil, err
 		}

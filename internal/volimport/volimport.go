@@ -18,11 +18,22 @@ import (
 	"unikraft.com/x/log"
 )
 
+func timeoutSUnsupported(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "timeout_s") && strings.Contains(err.Error(), "is not a valid member")
+}
+
+func deleteInstanceByUUID(ctx context.Context, c multimetro.MetroClient, instUUID string) error {
+	_, err := c.DeleteInstanceByUUID(ctx, instUUID, platform.DeleteInstanceByUUIDRequestBody{TimeoutS: new(int64(-1))}, nil)
+	if timeoutSUnsupported(err) {
+		// HACK: retry without timeout_s for metros that don't support it.
+		_, err = c.DeleteInstanceByUUID(ctx, instUUID, platform.DeleteInstanceByUUIDRequestBody{}, nil)
+	}
+	return err
+}
+
 const (
-	internalPort  = uint32(42069)
-	memoryMB      = int64(128)
-	stopTimeoutMs = int64(1100)
-	startTimeoutS = int64(3)
+	internalPort = uint32(42069)
+	memoryMB     = int64(128)
 )
 
 // Start creates a short-lived Unikraft Cloud instance running the
@@ -36,14 +47,12 @@ func Start(ctx context.Context, c multimetro.MetroClient, image, volUUID, authSt
 		"-t", strconv.FormatUint(timeoutS, 10),
 	}
 	destPort := internalPort
-
-	log.G(ctx).Trace().Msg("creating volume data import instance")
-	resp, err := c.CreateInstance(ctx, platform.CreateInstanceRequest{
+	req := platform.CreateInstanceRequest{
 		Image:         &platform.ImageSpec{Url: image},
 		MemoryMb:      new(memoryMB),
 		Args:          args,
 		Autostart:     new(true),
-		TimeoutS:      new(startTimeoutS),
+		TimeoutS:      new(int64(-1)),
 		RestartPolicy: new(platform.InstanceRestartPolicyNever),
 		Features:      []platform.InstanceFeature{platform.InstanceFeatureDeleteOnStop},
 		Volumes: []platform.CreateInstanceRequestVolume{{
@@ -57,7 +66,16 @@ func Start(ctx context.Context, c multimetro.MetroClient, image, volUUID, authSt
 				Handlers:        []platform.ConnectionHandler{platform.ConnectionHandlerTls},
 			}},
 		},
-	})
+	}
+
+	log.G(ctx).Trace().Msg("creating volume data import instance")
+	resp, err := c.CreateInstance(ctx, req)
+	if timeoutSUnsupported(err) {
+		// HACK: retry with wait_timeout_ms for metros that don't support timeout_s.
+		req.TimeoutS = nil
+		req.WaitTimeoutMs = new(int64(-1)) //nolint:staticcheck // Required for compatibility with metros that do not support timeout_s.
+		resp, err = c.CreateInstance(ctx, req)
+	}
 	if err != nil {
 		return "", "", fmt.Errorf("creating volume data import instance: %w", err)
 	}
@@ -71,7 +89,7 @@ func Start(ctx context.Context, c multimetro.MetroClient, image, volUUID, authSt
 	if inst.ServiceGroup == nil || len(inst.ServiceGroup.Domains) == 0 {
 		if instUUID != "" {
 			log.G(ctx).Trace().Str("uuid", instUUID).Msg("deleting instance: no service group domain returned")
-			_, _ = c.DeleteInstanceByUUID(ctx, instUUID, platform.DeleteInstanceByUUIDRequestBody{}, nil)
+			_ = deleteInstanceByUUID(ctx, c, instUUID)
 		}
 		return "", "", fmt.Errorf("import instance has no service group domain")
 	}
@@ -80,7 +98,7 @@ func Start(ctx context.Context, c multimetro.MetroClient, image, volUUID, authSt
 	if fqdn == "" {
 		if instUUID != "" {
 			log.G(ctx).Trace().Str("uuid", instUUID).Msg("deleting instance: empty FQDN returned")
-			_, _ = c.DeleteInstanceByUUID(ctx, instUUID, platform.DeleteInstanceByUUIDRequestBody{}, nil)
+			_ = deleteInstanceByUUID(ctx, c, instUUID)
 		}
 		return "", "", fmt.Errorf("import instance has an empty FQDN")
 	}
@@ -93,7 +111,7 @@ func Start(ctx context.Context, c multimetro.MetroClient, image, volUUID, authSt
 // Terminate deletes the given instance, ignoring "not found" errors.
 func Terminate(ctx context.Context, c multimetro.MetroClient, instUUID string) error {
 	log.G(ctx).Trace().Str("uuid", instUUID).Msg("deleting volume data import instance")
-	_, err := c.DeleteInstanceByUUID(ctx, instUUID, platform.DeleteInstanceByUUIDRequestBody{}, nil)
+	err := deleteInstanceByUUID(ctx, c, instUUID)
 	if err != nil && !platform.ErrorContainsOnly(err, platform.APIHTTPErrorNotFound) {
 		return fmt.Errorf("deleting volume data import instance: %w", err)
 	}
@@ -103,10 +121,17 @@ func Terminate(ctx context.Context, c multimetro.MetroClient, instUUID string) e
 // Wait waits for the given instance to reach the stopped state.
 func Wait(ctx context.Context, c multimetro.MetroClient, instUUID string) error {
 	state := platform.InstanceStateStopped
-	_, err := c.WaitInstanceByUUID(ctx, instUUID, platform.WaitInstanceByUUIDRequestBody{
-		State:     state,
-		TimeoutMs: new(stopTimeoutMs),
-	})
+	req := platform.WaitInstanceByUUIDRequestBody{
+		State:    state,
+		TimeoutS: new(int64(-1)),
+	}
+	_, err := c.WaitInstanceByUUID(ctx, instUUID, req)
+	if timeoutSUnsupported(err) {
+		// HACK: retry with timeout_ms for metros that don't support timeout_s.
+		req.TimeoutS = nil
+		req.TimeoutMs = new(int64(-1)) //nolint:staticcheck // Required for compatibility with metros that do not support timeout_s.
+		_, err = c.WaitInstanceByUUID(ctx, instUUID, req)
+	}
 	if err != nil && !platform.ErrorContainsOnly(err, platform.APIHTTPErrorNotFound) {
 		return fmt.Errorf("waiting for import instance to stop: %w", err)
 	}

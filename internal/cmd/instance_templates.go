@@ -370,11 +370,23 @@ func (InstanceTemplate) Create(ctx context.Context, fields []resource.Field) ([]
 			for _, ref := range refs {
 				refStr := cmp.Or(ref.Name, ref.UUID)
 				log.G(ctx).Trace().Str("ref", refStr).Msg("creating instance template")
+				opts := platform.CreateTemplateInstancesOpts{
+					TimeoutS: new(int64(-1)),
+				}
 				resp, err := c.CreateTemplateInstances(
 					ctx,
 					[]platform.NameOrUUID{ref.NameOrUUID()},
-					platform.CreateTemplateInstancesOpts{},
+					opts,
 				)
+				if err != nil && strings.Contains(err.Error(), "timeout_s") && strings.Contains(err.Error(), "is not a valid member") {
+					// HACK: retry without timeout_s for metros that don't support it.
+					opts.TimeoutS = nil
+					resp, err = c.CreateTemplateInstances(
+						ctx,
+						[]platform.NameOrUUID{ref.NameOrUUID()},
+						opts,
+					)
+				}
 				if err != nil {
 					errs = append(errs, fmt.Errorf("failed to create template for %s: %w", refStr, err))
 					continue
