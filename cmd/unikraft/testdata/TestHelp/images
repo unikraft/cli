@@ -8,6 +8,8 @@ Usage:
 Resources:
   list, ls
           List images.
+  build
+          Build a Unikraft project into a container image.
   get, inspect, show
           Inspect an image.
   delete, rm, remove

@@ -8,6 +8,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"golang.org/x/mod/semver"
 	"unikraft.com/cli/internal/builder"
@@ -21,7 +22,7 @@ import (
 	"unikraft.com/x/log"
 )
 
-type BuildCmd struct {
+type ImageBuildCmd struct {
 	Input  string `arg:"" default:"." help:"Path to the input directory."`
 	Output string `short:"o" help:"Output destination"`
 
@@ -34,42 +35,42 @@ type BuildCmd struct {
 	Insecure []string `help:"Allow insecure (HTTP/unverified TLS) connections to registries. Specify hostnames to restrict, or omit to apply to all." type:"optional"`
 }
 
-func (BuildCmd) Examples() []kingkong.Example {
+func (ImageBuildCmd) Examples() []kingkong.Example {
 	return []kingkong.Example{
 		{
 			Description: "Build the project in the current directory",
 			Commands: []string{
-				"unikraft build .",
+				"unikraft image build .",
 			},
 		},
 		{
 			Description: "Build and publish an image from a Kraftfile",
 			Commands: []string{
-				"unikraft build . --output my-org/my-app:latest",
+				"unikraft image build . --output my-org/my-app:latest",
 			},
 		},
 		{
 			Description: "Build with custom build arguments",
 			Commands: []string{
-				"unikraft build ./app --build-arg VERSION=1.2.3 --build-arg COMMIT=abc123",
+				"unikraft image build ./app --build-arg VERSION=1.2.3 --build-arg COMMIT=abc123",
 			},
 		},
 		{
 			Description: "Build with secret and SSH access",
 			Commands: []string{
-				"unikraft build . --secret id=npm,src=$HOME/.npmrc --ssh default=$SSH_AUTH_SOCK",
+				"unikraft image build . --secret id=npm,src=$HOME/.npmrc --ssh default=$SSH_AUTH_SOCK",
 			},
 		},
 		{
 			Description: "Build and save to a local OCI archive",
 			Commands: []string{
-				"unikraft build . --output ./dist/my-app.oci.tar",
+				"unikraft image build . --output ./dist/my-app.oci.tar",
 			},
 		},
 	}
 }
 
-func (c *BuildCmd) Run(ctx context.Context, cfg *config.Config, sandbox *resource.Sandbox) error {
+func (c *ImageBuildCmd) Run(ctx context.Context, cfg *config.Config, sandbox *resource.Sandbox) error {
 	kf, err := kraftfile.ParseDirectory(c.Input, kraftfile.WithSkippedVersionCheck())
 	if err != nil {
 		return err
@@ -153,4 +154,28 @@ func (c *BuildCmd) Run(ctx context.Context, cfg *config.Config, sandbox *resourc
 	}
 
 	return nil
+}
+
+type BuildCmd struct {
+	ImageBuildCmd `embed:""`
+}
+
+func (BuildCmd) Examples() []kingkong.Example {
+	imageExamples := ImageBuildCmd{}.Examples()
+	for i := range imageExamples {
+		for j := range imageExamples[i].Commands {
+			imageExamples[i].Commands[j] = strings.Replace(
+				imageExamples[i].Commands[j],
+				"unikraft image build",
+				"unikraft build",
+				1,
+			)
+		}
+	}
+
+	return imageExamples
+}
+
+func (c *BuildCmd) Run(ctx context.Context, cfg *config.Config, sandbox *resource.Sandbox) error {
+	return c.ImageBuildCmd.Run(ctx, cfg, sandbox)
 }

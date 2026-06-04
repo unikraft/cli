@@ -15,7 +15,7 @@ Commands:
   run
           Run an image as an instance.
   build
-          Build a Unikraft project into a container image.
+          Build a Unikraft project into a container image (alias for 'unikraft image build').
   tui
           Browse resources in a TUI.
 
@@ -61,7 +61,7 @@ Examples:
   unikraft instances list
 
   # Build and publish an image from a Kraftfile
-  unikraft build . --output my-org/my-app:latest
+  unikraft image build . --output my-org/my-app:latest
 
   # Deploy a new instance from an image
   unikraft run --metro=sfo --image=nginx:latest --autostart -p 443:8080/http+tls
@@ -113,7 +113,7 @@ Commands:
   run
           Run an image as an instance.
   build
-          Build a Unikraft project into a container image.
+          Build a Unikraft project into a container image (alias for 'unikraft image build').
   tui
           Browse resources in a TUI.
 
@@ -159,7 +159,7 @@ Examples:
   unikraft instances list
 
   # Build and publish an image from a Kraftfile
-  unikraft build . --output my-org/my-app:latest
+  unikraft image build . --output my-org/my-app:latest
 
   # Deploy a new instance from an image
   unikraft run --metro=sfo --image=nginx:latest --autostart -p 443:8080/http+tls
@@ -213,7 +213,7 @@ Commands:
   run
           Run an image as an instance.
   build
-          Build a Unikraft project into a container image.
+          Build a Unikraft project into a container image (alias for 'unikraft image build').
   tui
           Browse resources in a TUI.
 
@@ -259,7 +259,7 @@ Examples:
   unikraft instances list
 
   # Build and publish an image from a Kraftfile
-  unikraft build . --output my-org/my-app:latest
+  unikraft image build . --output my-org/my-app:latest
 
   # Deploy a new instance from an image
   unikraft run --metro=sfo --image=nginx:latest --autostart -p 443:8080/http+tls
@@ -310,7 +310,7 @@ Commands:
   run
           Run an image as an instance.
   build
-          Build a Unikraft project into a container image.
+          Build a Unikraft project into a container image (alias for 'unikraft image build').
   tui
           Browse resources in a TUI.
 
@@ -356,7 +356,7 @@ Examples:
   unikraft instances list
 
   # Build and publish an image from a Kraftfile
-  unikraft build . --output my-org/my-app:latest
+  unikraft image build . --output my-org/my-app:latest
 
   # Deploy a new instance from an image
   unikraft run --metro=sfo --image=nginx:latest --autostart -p 443:8080/http+tls

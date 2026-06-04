@@ -1,6 +1,7 @@
 $ unikraft build --help
 
-Build a Unikraft project into a container image.
+Build a Unikraft project into a container image (alias for 'unikraft image
+build').
 
 Usage:
   unikraft build [<input>] [flags]
