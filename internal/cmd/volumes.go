@@ -52,6 +52,8 @@ type VolumesCmd struct {
 	Template VolumeTemplatesCmd `cmd:"" group:"cmd-templates" help:"Manage volume templates." aliases:"templates" set:"name=volume-template" set:"names=volume-templates"`
 
 	Clone  VolumesCloneCmd `cmd:"" help:"Clone a volume."`
+	Attach VolumeAttachCmd `cmd:"" help:"Attach a volume to an instance."`
+	Detach VolumeDetachCmd `cmd:"" help:"Detach a volume from an instance."`
 	Import VolumeImportCmd `cmd:"" help:"Import data into a volume."`
 }
 
@@ -571,6 +573,83 @@ func volumePatchSpec(path string, _ patchOp, value any) (platform.MutableVolumeP
 	default:
 		return zero, nil, nil
 	}
+}
+
+// VolumeAttachCmd attaches an existing volume to a running instance.
+type VolumeAttachCmd struct {
+	Volume   string `arg:"" completion-predictor:"resource-key-volume" help:"Name or UUID of the volume to attach."`
+	To       string `required:"" completion-predictor:"resource-key-instance" help:"Name or UUID of the instance to attach to." placeholder:"instance"`
+	At       string `help:"Absolute mount path inside the instance." placeholder:"path" example:"/data,/mnt"`
+	Readonly bool   `help:"Mount volume as read-only."`
+
+	cmd.FormatOpts
+}
+
+func (VolumeAttachCmd) Examples() []kingkong.Example {
+	return []kingkong.Example{
+		{
+			Description: "Attach a volume to a stopped instance",
+			Commands:    []string{"unikraft volume attach my-volume --to my-instance --at /data"},
+		},
+		{
+			Description: "Attach a volume read-only",
+			Commands:    []string{"unikraft volume attach my-volume --to my-instance --at /data --readonly"},
+		},
+	}
+}
+
+func (c *VolumeAttachCmd) Run(ctx context.Context, stdio config.Stdio, sandbox *resource.Sandbox) error {
+	if c.At == "" {
+		return fmt.Errorf("--at is required: specify the absolute mount path inside the instance")
+	}
+	vol := &InstanceVolume{At: c.At, Readonly: c.Readonly}
+	if err := vol.Link.UnmarshalText([]byte(c.Volume)); err != nil {
+		return err
+	}
+	volStr, err := vol.MarshalText()
+	if err != nil {
+		return err
+	}
+	editCmd := &cmd.ResourceEditCmd[Instance]{
+		Target:     c.To,
+		AddArgs:    cmd.AddArgs{Add: []map[string]string{{"volumes": string(volStr)}}},
+		FormatOpts: c.FormatOpts,
+	}
+	return editCmd.Run(ctx, stdio, sandbox)
+}
+
+// VolumeDetachCmd detaches a volume from an instance.
+type VolumeDetachCmd struct {
+	Volume string `arg:"" completion-predictor:"resource-key-volume" help:"Name or UUID of the volume to detach."`
+	From   string `required:"" completion-predictor:"resource-key-instance" help:"Name or UUID of the instance to detach from." placeholder:"instance"`
+
+	cmd.FormatOpts
+}
+
+func (VolumeDetachCmd) Examples() []kingkong.Example {
+	return []kingkong.Example{
+		{
+			Description: "Detach a volume from an instance",
+			Commands:    []string{"unikraft volume detach my-volume --from my-instance"},
+		},
+	}
+}
+
+func (c *VolumeDetachCmd) Run(ctx context.Context, stdio config.Stdio, sandbox *resource.Sandbox) error {
+	vol := &InstanceVolume{}
+	if err := vol.Link.UnmarshalText([]byte(c.Volume)); err != nil {
+		return err
+	}
+	volStr, err := vol.MarshalText()
+	if err != nil {
+		return err
+	}
+	editCmd := &cmd.ResourceEditCmd[Instance]{
+		Target:     c.From,
+		DelArgs:    cmd.DelArgs{Del: []map[string]string{{"volumes": string(volStr)}}},
+		FormatOpts: c.FormatOpts,
+	}
+	return editCmd.Run(ctx, stdio, sandbox)
 }
 
 // VolumeImportCmd imports data from a local source into a volume by

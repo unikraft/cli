@@ -446,6 +446,10 @@ fra    my-instance  running  nginx  ["arg1", "arg2"]  256MiB  2      example.uni
       "set": [
         "my-volume"
       ]
+    },
+    "edit": {
+      "add": null,
+      "del": null
     }
   },
   {

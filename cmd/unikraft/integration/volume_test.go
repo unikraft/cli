@@ -136,6 +136,57 @@ func TestVolumes(t *testing.T) {
 		r.Run(t, []string{"unikraft", "volume", "delete", "test-" + volName})
 	})
 
+	t.Run("attach-detach", func(t *testing.T) {
+		r := runner(t, true)
+		volName := uniq()
+		instName := uniq()
+
+		r.Run(t, []string{
+			"unikraft", "volume", "create",
+			"--output", "quiet",
+			"--set", "name=test-" + volName,
+			"--set", "size=10",
+			"--set", "metro=" + r.Config.MetroName,
+		})
+
+		r.Run(t, []string{
+			"unikraft", "instance", "create",
+			"--output", "quiet",
+			"--set", "name=test-" + instName,
+			"--set", "metro=" + r.Config.MetroName,
+			"--set", "image=nginx:latest",
+			"--set", "resources.memory=128",
+			"--set", "resources.vcpus=1",
+		})
+
+		// attach shows instance diff
+		out := r.Run(t, []string{
+			"unikraft", "volume", "attach",
+			"test-" + volName,
+			"--to", "test-" + instName,
+			"--at", "/data",
+		})
+		assert.Regexp(t, `test-`+volName, out)
+
+		// verify via volume inspect
+		out = r.Run(t, []string{"unikraft", "volume", "inspect", "test-" + volName})
+		assert.Regexp(t, `test-`+instName, out)
+
+		// detach shows instance diff
+		out = r.Run(t, []string{
+			"unikraft", "volume", "detach",
+			"test-" + volName,
+			"--from", "test-" + instName,
+		})
+		assert.Regexp(t, `test-`+instName, out)
+
+		out = r.Run(t, []string{"unikraft", "volume", "inspect", "test-" + volName})
+		assert.NotRegexp(t, `test-`+instName, out)
+
+		r.Run(t, []string{"unikraft", "instance", "delete", "test-" + instName})
+		r.Run(t, []string{"unikraft", "volume", "delete", "test-" + volName})
+	})
+
 	t.Run("import", func(t *testing.T) {
 		t.Run("missing-source", func(t *testing.T) {
 			r := runner(t, false)

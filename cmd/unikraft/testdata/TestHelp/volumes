@@ -20,6 +20,10 @@ Resources:
           Edit a volume.
   clone
           Clone a volume.
+  attach
+          Attach a volume to an instance.
+  detach
+          Detach a volume from an instance.
   import
           Import data into a volume.
 
@@ -381,6 +385,98 @@ flag-clone
       --tags=<tag>
           Volume tags.
           [examples: env=prod, team=platform]
+
+$ unikraft volume attach --help
+
+Attach a volume to an instance.
+
+Usage:
+  unikraft volumes attach --to=instance <volume> [flags]
+
+Arguments:
+  <volume>
+          Name or UUID of the volume to attach.
+
+Examples:
+  # Attach a volume to a stopped instance
+  unikraft volume attach my-volume --to my-instance --at /data
+
+  # Attach a volume read-only
+  unikraft volume attach my-volume --to my-instance --at /data --readonly
+
+Flags:
+      --to=<instance>
+          Name or UUID of the instance to attach to.
+      --at=<path>
+          Absolute mount path inside the instance.
+          [examples: /data, /mnt]
+      --readonly
+          Mount volume as read-only.
+  -f, --field
+          Specify which fields to include in the output.
+  -o, --output
+          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
+
+$ unikraft volume detach --help
+
+Detach a volume from an instance.
+
+Usage:
+  unikraft volumes detach --from=instance <volume> [flags]
+
+Arguments:
+  <volume>
+          Name or UUID of the volume to detach.
+
+Examples:
+  # Detach a volume from an instance
+  unikraft volume detach my-volume --from my-instance
+
+Flags:
+      --from=<instance>
+          Name or UUID of the instance to detach from.
+  -f, --field
+          Specify which fields to include in the output.
+  -o, --output
+          Output format. One of: kv, table, json, yaml, raw, quiet, template.
+
+Global flags:
+  -h, --help
+          Show context-sensitive help.
+      --config=<file> ($UNIKRAFT_CONFIG)
+          Path to the configuration file.
+      --log-level=<level> ($UNIKRAFT_LOG_LEVEL)
+          Set the logging level.
+          [default: info, choices: trace, debug, info, warn, error, fatal]
+      --log-type=<type> ($UNIKRAFT_LOG_TYPE)
+          Set the log type.
+          [default: text, choices: text, json]
+      --profile=<name> ($UNIKRAFT_PROFILE)
+          Set the current profile.
+      --[no-]telemetry ($UNIKRAFT_TELEMETRY)
+          Toggle anonymous usage analytics.
+          [default: true]
+      --timeout=<duration> ($UNIKRAFT_TIMEOUT)
+          Set a deadline for the command (e.g. 30s, 5m, 1h).
 
 $ unikraft volume import --help
 

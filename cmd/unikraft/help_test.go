@@ -124,6 +124,8 @@ func volumesHelpTests(t *testing.T, unikraftPath string) {
 		[]string{"unikraft", "volume", "wait", "--help"},
 		[]string{"unikraft", "volume", "create", "--help"},
 		[]string{"unikraft", "volume", "clone", "--help"},
+		[]string{"unikraft", "volume", "attach", "--help"},
+		[]string{"unikraft", "volume", "detach", "--help"},
 		[]string{"unikraft", "volume", "import", "--help"},
 		[]string{"unikraft", "volume", "edit", "--help"},
 		[]string{"unikraft", "volume", "delete", "--help"},

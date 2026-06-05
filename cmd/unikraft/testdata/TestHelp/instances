@@ -482,6 +482,12 @@ Examples:
   # Remove a ROM from an instance by name
   unikraft instance edit demo-instance --del roms=name=my-rom
 
+  # Attach a volume to an instance
+  unikraft instance edit demo-instance --add volumes=my-vol:/data
+
+  # Detach a volume from an instance
+  unikraft instance edit demo-instance --del volumes=my-vol
+
 Fields:
   metro
   name

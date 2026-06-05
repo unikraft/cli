@@ -158,7 +158,7 @@ type Instance struct {
 	}
 
 	Service *InstanceService  `mirror:"instance.service_group" field:",embed" create:"set"`
-	Volumes []*InstanceVolume `mirror:"instance.volumes" field:",embed" create:"set"`
+	Volumes []*InstanceVolume `mirror:"instance.volumes" field:",embed" create:"set" edit:"add,del"`
 	Roms    []*InstanceRom    `mirror:"instance.roms" field:",embed" create:"set" edit:"set,add,del"`
 
 	Networks []InstanceNetwork `mirror:"instance.network_interfaces" field:",embed"`
@@ -258,9 +258,13 @@ type InstanceVolume struct {
 }
 
 func (v *InstanceVolume) MarshalText() ([]byte, error) {
-	parts := []string{
-		cmp.Or(v.Name, v.UUID),
-		v.At,
+	volKey, err := v.Link.MarshalText()
+	if err != nil {
+		return nil, err
+	}
+	parts := []string{string(volKey)}
+	if v.At != "" || v.Readonly || v.Size > 0 {
+		parts = append(parts, v.At)
 	}
 	if v.Readonly {
 		parts = append(parts, "ro")
@@ -299,11 +303,15 @@ func (v *InstanceVolume) UnmarshalJSON(data []byte) error {
 func (v *InstanceVolume) UnmarshalText(data []byte) error {
 	str := string(data)
 	parts := strings.Split(str, ":")
-	if len(parts) < 2 {
-		return fmt.Errorf("invalid volume format, expected NAME:AT, got %q", str)
-	}
 
-	name, at, parts := parts[0], parts[1], parts[2:]
+	name := parts[0]
+	var at string
+	if len(parts) >= 2 {
+		at = parts[1]
+		parts = parts[2:]
+	} else {
+		parts = nil
+	}
 	readonly := false
 	size := types.SizeMebibytes(0)
 
@@ -718,7 +726,6 @@ func (Instance) Edit(ctx context.Context, key string, fields []resource.Field) e
 			hasStateChange = true
 		}
 	}
-
 	var currentState types.InstanceState
 	if hasStateChange {
 		resources, err := Instance{}.Get(ctx, []string{key})
@@ -728,21 +735,40 @@ func (Instance) Edit(ctx context.Context, key string, fields []resource.Field) e
 		currentState = resources[0].(Instance).State
 	}
 
+	// Extract volume add/del ops before the standard patch pipeline.
+	var volumeAddOps []*InstanceVolume
+	var volumeDelOps []*InstanceVolume
+	for path, field := range resource.IterFields(fields) {
+		if path.String() != "volumes" || field.Edit == nil {
+			continue
+		}
+		if add, ok := field.Edit.Add.([]*InstanceVolume); ok {
+			volumeAddOps = add
+			field.Edit.Add = nil
+		}
+		if del, ok := field.Edit.Del.([]*InstanceVolume); ok {
+			volumeDelOps = del
+			field.Edit.Del = nil
+		}
+		break
+	}
+
 	patches, err := patchRequests(fields, instancePatchSpec)
 	if err != nil {
 		return err
 	}
-
 	g, err := multimetro.NewClient(ctx)
 	if err != nil {
 		return err
 	}
+
 	if hasStateChange && currentState.IsRunning() && !targetState.IsRunning() {
 		_, err := stopInstances(ctx, g, parsedKeys, StopOpts{DrainTimeout: -1})
 		if err != nil {
 			return err
 		}
 	}
+
 	if len(patches) > 0 {
 		err = group.DoRefs(ctx, g, parsedKeys.Refs(), func(ctx context.Context, c multimetro.MetroClient, refs group.Refs) (group.Refs, error) {
 			reqs := make([]platform.UpdateInstancesRequestItem, 0, len(refs)*len(patches))
@@ -775,12 +801,82 @@ func (Instance) Edit(ctx context.Context, key string, fields []resource.Field) e
 			return err
 		}
 	}
+
+	// Handle volume attach/detach ops using the dedicated volume APIs.
+	if len(volumeAddOps) > 0 || len(volumeDelOps) > 0 {
+		err = group.DoRefs(ctx, g, parsedKeys.Refs(), func(ctx context.Context, c multimetro.MetroClient, refs group.Refs) (group.Refs, error) {
+			var attachReqs []platform.AttachVolumesRequestItem
+			var detachReqs []platform.DetachVolumesRequestItem
+			for _, ref := range refs {
+				instRef := platform.NameOrUUID{
+					Uuid: ptr.NilIfZero(ref.UUID),
+					Name: ptr.NilIfZero(ref.Name),
+				}
+				for _, vol := range volumeAddOps {
+					if vol.Metro != "" && vol.Metro != c.Metro.Name {
+						return nil, fmt.Errorf("volume %q is in metro %q but instance is in metro %q: cross-metro volume attachment is not supported",
+							cmp.Or(vol.Name, vol.UUID), vol.Metro, c.Metro.Name)
+					}
+					if vol.At == "" {
+						return nil, fmt.Errorf("volume %q: mount path is required for attach (format: NAME:PATH[:<options>])",
+							cmp.Or(vol.Name, vol.UUID))
+					}
+					req := platform.AttachVolumesRequestItem{
+						AttachTo: instRef,
+						At:       vol.At,
+					}
+					if vol.UUID != "" {
+						req.Uuid = ptr.NilIfZero(vol.UUID)
+					} else {
+						req.Name = ptr.NilIfZero(vol.Name)
+					}
+					if vol.Readonly {
+						req.Readonly = new(true)
+					}
+					attachReqs = append(attachReqs, req)
+				}
+				for _, vol := range volumeDelOps {
+					if vol.Metro != "" && vol.Metro != c.Metro.Name {
+						return nil, fmt.Errorf("volume %q is in metro %q but instance is in metro %q: cross-metro volume detachment is not supported",
+							cmp.Or(vol.Name, vol.UUID), vol.Metro, c.Metro.Name)
+					}
+					req := platform.DetachVolumesRequestItem{
+						From: &instRef,
+					}
+					if vol.UUID != "" {
+						req.Uuid = ptr.NilIfZero(vol.UUID)
+					} else {
+						req.Name = ptr.NilIfZero(vol.Name)
+					}
+					detachReqs = append(detachReqs, req)
+				}
+			}
+			if len(attachReqs) > 0 {
+				log.G(ctx).Trace().Msg("attaching volumes to instance")
+				if _, err := c.AttachVolumes(ctx, attachReqs); err != nil {
+					return nil, err
+				}
+			}
+			if len(detachReqs) > 0 {
+				log.G(ctx).Trace().Msg("detaching volumes from instance")
+				if _, err := c.DetachVolumes(ctx, detachReqs); err != nil {
+					return nil, err
+				}
+			}
+			return refs, nil
+		})
+		if err != nil {
+			return err
+		}
+	}
+
 	if hasStateChange && !currentState.IsRunning() && targetState.IsRunning() {
 		_, err := startInstances(ctx, g, parsedKeys)
 		if err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -1175,6 +1271,18 @@ func (Instance) Examples() map[cmd.CmdType][]kingkong.Example {
 				Description: "Remove a ROM from an instance by name",
 				Commands: []string{
 					"unikraft instance edit demo-instance --del roms=name=my-rom",
+				},
+			},
+			{
+				Description: "Attach a volume to an instance",
+				Commands: []string{
+					"unikraft instance edit demo-instance --add volumes=my-vol:/data",
+				},
+			},
+			{
+				Description: "Detach a volume from an instance",
+				Commands: []string{
+					"unikraft instance edit demo-instance --del volumes=my-vol",
 				},
 			},
 		},
