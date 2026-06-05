@@ -1004,9 +1004,11 @@ func (Instance) Create(ctx context.Context, fields []resource.Field) ([]resource
 					if name == "" {
 						name = domain.FQDN + "."
 					}
-					req.ServiceGroup.Domains = append(req.ServiceGroup.Domains, platform.CreateInstanceRequestDomain{
-						Name: name,
-					})
+					d := platform.CreateInstanceRequestDomain{
+						Name:        name,
+						Certificate: new(domain.Certificate.Ref().NameOrUUID()),
+					}
+					req.ServiceGroup.Domains = append(req.ServiceGroup.Domains, d)
 				}
 			}
 		case "service.soft-limit":

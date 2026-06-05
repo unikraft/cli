@@ -128,7 +128,8 @@ func (s *Service) MarshalText() ([]byte, error) {
 	for i, handler := range s.Handlers {
 		handlers[i] = string(handler)
 	}
-	return fmt.Appendf([]byte{}, "%d:%d/%s",
+	return fmt.Appendf(
+		[]byte{}, "%d:%d/%s",
 		s.Source,
 		s.Destination,
 		strings.Join(handlers, "+"),
@@ -381,7 +382,8 @@ func (ServiceGroup) Create(ctx context.Context, fields []resource.Field) ([]reso
 						name = domain.FQDN + "."
 					}
 					req.Domains = append(req.Domains, platform.CreateServiceGroupRequestDomain{
-						Name: name,
+						Name:        name,
+						Certificate: new(domain.Certificate.Ref().NameOrUUID()),
 					})
 				}
 			case "services":
@@ -534,7 +536,8 @@ func serviceGroupPatchSpec(path string, _ patchOp, value any) (platform.MutableS
 				name = domain.FQDN + "."
 			}
 			nvalue = append(nvalue, platform.CreateServiceGroupRequestDomain{
-				Name: name,
+				Name:        name,
+				Certificate: new(domain.Certificate.Ref().NameOrUUID()),
 			})
 		}
 		return platform.MutableServiceGroupPropertyDomains, nvalue, nil
