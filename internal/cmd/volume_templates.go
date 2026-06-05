@@ -10,6 +10,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/alecthomas/kong"
@@ -25,6 +26,8 @@ import (
 	"unikraft.com/cli/internal/multimetro"
 	"unikraft.com/cli/internal/resource"
 	"unikraft.com/cli/internal/resource/cmd"
+	"unikraft.com/cli/internal/resource/patch"
+	"unikraft.com/cli/internal/resource/value"
 	"unikraft.com/cli/internal/types"
 )
 
@@ -36,6 +39,7 @@ type VolumeTemplatesCmd struct {
 
 	Create VolumeTemplateCreateCmd `cmd:"" help:"Create a volume template."`
 	Edit   VolumeTemplateEditCmd   `cmd:"" help:"Edit a volume template."`
+	Clone  VolumeTemplateCloneCmd  `cmd:"" help:"Clone a volume from a template."`
 }
 
 // VolumeTemplateCreateCmd extends the generic resource create command with
@@ -70,6 +74,104 @@ func (c *VolumeTemplateEditCmd) Run(ctx context.Context, stdio config.Stdio, san
 		return err
 	}
 	return c.ResourceEditCmd.Run(ctx, stdio, sandbox)
+}
+
+// VolumeTemplateCloneCmd clones an existing volume template into a new volume.
+type VolumeTemplateCloneCmd struct {
+	Source string `arg:"" completion-predictor:"resource-key-volume-template" help:"Name or UUID of the volume template to clone from."`
+
+	Name string   `group:"flag-clone" shortcut:"name" short:"n" help:"New volume name." placeholder:"name"`
+	Tags []string `group:"flag-clone" shortcut:"tags" help:"Volume tags." placeholder:"tag" example:"env=prod,team=platform"`
+
+	cmd.SetArgs
+
+	cmd.FormatOpts
+}
+
+func (VolumeTemplateCloneCmd) Examples() []kingkong.Example {
+	return []kingkong.Example{
+		{
+			Description: "Clone a volume template into a new volume",
+			Commands: []string{
+				"unikraft volume template clone my-template --name my-new-volume",
+			},
+		},
+	}
+}
+
+func (c *VolumeTemplateCloneCmd) Run(ctx context.Context, stdio config.Stdio, sandbox *resource.Sandbox, kctx *kong.Context) error {
+	if err := cmd.ApplyShortcutFlags(&c.SetArgs, kctx.Flags()); err != nil {
+		return err
+	}
+	spec := patch.PatchSpec{
+		Set: make(map[string][]string),
+	}
+	if err := c.Apply(&spec); err != nil {
+		return err
+	}
+	req := platform.CloneVolumesRequestItem{}
+	var unknownFields []string
+	for key, values := range spec.Set {
+		switch key {
+		case "name":
+			name, err := value.Parse[string](values)
+			if err != nil {
+				return err
+			}
+			if name != "" {
+				req.VolName = new(name)
+			}
+		case "tags":
+			tags, err := value.Parse[[]string](values)
+			if err != nil {
+				return err
+			}
+			req.Tags = tags
+		default:
+			unknownFields = append(unknownFields, key)
+		}
+	}
+	if len(unknownFields) > 0 {
+		slices.Sort(unknownFields)
+		return fmt.Errorf("unknown fields: %v", unknownFields)
+	}
+
+	gettable := sandbox.WrapGettable(VolumeTemplate{})
+	resources, err := gettable.Get(ctx, []string{c.Source})
+	if err != nil {
+		return err
+	}
+	if len(resources) == 0 {
+		return fmt.Errorf("volume template not found: %s", c.Source)
+	}
+	if len(resources) > 1 {
+		var keys []string
+		for _, res := range resources {
+			keys = append(keys, res.Key().String())
+		}
+		return fmt.Errorf("ambiguous volume template: %s (found %v)", c.Source, keys)
+	}
+
+	tmpl, ok := resources[0].(VolumeTemplate)
+	if !ok {
+		return fmt.Errorf("unexpected resource type %T", resources[0])
+	}
+	if tmpl.UUID == "" {
+		return fmt.Errorf("volume template %q is missing a UUID", tmpl.Name)
+	}
+	if tmpl.Metro == nil {
+		return fmt.Errorf("volume template %q has no metro information", tmpl.Name)
+	}
+
+	results, cloneErr := cloneVolume(ctx, sandbox, tmpl.Metro.Name, tmpl.key.UUID, tmpl.key.Name, req)
+	if cloneErr != nil && len(results) == 0 {
+		return cloneErr
+	}
+
+	printErr := c.Output.
+		WithDefault(cmd.PrinterTypeKeyValue).
+		Print(ctx, stdio.Stdout, c.Field, Volume{}, results...)
+	return errors.Join(cloneErr, printErr)
 }
 
 type VolumeTemplate struct {

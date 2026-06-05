@@ -181,15 +181,27 @@ func (c *VolumesCloneCmd) Run(ctx context.Context, stdio config.Stdio, sandbox *
 		return fmt.Errorf("volume %q has no metro information", volume.Name)
 	}
 
+	results, cloneErr := cloneVolume(ctx, sandbox, volume.Metro.Name, volume.key.UUID, volume.key.Name, req)
+	if cloneErr != nil && len(results) == 0 {
+		return cloneErr
+	}
+
+	printErr := c.Output.
+		WithDefault(cmd.PrinterTypeKeyValue).
+		Print(ctx, stdio.Stdout, c.Field, Volume{}, results...)
+	return errors.Join(cloneErr, printErr)
+}
+
+func cloneVolume(ctx context.Context, sandbox *resource.Sandbox, metro, uuid, name string, req platform.CloneVolumesRequestItem) ([]resource.Resource, error) {
 	g, err := multimetro.NewClient(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	req.Uuid = ptr.NilIfZero(volume.key.UUID)
+	req.Uuid = ptr.NilIfZero(uuid)
 	if req.Uuid == nil {
-		req.Name = ptr.NilIfZero(volume.key.Name)
+		req.Name = ptr.NilIfZero(name)
 	}
-	keys, opErr := group.CollectMetro(ctx, g, volume.Metro.Name, func(ctx context.Context, client multimetro.MetroClient) (multimetro.Keys, error) {
+	keys, opErr := group.CollectMetro(ctx, g, metro, func(ctx context.Context, client multimetro.MetroClient) (multimetro.Keys, error) {
 		log.G(ctx).Trace().Msg("cloning volume")
 		resp, err := client.CloneVolumes(ctx, []platform.CloneVolumesRequestItem{req})
 		if err != nil {
@@ -209,28 +221,21 @@ func (c *VolumesCloneCmd) Run(ctx context.Context, stdio config.Stdio, sandbox *
 		return created, nil
 	})
 	if opErr != nil && len(keys) == 0 {
-		return opErr
+		return nil, opErr
 	}
 
 	results, getErr := Volume{}.Get(ctx, keys.Strings())
 	if getErr != nil && len(results) == 0 {
-		return errors.Join(opErr, getErr)
+		return nil, errors.Join(opErr, getErr)
 	}
 	if sandbox != nil {
 		for _, res := range results {
 			if err := sandbox.Add(ctx, res); err != nil {
-				return err
+				return results, err
 			}
 		}
 	}
-
-	printErr := c.Output.
-		WithDefault(cmd.PrinterTypeKeyValue).
-		Print(ctx, stdio.Stdout, c.Field, Volume{}, results...)
-	if printErr != nil {
-		return errors.Join(opErr, getErr, printErr)
-	}
-	return errors.Join(opErr, getErr)
+	return results, errors.Join(opErr, getErr)
 }
 
 type Volume struct {

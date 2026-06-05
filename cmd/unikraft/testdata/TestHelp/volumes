@@ -568,6 +568,8 @@ Templates:
           Create a volume template.
   edit
           Edit a volume template.
+  clone
+          Clone a volume from a template.
 
 Fields:
   metro
