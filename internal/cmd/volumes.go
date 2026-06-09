@@ -67,7 +67,7 @@ type VolumeCreateCmd struct {
 	Size        types.SizeMebibytes `group:"flag-create" shortcut:"size" help:"Volume size." placeholder:"size" example:"10GiB,100MiB"`
 	Filesystem  string              `group:"flag-create" shortcut:"filesystem" help:"Volume filesystem." placeholder:"filesystem" example:"ext4"`
 	QuotaPolicy string              `group:"flag-create" shortcut:"quota-policy" help:"Volume quota policy." placeholder:"quota-policy" example:"static,dynamic"`
-	AccessMode  types.AccessMode    `group:"flag-create" shortcut:"access-mode" help:"Volume access mode." placeholder:"access-mode" example:"rwo,rox,rwx" default:"rwo"`
+	AccessMode  types.AccessMode    `group:"flag-create" shortcut:"access-mode" help:"Volume access mode." placeholder:"access-mode" example:"rwo,rox,rwx"`
 	Template    string              `group:"flag-create" shortcut:"template" help:"Create from volume template." placeholder:"name"`
 }
 
@@ -247,7 +247,7 @@ type Volume struct {
 	Filesystem  string              `mirror:"volume.filesystem" field:",long" create:"set"`
 	QuotaPolicy string              `mirror:"volume.quota_policy" field:"quota-policy,long" create:"set" edit:"set"`
 	Persistent  bool                `mirror:"volume.persistent" field:",long"`
-	AccessMode  types.AccessMode    `mirror:"volume.access_mode" field:"access-mode,long" create:"set"`
+	AccessMode  *types.AccessMode   `mirror:"volume.access_mode" field:",long" create:"set"`
 	Template    string              `field:"template,invisible,valueless" create:"set"`
 
 	Timestamps struct {
@@ -423,8 +423,10 @@ func (Volume) Create(ctx context.Context, fields []resource.Field) ([]resource.R
 				quotaPolicy := field.Create.Set.(string)
 				req.QuotaPolicy = new(platform.VolumeQuotaPolicy(quotaPolicy))
 			case "access-mode":
-				accessMode := field.Create.Set.(types.AccessMode)
-				req.AccessMode = new(platform.VolumeAccessMode(accessMode))
+				accessMode := field.Create.Set.(*types.AccessMode)
+				if accessMode != nil {
+					req.AccessMode = new(platform.VolumeAccessMode(*accessMode))
+				}
 			case "template":
 				template := field.Create.Set.(string)
 				key := multimetro.ParseKey(template)
