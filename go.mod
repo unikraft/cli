@@ -199,3 +199,6 @@ replace charm.land/lipgloss/v2 => github.com/jedevc/lipgloss/v2 v2.0.0-202603221
 
 // HACK: pin to rc.2 due to bug in rc.3, see https://github.com/moby/buildkit/pull/6616
 replace github.com/containerd/platforms => github.com/containerd/platforms v1.0.0-rc.2
+
+// replace unikraft.com/cloud/sdk => ../unikraft-go-sdk
+replace unikraft.com/cloud/sdk => github.com/unikraft-cloud/go-sdk-internal v0.0.0-20260609164933-156f91e9e591

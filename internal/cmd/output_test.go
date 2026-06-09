@@ -96,11 +96,11 @@ func TestOutput(t *testing.T) {
 
 func instancesOutputTests(t *testing.T) {
 	sample := cmd.Instance{
-		MetroName: "fra",
-		Name:      "my-instance",
-		UUID:      "7b79b250-0658-4d10-8dc0-d854399d7e74",
-		Tags:      []string{"env-prod", "team-core"},
-		State:     types.InstanceState(platform.InstanceStateRunning),
+		Metro: "fra",
+		Name:  "my-instance",
+		UUID:  "7b79b250-0658-4d10-8dc0-d854399d7e74",
+		Tags:  []string{"env-prod", "team-core"},
+		State: types.InstanceState(platform.InstanceStateRunning),
 		Service: &cmd.InstanceService{
 			Link: cmd.Link[cmd.ServiceGroup]{
 				Name: "my-service",

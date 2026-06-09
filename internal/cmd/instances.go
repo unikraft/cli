@@ -138,9 +138,9 @@ func (c *InstanceEditCmd) Run(ctx context.Context, stdio config.Stdio, sandbox *
 }
 
 type Instance struct {
-	MetroName LinkName[Metro] `mirror:"metro.name" field:"metro,short" create:"set,required"`
-	Name      string          `mirror:"instance.name" field:",short" create:"set"`
-	UUID      string          `mirror:"instance.uuid" field:",long"`
+	Metro LinkName[Metro] `mirror:"metro.name" field:"metro,short" create:"set,required"`
+	Name  string          `mirror:"instance.name" field:",short" create:"set"`
+	UUID  string          `mirror:"instance.uuid" field:",long"`
 
 	Tags []string `mirror:"instance.tags"`
 
@@ -201,7 +201,6 @@ type Instance struct {
 	} `field:",long"`
 
 	Instance platform.Instance `field:"-" json:"instance"`
-	Metro    *config.Metro     `field:"-" json:"metro"`
 	Profile  *config.Profile   `field:"-" json:"profile"`
 
 	key multimetro.Key
@@ -533,7 +532,7 @@ func (i Instance) Raw() any {
 }
 
 func (i Instance) Fields(ctx context.Context) ([]resource.Field, error) {
-	i.MetroName = LinkName[Metro](defaultMetro(ctx, string(i.MetroName)))
+	i.Metro = LinkName[Metro](defaultMetro(ctx, string(i.Metro)))
 	result, err := resource.FieldsFromStruct(i)
 	if err != nil {
 		return nil, err
@@ -558,7 +557,7 @@ func (i Instance) hyperlink() string {
 	return fmt.Sprintf(
 		"https://console.unikraft.cloud/org/%s/instances/%s/%s",
 		i.Profile.Organization,
-		i.MetroName,
+		i.Metro,
 		i.Name,
 	)
 }
@@ -581,7 +580,7 @@ func (Instance) List(ctx context.Context) ([]resource.Resource, error) {
 		var results []resource.Resource
 		var errs []error
 		for _, instance := range resp.Data.Instances {
-			result, err := Instance{}.load(nil, instance, &c.Metro, profile)
+			result, err := Instance{}.load(nil, instance, c.Metro, profile)
 			if err != nil {
 				errs = append(errs, err)
 			}
@@ -613,13 +612,13 @@ func (Instance) Get(ctx context.Context, keys []string) ([]resource.Resource, er
 			if instance.Status == nil || *instance.Status != platform.ResponseStatusSuccess {
 				continue
 			}
-			result, err := Instance{}.load(&refs[i], instance, &c.Metro, profile)
+			result, err := Instance{}.load(&refs[i], instance, c.Metro, profile)
 			if err != nil {
 				errs = append(errs, err)
 				continue
 			}
 			found = append(found, group.Ref{
-				Metro: c.Metro.Name,
+				Metro: string(result.Metro),
 				Name:  result.Name,
 				UUID:  result.UUID,
 			})
@@ -630,21 +629,25 @@ func (Instance) Get(ctx context.Context, keys []string) ([]resource.Resource, er
 }
 
 func (Instance) load(ref *group.Ref, instance platform.Instance, metro *config.Metro, profile *config.Profile) (Instance, error) {
+	if metro == nil {
+		metro = &config.Metro{}
+	}
 	if ref == nil {
 		ref = &group.Ref{
-			Metro: metro.Name,
+			Metro: cmp.Or(ptr.ZeroIfNil(instance.Metro), metro.Name),
 			Name:  instance.Name,
 			UUID:  instance.Uuid,
 		}
 	} else {
-		ref.Metro = cmp.Or(ref.Metro, metro.Name)
+		// XXX: suuuuuper error prone
+		ref.Metro = cmp.Or(ptr.ZeroIfNil(instance.Metro), ref.Metro, metro.Name)
 		ref.Name = cmp.Or(ref.Name, instance.Name)
 		ref.UUID = cmp.Or(ref.UUID, instance.Uuid)
 	}
 
 	result := Instance{
+		Metro:    LinkName[Metro](ref.Metro),
 		Instance: instance,
-		Metro:    metro,
 		Profile:  profile,
 		key:      multimetro.Key(*ref),
 	}
@@ -662,6 +665,15 @@ func (Instance) load(ref *group.Ref, instance platform.Instance, metro *config.M
 	return result, nil
 }
 
+// func determineMetroName(metroResponse *string, metroConfig *config.Metro) (string, error) {
+// 	if metroConfig != nil {
+// 		return metroConfig.Name, nil
+// 	} else if metroName := ptr.ZeroIfNil(metroResponse); metroName != "" {
+// 		return metroName, nil
+// 	}
+// 	return "", fmt.Errorf("unknown metro for instance")
+// }
+
 func (Instance) Delete(ctx context.Context, keys []string) error {
 	parsedKeys := multimetro.ParseKeys(keys)
 
@@ -676,6 +688,7 @@ func (Instance) Delete(ctx context.Context, keys []string) error {
 			reqs[i] = platform.DeleteInstanceRequestItem{
 				Uuid:     ref.Uuid,
 				Name:     ref.Name,
+				Metro:    ref.Metro,
 				TimeoutS: new(int64(-1)),
 			}
 		}
@@ -754,11 +767,10 @@ func (Instance) Edit(ctx context.Context, key string, fields []resource.Field) e
 						Prop:  patch.Prop,
 						Value: new(patch.Value),
 					}
-					if ref.UUID != "" {
-						req.Uuid = &ref.UUID
-					} else {
-						req.Name = &ref.Name
-					}
+					id := ref.NameOrUUID()
+					req.Uuid = id.Uuid
+					req.Name = id.Name
+					req.Metro = id.Metro
 					reqs = append(reqs, req)
 				}
 			}
@@ -1088,7 +1100,8 @@ func (Instance) Create(ctx context.Context, fields []resource.Field) ([]resource
 		created := make(multimetro.Keys, 0, len(resp.Data.Instances))
 		for _, instance := range resp.Data.Instances {
 			key := multimetro.Key{
-				Metro: c.Metro.Name,
+				// Metro: c.Metro.Name,
+				Metro: cmp.Or(ptr.ZeroIfNil(instance.Metro), metro),
 				UUID:  instance.Uuid,
 				Name:  instance.Name,
 			}
@@ -1470,8 +1483,9 @@ type StopOpts struct {
 
 func (args *StopOpts) toReq(nameOrUUID platform.NameOrUUID) platform.StopInstancesRequestItem {
 	req := platform.StopInstancesRequestItem{
-		Uuid: nameOrUUID.Uuid,
-		Name: nameOrUUID.Name,
+		Metro: nameOrUUID.Metro,
+		Uuid:  nameOrUUID.Uuid,
+		Name:  nameOrUUID.Name,
 	}
 	if args.Force {
 		req.Force = &args.Force
@@ -1489,8 +1503,9 @@ func startInstances(ctx context.Context, g *group.Group[multimetro.MetroClient],
 		reqs := make([]platform.StartInstancesRequestItem, 0, len(refs))
 		for _, ref := range refs.NameOrUUIDs() {
 			reqs = append(reqs, platform.StartInstancesRequestItem{
-				Name: ref.Name,
-				Uuid: ref.Uuid,
+				Metro: ref.Metro,
+				Name:  ref.Name,
+				Uuid:  ref.Uuid,
 			})
 		}
 		resp, err := c.StartInstances(ctx, reqs)
@@ -1608,9 +1623,11 @@ func suspendInstances(ctx context.Context, g *group.Group[multimetro.MetroClient
 		log.G(ctx).Trace().Msg("suspending instances")
 		reqs := make([]platform.SuspendInstancesRequestItem, 0, len(refs))
 		for _, ref := range refs {
+			id := ref.NameOrUUID()
 			req := platform.SuspendInstancesRequestItem{
-				Uuid: ref.NameOrUUID().Uuid,
-				Name: ref.NameOrUUID().Name,
+				Metro: id.Metro,
+				Uuid:  id.Uuid,
+				Name:  id.Name,
 			}
 			if drainTimeout >= 0 {
 				timeout := uint64(drainTimeout)

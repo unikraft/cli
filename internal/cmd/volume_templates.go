@@ -135,7 +135,7 @@ func (VolumeTemplate) List(ctx context.Context) ([]resource.Resource, error) {
 		var results []resource.Resource
 		var errs []error
 		for _, volume := range resp.Data.Volumes {
-			result, err := VolumeTemplate{}.load(nil, volume, &c.Metro, profile)
+			result, err := VolumeTemplate{}.load(nil, volume, c.Metro, profile)
 			if err != nil {
 				errs = append(errs, err)
 				continue
@@ -168,7 +168,7 @@ func (VolumeTemplate) Get(ctx context.Context, keys []string) ([]resource.Resour
 			if volume.Status == nil || *volume.Status != platform.ResponseStatusSuccess {
 				continue
 			}
-			result, err := VolumeTemplate{}.load(&refs[i], volume, &c.Metro, profile)
+			result, err := VolumeTemplate{}.load(&refs[i], volume, c.Metro, profile)
 			if err != nil {
 				errs = append(errs, err)
 				continue

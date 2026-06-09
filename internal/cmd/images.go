@@ -367,7 +367,7 @@ func listPlatformImages(ctx context.Context) ([]resource.Resource, error) {
 		var errs []error
 		if resp.Data != nil {
 			for _, image := range resp.Data.Images {
-				entries, err := ImageEntry{}.loadFromPlatform(image, &c.Metro)
+				entries, err := ImageEntry{}.loadFromPlatform(image, c.Metro)
 				if err != nil {
 					errs = append(errs, err)
 					continue

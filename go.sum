@@ -366,6 +366,8 @@ github.com/tonistiigi/units v0.0.0-20180711220420-6950e57a87ea h1:SXhTLE6pb6eld/
 github.com/tonistiigi/units v0.0.0-20180711220420-6950e57a87ea/go.mod h1:WPnis/6cRcDZSUvVmezrxJPkiO87ThFYsoUiMwWNDJk=
 github.com/tonistiigi/vt100 v0.0.0-20240514184818-90bafcd6abab h1:H6aJ0yKQ0gF49Qb2z5hI1UHxSQt4JMyxebFR15KnApw=
 github.com/tonistiigi/vt100 v0.0.0-20240514184818-90bafcd6abab/go.mod h1:ulncasL3N9uLrVann0m+CDlJKWsIAP34MPcOJF6VRvc=
+github.com/unikraft-cloud/go-sdk-internal v0.0.0-20260609164933-156f91e9e591 h1:MTz2VOMasnlmpQp/YHtMK/U+/3C+h07d/JaqSyCHLA4=
+github.com/unikraft-cloud/go-sdk-internal v0.0.0-20260609164933-156f91e9e591/go.mod h1:XM2/ocAKjvRqXN5oXoKQAI/bIdu452d9q9bdtehQcao=
 github.com/unikraft/go-archivefs v0.0.0-20260513151619-de2950d0a646 h1:Xlgi63F+i0D1PkZ7tmGPBsJkQJ0GHsHVlY87uXjHI50=
 github.com/unikraft/go-archivefs v0.0.0-20260513151619-de2950d0a646/go.mod h1:NLWtSTdsTRLGQN87zqm9+vN01Ei9JX+FWwuOme2wJXw=
 github.com/unikraft/go-cpio v0.0.0-20260415131742-4f1984ca41f3 h1:C8GONmMNDK3spdZEHBIffmq1b1hjCm9nZrquv3+4H+U=
@@ -489,8 +491,6 @@ sigs.k8s.io/yaml v1.6.0 h1:G8fkbMSAFqgEFgh4b1wmtzDnioxFCUgTZhlbj5P9QYs=
 sigs.k8s.io/yaml v1.6.0/go.mod h1:796bPqUfzR/0jLAl6XjHl3Ck7MiyVv8dbTdyT3/pMf4=
 tailscale.com v1.94.1 h1:0dAst/ozTuFkgmxZULc3oNwR9+qPIt5ucvzH7kaM0Jw=
 tailscale.com v1.94.1/go.mod h1:gLnVrEOP32GWvroaAHHGhjSGMPJ1i4DvqNwEg+Yuov4=
-unikraft.com/cloud/sdk v0.0.0-20260605091644-013c82cb941e h1:XV1SR4aPbT99KMJ19pzHiT6NYEkYhhXEVELDSNTCwho=
-unikraft.com/cloud/sdk v0.0.0-20260605091644-013c82cb941e/go.mod h1:XM2/ocAKjvRqXN5oXoKQAI/bIdu452d9q9bdtehQcao=
 unikraft.com/x/colors v0.0.0-20260313145522-d793c36d706e h1:C/V6l4ut5XpcVTN5CvnskRv6NHDbyIeLdgFVLEJ9BIE=
 unikraft.com/x/colors v0.0.0-20260313145522-d793c36d706e/go.mod h1:SVlAGfyQ7MwJom7m9M2w83+TrO+nJoiLxeduJAxagEo=
 unikraft.com/x/filters v0.0.0-20260416164455-ec39ae908f3f h1:v6pitpzsBnOjyzDIW0/YAEHHSI6cNOw4QOwQV0uD+dc=

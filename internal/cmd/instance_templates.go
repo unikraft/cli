@@ -152,7 +152,7 @@ func (InstanceTemplate) List(ctx context.Context) ([]resource.Resource, error) {
 		var results []resource.Resource
 		var errs []error
 		for _, instance := range resp.Data.Instances {
-			result, err := InstanceTemplate{}.load(nil, instance, &c.Metro, profile)
+			result, err := InstanceTemplate{}.load(nil, instance, c.Metro, profile)
 			if err != nil {
 				errs = append(errs, err)
 				continue
@@ -185,7 +185,7 @@ func (InstanceTemplate) Get(ctx context.Context, keys []string) ([]resource.Reso
 			if instance.Status == nil || *instance.Status != platform.ResponseStatusSuccess {
 				continue
 			}
-			result, err := InstanceTemplate{}.load(&refs[i], instance, &c.Metro, profile)
+			result, err := InstanceTemplate{}.load(&refs[i], instance, c.Metro, profile)
 			if err != nil {
 				errs = append(errs, err)
 				continue

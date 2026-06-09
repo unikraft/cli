@@ -20,7 +20,7 @@ import (
 
 type MetroClient struct {
 	platform.Client
-	Metro config.Metro
+	Metro *config.Metro
 }
 
 func NewClient(ctx context.Context) (*group.Group[MetroClient], error) {
@@ -28,9 +28,25 @@ func NewClient(ctx context.Context) (*group.Group[MetroClient], error) {
 	if err != nil {
 		return nil, err
 	}
-	if len(profile.Metros) == 0 {
+	if len(profile.Metros) == 0 && profile.Proxy == "" {
 		return nil, fmt.Errorf("profile %q has no metros configured", profile.Name)
 	}
+
+	if profile.Proxy != "" {
+		group := group.New[MetroClient]()
+		client := platform.NewClient(
+			// XXX: ???
+			// platform.WithHTTPClient(httpclient.GetClient(ptr.ZeroIfNil(metro.Insecure))),
+			platform.WithHTTPClient(httpclient.GetClient(false)),
+			platform.WithToken(profile.Token),
+			platform.WithDefaultMetro(profile.Proxy),
+		)
+		group = group.WithProxy(
+			MetroClient{Client: client, Metro: nil},
+		)
+		return group, nil
+	}
+
 	metros := profile.Metros
 	metros = filterMetrosFromContext(ctx, metros)
 
@@ -52,7 +68,7 @@ func NewClient(ctx context.Context) (*group.Group[MetroClient], error) {
 		)
 		group = group.WithClient(
 			metro.Name,
-			MetroClient{Client: client, Metro: metro},
+			MetroClient{Client: client, Metro: &metro},
 		)
 	}
 	return group, nil

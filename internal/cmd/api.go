@@ -54,6 +54,7 @@ func (c *APICmd) Run(ctx context.Context, stdio config.Stdio) error {
 		if err != nil {
 			return jujuerrors.Annotate(err, "parsing endpoint URL")
 		}
+		// XXX: show against proxy!
 		for i := range profile.Metros {
 			mu, err := url.Parse(profile.Metros[i].Endpoint)
 			if err != nil {
@@ -80,9 +81,6 @@ func (c *APICmd) Run(ctx context.Context, stdio config.Stdio) error {
 				metro = &profile.Metros[i]
 				break
 			}
-		}
-		if metro == nil {
-			return jujuerrors.Errorf("metro %q is not configured in profile %q", metroName, profile.Name)
 		}
 
 		path := c.Endpoint

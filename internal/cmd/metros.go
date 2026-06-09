@@ -215,6 +215,8 @@ func (Metro) List(ctx context.Context) ([]resource.Resource, error) {
 		return nil, err
 	}
 
+	// XXX: metro listing needs /v1/metros on controlplane
+	// XXX: for nderjung: where is GET /v1/nodes? in alex's backlog
 	var results []resource.Resource
 	for _, metro := range profile.Metros {
 		result := Metro{

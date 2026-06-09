@@ -271,7 +271,7 @@ func (ServiceGroup) List(ctx context.Context) ([]resource.Resource, error) {
 		var results []resource.Resource
 		var errs []error
 		for _, serviceGroup := range resp.Data.ServiceGroups {
-			result, err := ServiceGroup{}.load(nil, serviceGroup, &c.Metro)
+			result, err := ServiceGroup{}.load(nil, serviceGroup, c.Metro)
 			if err != nil {
 				errs = append(errs, err)
 			}
@@ -299,7 +299,7 @@ func (ServiceGroup) Get(ctx context.Context, keys []string) ([]resource.Resource
 			if serviceGroup.Status == nil || *serviceGroup.Status != platform.ResponseStatusSuccess {
 				continue
 			}
-			result, err := ServiceGroup{}.load(&refs[i], serviceGroup, &c.Metro)
+			result, err := ServiceGroup{}.load(&refs[i], serviceGroup, c.Metro)
 			if err != nil {
 				errs = append(errs, err)
 				continue

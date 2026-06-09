@@ -303,7 +303,7 @@ func (Volume) List(ctx context.Context) ([]resource.Resource, error) {
 		var results []resource.Resource
 		var errs []error
 		for _, volume := range resp.Data.Volumes {
-			result, err := Volume{}.load(nil, volume, &c.Metro)
+			result, err := Volume{}.load(nil, volume, c.Metro)
 			if err != nil {
 				errs = append(errs, err)
 			}
@@ -332,7 +332,7 @@ func (Volume) Get(ctx context.Context, keys []string) ([]resource.Resource, erro
 			if volume.Status == nil || *volume.Status != platform.ResponseStatusSuccess {
 				continue
 			}
-			result, err := Volume{}.load(&refs[i], volume, &c.Metro)
+			result, err := Volume{}.load(&refs[i], volume, c.Metro)
 			if err != nil {
 				errs = append(errs, err)
 				continue

@@ -76,6 +76,8 @@ type Profile struct {
 	Metros []Metro `json:"metros,omitempty" field:",long,embed"`
 	// MetroDefault is the default metro to use when creating resources.
 	MetroDefault string `json:"metro_default,omitempty"`
+	// Proxy
+	Proxy string `json:"proxy,omitempty"`
 }
 
 func (p Profile) GetDefaultMetro() string {

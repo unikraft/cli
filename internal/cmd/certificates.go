@@ -120,7 +120,7 @@ func (Certificate) List(ctx context.Context) ([]resource.Resource, error) {
 		var results []resource.Resource
 		var errs []error
 		for _, certificate := range resp.Data.Certificates {
-			result, err := Certificate{}.load(nil, certificate, &c.Metro)
+			result, err := Certificate{}.load(nil, certificate, c.Metro)
 			if err != nil {
 				errs = append(errs, err)
 			}
@@ -145,7 +145,7 @@ func (Certificate) Get(ctx context.Context, keys []string) ([]resource.Resource,
 		var results []resource.Resource
 		var errs []error
 		for i, certificate := range resp.Data.Certificates {
-			result, err := Certificate{}.load(&refs[i], certificate, &c.Metro)
+			result, err := Certificate{}.load(&refs[i], certificate, c.Metro)
 			if err != nil {
 				errs = append(errs, err)
 				continue

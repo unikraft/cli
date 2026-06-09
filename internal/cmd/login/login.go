@@ -131,6 +131,7 @@ func (cmd *LoginCmd) Run(ctx context.Context, cfg *config.Config) error {
 			Err(err).
 			Msg("could not list metros for profile: please add metros manually")
 	}
+	// XXX: setup with login
 	existingMetros := make(map[string]struct{}, len(profile.Metros))
 	for _, metro := range profile.Metros {
 		existingMetros[metro.Name] = struct{}{}
