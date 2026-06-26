@@ -339,20 +339,39 @@ func (Volume) Get(ctx context.Context, keys []string) ([]resource.Resource, erro
 		if resp == nil || resp.Data == nil {
 			return nil, nil, nil
 		}
-		for i, volume := range resp.Data.Volumes {
+		for _, volume := range resp.Data.Volumes {
 			if volume.Status == nil || *volume.Status != platform.ResponseStatusSuccess {
 				continue
 			}
-			result, err := Volume{}.load(&refs[i], volume, &c.Metro)
+
+			var matchedRef *group.Ref
+			if idx := slices.IndexFunc(refs, func(ref group.Ref) bool {
+				if ref.UUID != "" && volume.Uuid != "" {
+					return ref.UUID == volume.Uuid
+				}
+				if ref.Name != "" && volume.Name != "" {
+					return ref.Name == volume.Name
+				}
+				return false
+			}); idx >= 0 {
+				copyRef := refs[idx]
+				matchedRef = &copyRef
+			}
+
+			result, err := Volume{}.load(matchedRef, volume, &c.Metro)
 			if err != nil {
 				errs = append(errs, err)
 				continue
 			}
-			found = append(found, group.Ref{
-				Metro: c.Metro.Name,
-				Name:  result.Name,
-				UUID:  result.UUID,
-			})
+			if matchedRef != nil {
+				found = append(found, *matchedRef)
+			} else {
+				found = append(found, group.Ref{
+					Metro: c.Metro.Name,
+					Name:  result.Name,
+					UUID:  result.UUID,
+				})
+			}
 			results = append(results, result)
 		}
 		return results, found, errors.Join(errs...)
