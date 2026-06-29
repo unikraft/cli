@@ -6,6 +6,7 @@
 package cmd
 
 import (
+	"bytes"
 	"cmp"
 	"context"
 	"encoding/base64"
@@ -14,6 +15,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"net/http"
 	"os"
 	"path/filepath"
 	"slices"
@@ -58,6 +60,8 @@ type InstancesCmd struct {
 	Stop    InstancesStopCmd    `cmd:"" help:"Stop one or more instances."`
 	Suspend InstancesSuspendCmd `cmd:"" help:"Suspend one or more instances."`
 	Restart InstancesRestartCmd `cmd:"" help:"Restart one or more instances."`
+
+	Exec ExecSandboxInstanceCmd `cmd:"" help:"Exec a command on a sandbox instance."`
 }
 
 // InstanceCreateCmd extends the generic resource create command with shortcut
@@ -1844,4 +1848,296 @@ func suspendInstances(ctx context.Context, g *group.Group[multimetro.MetroClient
 		return suspended, suspended.Refs(), nil
 	})
 	return multimetro.Keys(suspended), err
+}
+
+// ##################################################
+//								  SANDBOX DEMO
+// ##################################################
+
+// TODO: replace these with something generated from proto
+type APICommandRequest struct {
+	Cmd string            `json:"cmd"`
+	// NOTE: dir doesn't work with the current implementation of the sandbox api
+	// probably can cd but that can be error prone
+	Env map[string]string `json:"env,omitempty"`
+	Dir *string `json:"dir,omitempty"`
+}
+
+type APICommandResponse struct {
+	UUID string `json:"uuid"`
+}
+
+type APIWaitTimeoutRequest struct {
+	TimeoutMsec int `json:"timeout_msec"`
+}
+
+type APICommandLogsResponse struct {
+	Stdout string `json:"stdout"`
+	Stderr string `json:"stderr"`
+}
+
+type APICommandInspectResponse struct {
+	UUID     string `json:"uuid"`
+	Cmdline  string `json:"cmdline"`
+	ExitCode *int   `json:"exitcode,omitempty"`
+}
+
+type ExecOpts struct {
+	Cmd SandboxInsanceCmd `arg:"" name:"command" help:"Command to pass to the instance." placeholder:"cmd"`
+
+	Dir         string            `name:"dir" help:"Directory to execute the command from"`
+	Env         map[string]string `name:"env"     help:"Environment variables to set (KEY=VALUE)" mapsep:","`
+	TimeoutMsec int               `name:"timeout" help:"Timeout for waiting the result of the command"`
+}
+
+type SandboxInsanceCmd []string
+type ExecSandboxInstanceCmd struct {
+	Target string `arg:"" name:"target" completion-predictor:"resource-key-instance" help:"Target instances to run the command on."`
+
+	ExecOpts
+}
+
+func (c *ExecSandboxInstanceCmd) Run(ctx context.Context, stdio config.Stdio) error {
+	key := multimetro.ParseKey(c.Target)
+	sandbox, opErr := Instance{}.Get(ctx, []string{key.String()})
+	if opErr != nil && len(sandbox) == 0 {
+		return opErr
+	}
+
+	inst := sandbox[0].(Instance)
+	var fqdn string
+	if inst.Service != nil && len(inst.Service.Domains) > 0 {
+		fqdn = inst.Service.Domains[0].FQDN
+	}
+
+	g, err := multimetro.NewClient(ctx)
+	if err != nil {
+		return err
+	}
+
+	result, err := execSandboxInstance(ctx, g, key, c.ExecOpts, fqdn)
+
+	if err != nil {
+		return err
+	}
+
+	if result != "" {
+		fmt.Print(result)
+	}
+
+	return nil
+}
+
+func execSandboxInstance(ctx context.Context, g *group.Group[multimetro.MetroClient], key multimetro.Key, opts ExecOpts, fqdn string) (string, error) {
+	log.G(ctx).Trace().Msg("executing command")
+
+	refs := multimetro.ParseKeys([]string{key.String()}).Refs()
+
+	results, err := group.CollectRefs(ctx, g, refs, func(ctx context.Context, c multimetro.MetroClient, clientRefs group.Refs) (string, group.Refs, error) {
+		var output string
+		var found group.Refs
+
+		for _, ref := range clientRefs {
+			respStr, execErr := execInstance(ctx, fqdn, opts)
+
+			output = respStr
+			found = append(found, ref)
+
+			if execErr != nil {
+				return output, found, execErr
+			}
+		}
+
+		return output, found, nil
+	})
+
+	var finalOutput strings.Builder
+	for _, res := range results {
+		finalOutput.WriteString(res)
+	}
+
+	return finalOutput.String(), err
+}
+
+// TODO: replace this with actual sdk function using sandbox api instead of
+// grabbing the fqdn and executing commands on the instance
+func execInstance(ctx context.Context, fqdn string, opts ExecOpts) (string, error) {
+	client := &http.Client{}
+
+	uuid, err := apiStartCommand(ctx, client, fqdn, opts)
+	if err != nil {
+		return "", err
+	}
+
+	if err := apiWaitCommand(ctx, client, fqdn, uuid, opts.TimeoutMsec); err != nil {
+		return "", err
+	}
+
+	stdoutBytes, err := apiFetchRawLog(ctx, client, fqdn, uuid, "stdout")
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch stdout: %w", err)
+	}
+
+	stderrBytes, err := apiFetchRawLog(ctx, client, fqdn, uuid, "stderr")
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch stderr: %w", err)
+	}
+
+	finalOutput := string(stdoutBytes)
+	if len(stderrBytes) > 0 {
+		finalOutput += string(stderrBytes)
+	}
+
+	exitCode, err := apiInspectCommand(ctx, client, fqdn, uuid)
+	if err != nil {
+		return finalOutput, fmt.Errorf("failed to inspect command: %w", err)
+	}
+
+	if exitCode != nil && *exitCode != 0 {
+		errDetail := strings.TrimSpace(string(stderrBytes))
+		if errDetail == "" {
+			errDetail = strings.TrimSpace(string(stdoutBytes))
+		}
+
+		if errDetail != "" {
+			return finalOutput, fmt.Errorf("command exited with code %d: %s", *exitCode, errDetail)
+		}
+		return finalOutput, fmt.Errorf("command exited with code %d", *exitCode)
+	}
+
+	return finalOutput, nil
+}
+
+// --- Helper Functions ---
+func apiStartCommand(ctx context.Context, client *http.Client, fqdn string, opts ExecOpts) (string, error) {
+	cmdString := strings.Join(opts.Cmd, " ")
+	reqData := APICommandRequest{Cmd: cmdString, Dir: &opts.Dir, Env: opts.Env}
+	jsonBytes, err := json.Marshal(reqData)
+	if err != nil {
+		return "", fmt.Errorf("failed to format JSON: %w", err)
+	}
+
+	fmt.Println(string(jsonBytes))
+
+	startURL := fmt.Sprintf("https://%s/api/v1/commands", fqdn)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, startURL, bytes.NewReader(jsonBytes))
+	if err != nil {
+		return "", fmt.Errorf("failed to initialize start HTTP request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("network request to start command failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to read start response: %w", err)
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return "", fmt.Errorf("server rejected start request with status %d: %s", resp.StatusCode, string(body))
+	}
+
+	var apiResp APICommandResponse
+	if err := json.Unmarshal(body, &apiResp); err != nil {
+		return "", fmt.Errorf("failed to parse start response JSON: %w", err)
+	}
+	if apiResp.UUID == "" {
+		return "", fmt.Errorf("API returned empty UUID")
+	}
+
+	return apiResp.UUID, nil
+}
+
+func apiWaitCommand(ctx context.Context, client *http.Client, fqdn string, uuid string, timeoutMsec int) error {
+	var waitReq *http.Request
+	var err error
+
+	if timeoutMsec > 0 {
+		waitURL := fmt.Sprintf("https://%s/api/v1/commands/%s/wait_timeout", fqdn, uuid)
+		waitData := APIWaitTimeoutRequest{TimeoutMsec: timeoutMsec}
+		waitBytes, _ := json.Marshal(waitData)
+		waitReq, err = http.NewRequestWithContext(ctx, http.MethodPost, waitURL, bytes.NewReader(waitBytes))
+		waitReq.Header.Set("Content-Type", "application/json")
+	} else {
+		waitURL := fmt.Sprintf("https://%s/api/v1/commands/%s/wait", fqdn, uuid)
+		waitReq, err = http.NewRequestWithContext(ctx, http.MethodPost, waitURL, nil)
+	}
+
+	if err != nil {
+		return fmt.Errorf("failed to initialize wait HTTP request: %w", err)
+	}
+
+	resp, err := client.Do(waitReq)
+	if err != nil {
+		return fmt.Errorf("network request to wait for command failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusRequestTimeout {
+		return fmt.Errorf("command timed out after %d ms", timeoutMsec)
+	}
+
+	body, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("wait request failed with status %d: %s", resp.StatusCode, string(body))
+	}
+
+	return nil
+}
+
+func apiFetchRawLog(ctx context.Context, client *http.Client, fqdn string, uuid string, streamType string) ([]byte, error) {
+	logURL := fmt.Sprintf("https://%s/api/v1/commands/%s/logs/raw/%s", fqdn, uuid, streamType)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, logURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize %s HTTP request: %w", streamType, err)
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("network request for %s failed: %w", streamType, err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		if resp.StatusCode == http.StatusNotFound {
+			return []byte{}, nil
+		}
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("%s request failed with status %d: %s", streamType, resp.StatusCode, string(body))
+	}
+
+	return io.ReadAll(resp.Body)
+}
+
+func apiInspectCommand(ctx context.Context, client *http.Client, fqdn string, uuid string) (*int, error) {
+	inspectURL := fmt.Sprintf("https://%s/api/v1/commands/%s", fqdn, uuid)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, inspectURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize inspect HTTP request: %w", err)
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("network request to inspect command failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read inspect response: %w", err)
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("inspect request failed with status %d: %s", resp.StatusCode, string(body))
+	}
+
+	var inspectData APICommandInspectResponse
+	if err := json.Unmarshal(body, &inspectData); err != nil {
+		return nil, fmt.Errorf("failed to parse inspect JSON: %w (body: %s)", err, string(body))
+	}
+
+	return inspectData.ExitCode, nil
 }
