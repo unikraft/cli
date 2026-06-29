@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -301,20 +302,39 @@ func (ServiceGroup) Get(ctx context.Context, keys []string) ([]resource.Resource
 		if resp == nil || resp.Data == nil {
 			return nil, nil, nil
 		}
-		for i, serviceGroup := range resp.Data.ServiceGroups {
+		for _, serviceGroup := range resp.Data.ServiceGroups {
 			if serviceGroup.Status == nil || *serviceGroup.Status != platform.ResponseStatusSuccess {
 				continue
 			}
-			result, err := ServiceGroup{}.load(&refs[i], serviceGroup, &c.Metro)
+
+			var matchedRef *group.Ref
+			if idx := slices.IndexFunc(refs, func(ref group.Ref) bool {
+				if ref.UUID != "" && serviceGroup.Uuid != "" {
+					return ref.UUID == serviceGroup.Uuid
+				}
+				if ref.Name != "" && serviceGroup.Name != "" {
+					return ref.Name == serviceGroup.Name
+				}
+				return false
+			}); idx >= 0 {
+				copyRef := refs[idx]
+				matchedRef = &copyRef
+			}
+
+			result, err := ServiceGroup{}.load(matchedRef, serviceGroup, &c.Metro)
 			if err != nil {
 				errs = append(errs, err)
 				continue
 			}
-			found = append(found, group.Ref{
-				Metro: c.Metro.Name,
-				Name:  result.Name,
-				UUID:  result.UUID,
-			})
+			if matchedRef != nil {
+				found = append(found, *matchedRef)
+			} else {
+				found = append(found, group.Ref{
+					Metro: c.Metro.Name,
+					Name:  result.Name,
+					UUID:  result.UUID,
+				})
+			}
 			results = append(results, result)
 		}
 		return results, found, errors.Join(errs...)
