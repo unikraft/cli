@@ -1910,12 +1910,7 @@ func (c *ExecSandboxInstanceCmd) Run(ctx context.Context, stdio config.Stdio) er
 		fqdn = inst.Service.Domains[0].FQDN
 	}
 
-	g, err := multimetro.NewClient(ctx)
-	if err != nil {
-		return err
-	}
-
-	result, err := execSandboxInstance(ctx, g, key, c.ExecOpts, fqdn)
+	result, err := execSandboxInstance(ctx, c.ExecOpts, fqdn)
 
 	if err != nil {
 		return err
@@ -1928,33 +1923,14 @@ func (c *ExecSandboxInstanceCmd) Run(ctx context.Context, stdio config.Stdio) er
 	return nil
 }
 
-func execSandboxInstance(ctx context.Context, g *group.Group[multimetro.MetroClient], key multimetro.Key, opts ExecOpts, fqdn string) (string, error) {
+func execSandboxInstance(ctx context.Context, opts ExecOpts, fqdn string) (string, error) {
 	log.G(ctx).Trace().Msg("executing command")
 
-	refs := multimetro.ParseKeys([]string{key.String()}).Refs()
-
-	results, err := group.CollectRefs(ctx, g, refs, func(ctx context.Context, c multimetro.MetroClient, clientRefs group.Refs) (string, group.Refs, error) {
-		var output string
-		var found group.Refs
-
-		for _, ref := range clientRefs {
-			respStr, execErr := execInstance(ctx, fqdn, opts)
-
-			output = respStr
-			found = append(found, ref)
-
-			if execErr != nil {
-				return output, found, execErr
-			}
-		}
-
-		return output, found, nil
-	})
+	// NOTE: doing this only because I am running on a single instance
+	res, err := execInstance(ctx, fqdn, opts)
 
 	var finalOutput strings.Builder
-	for _, res := range results {
-		finalOutput.WriteString(res)
-	}
+	finalOutput.WriteString(res)
 
 	return finalOutput.String(), err
 }
