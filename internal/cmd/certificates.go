@@ -10,6 +10,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/alecthomas/kong"
 
@@ -149,17 +150,39 @@ func (Certificate) Get(ctx context.Context, keys []string) ([]resource.Resource,
 		if resp == nil || resp.Data == nil {
 			return nil, nil, nil
 		}
-		for i, certificate := range resp.Data.Certificates {
-			result, err := Certificate{}.load(&refs[i], certificate, &c.Metro)
+		for _, certificate := range resp.Data.Certificates {
+			if certificate.Status == nil || *certificate.Status != platform.ResponseStatusSuccess {
+				continue
+			}
+
+			var matchedRef *group.Ref
+			if idx := slices.IndexFunc(refs, func(ref group.Ref) bool {
+				if ref.UUID != "" && certificate.Uuid != "" {
+					return ref.UUID == certificate.Uuid
+				}
+				if ref.Name != "" && certificate.Name != "" {
+					return ref.Name == certificate.Name
+				}
+				return false
+			}); idx >= 0 {
+				copyRef := refs[idx]
+				matchedRef = &copyRef
+			}
+
+			result, err := Certificate{}.load(matchedRef, certificate, &c.Metro)
 			if err != nil {
 				errs = append(errs, err)
 				continue
 			}
-			found = append(found, group.Ref{
-				Metro: c.Metro.Name,
-				Name:  result.Name,
-				UUID:  result.UUID,
-			})
+			if matchedRef != nil {
+				found = append(found, *matchedRef)
+			} else {
+				found = append(found, group.Ref{
+					Metro: c.Metro.Name,
+					Name:  result.Name,
+					UUID:  result.UUID,
+				})
+			}
 			results = append(results, result)
 		}
 		return results, found, errors.Join(errs...)
