@@ -63,6 +63,7 @@ Fields:
   vsock
   template
   stop, stop.reason, stop.origin, stop.errno, stop.exit-code
+  delete-lock
 
 Global flags:
   -h, --help
@@ -128,6 +129,7 @@ Fields:
   vsock
   template
   stop, stop.reason, stop.origin, stop.errno, stop.exit-code
+  delete-lock
 
 Flags:
   -w, --watch=<duration>
@@ -201,6 +203,7 @@ Fields:
   vsock
   template
   stop, stop.reason, stop.origin, stop.errno, stop.exit-code
+  delete-lock
 
 Flags:
       --filter
@@ -276,6 +279,7 @@ Fields:
   vsock
   template
   stop, stop.reason, stop.origin, stop.errno, stop.exit-code
+  delete-lock
 
 Flags:
       --until, --filter
@@ -361,6 +365,7 @@ Fields:
   vsock
   template
   stop, stop.reason, stop.origin, stop.errno, stop.exit-code
+  delete-lock
 
 Flags:
       --set=<name>=<value>, --set-file=<name>=<filename>
@@ -512,6 +517,7 @@ Fields:
   vsock
   template
   stop, stop.reason, stop.origin, stop.errno, stop.exit-code
+  delete-lock
 
 Flags:
       --set=<name>=<value>, --set-file=<name>=<filename>
@@ -672,6 +678,7 @@ Fields:
   vsock
   template
   stop, stop.reason, stop.origin, stop.errno, stop.exit-code
+  delete-lock
 
 Flags:
       --set=<name>=<value>, --set-file=<name>=<filename>
@@ -743,6 +750,8 @@ Edit flags:
             notify-time: notification time in ms before scaling to zero
             stateful: true | false.
           [examples: on, policy=on,cooldown-time=300, policy=on,stateful=true,cooldown-time=500,notify-time=100]
+      --delete-lock
+          Prevent instance deletion until the lock is removed.
 
 $ unikraft instance delete --help
 
@@ -789,6 +798,7 @@ Fields:
   vsock
   template
   stop, stop.reason, stop.origin, stop.errno, stop.exit-code
+  delete-lock
 
 Flags:
       --all

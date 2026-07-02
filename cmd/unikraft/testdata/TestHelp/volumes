@@ -49,6 +49,7 @@ Fields:
   attached-to, attached-to.*, attached-to.*.name, attached-to.*.uuid
   mounted-by, mounted-by.*, mounted-by.*.name, mounted-by.*.uuid, mounted-
   by.*.read-only
+  delete-lock
 
 Global flags:
   -h, --help
@@ -102,6 +103,7 @@ Fields:
   attached-to, attached-to.*, attached-to.*.name, attached-to.*.uuid
   mounted-by, mounted-by.*, mounted-by.*.name, mounted-by.*.uuid, mounted-
   by.*.read-only
+  delete-lock
 
 Flags:
   -w, --watch=<duration>
@@ -163,6 +165,7 @@ Fields:
   attached-to, attached-to.*, attached-to.*.name, attached-to.*.uuid
   mounted-by, mounted-by.*, mounted-by.*.name, mounted-by.*.uuid, mounted-
   by.*.read-only
+  delete-lock
 
 Flags:
       --filter
@@ -226,6 +229,7 @@ Fields:
   attached-to, attached-to.*, attached-to.*.name, attached-to.*.uuid
   mounted-by, mounted-by.*, mounted-by.*.name, mounted-by.*.uuid, mounted-
   by.*.read-only
+  delete-lock
 
 Flags:
       --until, --filter
@@ -290,6 +294,7 @@ Fields:
   attached-to, attached-to.*, attached-to.*.name, attached-to.*.uuid
   mounted-by, mounted-by.*, mounted-by.*.name, mounted-by.*.uuid, mounted-
   by.*.read-only
+  delete-lock
 
 Flags:
       --set=<name>=<value>, --set-file=<name>=<filename>
@@ -573,6 +578,7 @@ Fields:
   attached-to, attached-to.*, attached-to.*.name, attached-to.*.uuid
   mounted-by, mounted-by.*, mounted-by.*.name, mounted-by.*.uuid, mounted-
   by.*.read-only
+  delete-lock
 
 Flags:
       --set=<name>=<value>, --set-file=<name>=<filename>
@@ -623,6 +629,8 @@ Edit flags:
       --quota-policy=<quota-policy>
           Volume quota policy.
           [examples: static, dynamic]
+      --delete-lock
+          Prevent volume deletion until the lock is removed.
 
 $ unikraft volume delete --help
 
@@ -657,6 +665,7 @@ Fields:
   attached-to, attached-to.*, attached-to.*.name, attached-to.*.uuid
   mounted-by, mounted-by.*, mounted-by.*.name, mounted-by.*.uuid, mounted-
   by.*.read-only
+  delete-lock
 
 Flags:
       --all
