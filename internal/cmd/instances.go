@@ -140,6 +140,8 @@ type InstanceEditCmd struct {
 	Tags []string `group:"flag-edit" shortcut:"tags" help:"Instance tags." placeholder:"tag" example:"env-prod,team-platform"`
 
 	ScaleToZero InstanceScaleToZero `group:"flag-edit" shortcut:"scale-to-zero" help:"Scale-to-zero options.\n  policy: on | idle | off\n  cooldown-time: cooldown in ms before scaling to zero\n  notify-time: notification time in ms before scaling to zero\n  stateful: true | false" placeholder:"<key>=<value>" example:"on,policy=on\\,cooldown-time=300,policy=on\\,stateful=true\\,cooldown-time=500\\,notify-time=100"`
+
+	DeleteLock *bool `group:"flag-edit" shortcut:"delete-lock" help:"Prevent instance deletion until the lock is removed."`
 }
 
 func (c *InstanceEditCmd) Run(ctx context.Context, stdio config.Stdio, sandbox *resource.Sandbox, kctx *kong.Context) error {
@@ -216,6 +218,8 @@ type Instance struct {
 	Profile  *config.Profile   `field:"-" json:"profile"`
 
 	key multimetro.Key
+
+	DeleteLock bool `mirror:"instance.delete_lock" field:"delete-lock,hidden" edit:"set"`
 }
 
 type InstanceNetwork struct {
@@ -969,6 +973,9 @@ func instancePatchSpec(path string, op patchOp, value any) (platform.MutableInst
 			reqRoms = append(reqRoms, reqRom)
 		}
 		return platform.MutableInstancePropertyRoms, reqRoms, nil
+	case "delete-lock":
+		return platform.MutableInstancePropertyDeleteLock, value.(bool), nil
+
 	default:
 		return zero, nil, nil
 	}
