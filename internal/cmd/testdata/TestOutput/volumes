@@ -28,6 +28,7 @@ timestamps:
   created:    never
 attached-to:
 mounted-by:
+delete-lock:  false
 
 ==================================== table =====================================
 METRO  NAME       STATE      SIZE   CREATED
@@ -202,5 +203,13 @@ fra    my-volume  available  50MiB
       "verbosity": "long"
     },
     "verbosity": "long"
+  },
+  {
+    "name": "delete-lock",
+    "value": false,
+    "verbosity": "hidden",
+    "edit": {
+      "set": false
+    }
   }
 ]

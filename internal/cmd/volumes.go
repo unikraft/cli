@@ -274,7 +274,7 @@ type Volume struct {
 
 	key multimetro.Key
 
-	DeleteLock bool `mirror:"volume.delete_lock" field:"delete-lock" edit:"set"`
+	DeleteLock bool `mirror:"volume.delete_lock" field:"delete-lock,hidden" edit:"set"`
 }
 
 func (Volume) Type() resource.Type {

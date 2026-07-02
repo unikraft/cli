@@ -102,6 +102,7 @@ stop:
   origin:        kernel
   errno:
   exit-code:     1
+delete-lock:     false
 
 ==================================== table =====================================
 METRO  NAME         STATE    IMAGE  ARGS              MEMORY  VCPUS  FQDN                  CREATED
@@ -789,5 +790,13 @@ fra    my-instance  running  nginx  ["arg1", "arg2"]  256MiB  2      example.uni
       }
     ],
     "verbosity": "long"
+  },
+  {
+    "name": "delete-lock",
+    "value": false,
+    "verbosity": "hidden",
+    "edit": {
+      "set": false
+    }
   }
 ]
