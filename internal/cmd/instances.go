@@ -74,7 +74,7 @@ type InstanceCreateCmd struct {
 	Image string `group:"flag-create" shortcut:"image" help:"Image to deploy." placeholder:"<name>:<tag>" example:"nginx:latest,my-app:v1.2.3"`
 
 	Args InstanceArgs `group:"flag-create" shortcut:"runtime.args" help:"Arguments to pass to the instance." placeholder:"arg"`
-	Env  []string     `group:"flag-create" shortcut:"runtime.env" short:"e" help:"Environment variables." placeholder:"<key>=<value>" example:"DEBUG=true,PORT=8080"`
+	Env  []string     `group:"flag-create" shortcut:"runtime.env" short:"e" sep:"none" help:"Environment variables." placeholder:"<key>=<value>" example:"DEBUG=true,PORT=8080"`
 
 	Memory        types.SizeMebibytes     `group:"flag-create" shortcut:"resources.memory" short:"m" help:"Memory allocation." placeholder:"size" example:"128MiB,1GiB"`
 	Vcpus         int                     `group:"flag-create" shortcut:"resources.vcpus" help:"Number of vCPUs." placeholder:"n" example:"1,2,4"`
@@ -101,6 +101,15 @@ type InstanceCreateCmd struct {
 }
 
 func (c *InstanceCreateCmd) Run(ctx context.Context, stdio config.Stdio, sandbox *resource.Sandbox, kctx *kong.Context) error {
+	if len(c.Env) > 0 {
+		set, err := runtimeEnvSetArgs(c.Env)
+		if err != nil {
+			return err
+		}
+		c.Set = append(c.Set, set...)
+		// Prevent generic shortcut handling from re-processing --env values.
+		c.Env = nil
+	}
 	if err := cmd.ApplyShortcutFlags(&c.SetArgs, kctx.Flags()); err != nil {
 		return err
 	}
@@ -129,7 +138,7 @@ type InstanceEditCmd struct {
 	Image string `group:"flag-edit" shortcut:"image" help:"Image to deploy." placeholder:"<name>:<tag>" example:"nginx:latest,my-app:v1.2.3"`
 
 	Args InstanceArgs `group:"flag-edit" shortcut:"runtime.args" help:"Arguments to pass to the instance." placeholder:"arg"`
-	Env  []string     `group:"flag-edit" shortcut:"runtime.env" short:"e" help:"Environment variables." placeholder:"<key>=<value>" example:"DEBUG=true,PORT=8080"`
+	Env  []string     `group:"flag-edit" shortcut:"runtime.env" short:"e" sep:"none" help:"Environment variables." placeholder:"<key>=<value>" example:"DEBUG=true,PORT=8080"`
 
 	Memory        types.SizeMebibytes     `group:"flag-edit" shortcut:"resources.memory" short:"m" help:"Memory allocation." placeholder:"size" example:"128MiB,1GiB"`
 	Vcpus         int                     `group:"flag-edit" shortcut:"resources.vcpus" help:"Number of vCPUs." placeholder:"n" example:"1,2,4"`
@@ -145,10 +154,106 @@ type InstanceEditCmd struct {
 }
 
 func (c *InstanceEditCmd) Run(ctx context.Context, stdio config.Stdio, sandbox *resource.Sandbox, kctx *kong.Context) error {
+	if len(c.Env) > 0 {
+		set, err := runtimeEnvSetArgs(c.Env)
+		if err != nil {
+			return err
+		}
+		c.Set = append(c.Set, set...)
+		// Prevent generic shortcut handling from re-processing --env values.
+		c.Env = nil
+	}
 	if err := cmd.ApplyShortcutFlags(&c.SetArgs, kctx.Flags()); err != nil {
 		return err
 	}
 	return c.ResourceEditCmd.Run(ctx, stdio, sandbox)
+}
+
+func runtimeEnvSetArgs(inputs []string) ([]map[string]string, error) {
+	var set []map[string]string
+	for _, input := range inputs {
+		for _, assignment := range splitEnvAssignments(input) {
+			key, value, _ := strings.Cut(strings.TrimSpace(assignment), "=")
+			envJSON, err := json.Marshal(map[string]string{key: value})
+			if err != nil {
+				return nil, fmt.Errorf("encoding runtime env %q: %w", key, err)
+			}
+			set = append(set, map[string]string{"runtime.env": string(envJSON)})
+		}
+	}
+	return set, nil
+}
+
+func splitEnvAssignments(input string) []string {
+	if input == "" {
+		return nil
+	}
+
+	var assignments []string
+	start := 0
+	for i := 0; i < len(input); i++ {
+		if input[i] != ',' {
+			continue
+		}
+
+		next := strings.TrimSpace(input[i+1:])
+		if !looksLikeEnvAssignment(firstCommaToken(next)) {
+			continue
+		}
+
+		assignment := strings.TrimSpace(input[start:i])
+		if assignment != "" {
+			assignments = append(assignments, assignment)
+		}
+		start = i + 1
+	}
+
+	last := strings.TrimSpace(input[start:])
+	if last != "" {
+		assignments = append(assignments, last)
+	}
+
+	return assignments
+}
+
+func firstCommaToken(input string) string {
+	if input == "" {
+		return ""
+	}
+	if before, _, ok := strings.Cut(input, ","); ok {
+		return strings.TrimSpace(before)
+	}
+	return strings.TrimSpace(input)
+}
+
+func looksLikeEnvAssignment(input string) bool {
+	key, _, found := strings.Cut(strings.TrimSpace(input), "=")
+	if !found {
+		return false
+	}
+	return isValidEnvKey(strings.TrimSpace(key))
+}
+
+func isValidEnvKey(key string) bool {
+	if key == "" {
+		return false
+	}
+	for i, r := range key {
+		if r == '_' {
+			continue
+		}
+		if 'A' <= r && r <= 'Z' {
+			continue
+		}
+		if 'a' <= r && r <= 'z' {
+			continue
+		}
+		if i > 0 && '0' <= r && r <= '9' {
+			continue
+		}
+		return false
+	}
+	return true
 }
 
 type Instance struct {

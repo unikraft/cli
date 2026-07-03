@@ -99,6 +99,16 @@ func (RunCmd) Examples() []kingkong.Example {
 }
 
 func (c *RunCmd) Run(ctx context.Context, stdio config.Stdio, sandbox *resource.Sandbox, kctx *kong.Context) error {
+	if len(c.Env) > 0 {
+		set, err := runtimeEnvSetArgs(c.Env)
+		if err != nil {
+			return err
+		}
+		c.Set = append(c.Set, set...)
+		// Prevent generic shortcut handling from re-processing --env values.
+		c.Env = nil
+	}
+
 	// Apply shortcut flags first (only user-set flags)
 	if err := resourcecmd.ApplyShortcutFlags(&c.SetArgs, kctx.Flags()); err != nil {
 		return err
