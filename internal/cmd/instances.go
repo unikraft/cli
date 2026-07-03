@@ -71,7 +71,8 @@ type InstanceCreateCmd struct {
 	Metro string `group:"flag-create" shortcut:"metro" help:"Metro to deploy in." placeholder:"metro" example:"fra,sfo,nyc"`
 	Name  string `group:"flag-create" shortcut:"name" short:"n" help:"Instance name." placeholder:"name"`
 
-	Image string `group:"flag-create" shortcut:"image" help:"Image to deploy." placeholder:"<name>:<tag>" example:"nginx:latest,my-app:v1.2.3"`
+	Image      string               `group:"flag-create" shortcut:"image" help:"Image to deploy." placeholder:"<name>:<tag>" example:"nginx:latest,my-app:v1.2.3"`
+	PullPolicy *platform.PullPolicy `group:"flag-create" shortcut:"pull-policy" help:"Image pull policy." placeholder:"policy" example:"always,never,if_not_present"`
 
 	Args InstanceArgs `group:"flag-create" shortcut:"runtime.args" help:"Arguments to pass to the instance." placeholder:"arg"`
 	Env  []string     `group:"flag-create" shortcut:"runtime.env" short:"e" help:"Environment variables." placeholder:"<key>=<value>" example:"DEBUG=true,PORT=8080"`
@@ -160,7 +161,8 @@ type Instance struct {
 
 	State types.InstanceState `mirror:"instance.state" field:",short" edit:"set"`
 
-	Image types.ImageRef[reference.Named] `mirror:"instance.image" field:",short" create:"set" edit:"set"`
+	Image      types.ImageRef[reference.Named] `mirror:"instance.image" field:",short" create:"set" edit:"set"`
+	PullPolicy *platform.PullPolicy            `field:"pull-policy,invisible,valueless" create:"set"`
 
 	Runtime struct {
 		Args InstanceArgs      `mirror:"instance.args" field:",short" create:"set" edit:"set"`
@@ -983,6 +985,7 @@ func instancePatchSpec(path string, op patchOp, value any) (platform.MutableInst
 func (Instance) Create(ctx context.Context, fields []resource.Field) ([]resource.Resource, error) {
 	var req platform.CreateInstanceRequest
 	var metro string
+	var pullPolicy *platform.PullPolicy
 	for key, field := range resource.IterFields(fields) {
 		if field.Create == nil || field.Create.Set == nil {
 			continue
@@ -996,7 +999,9 @@ func (Instance) Create(ctx context.Context, fields []resource.Field) ([]resource
 		case "metro":
 			metro = string(field.Create.Set.(LinkName[Metro]))
 		case "image":
-			req.Image = new(field.Create.Set.(types.ImageRef[reference.Named]).Reference.String())
+			req.Image = &platform.ImageSpec{Url: field.Create.Set.(types.ImageRef[reference.Named]).Reference.String()}
+		case "pull-policy":
+			pullPolicy = field.Create.Set.(*platform.PullPolicy)
 		case "runtime.args":
 			req.Args = []string(field.Create.Set.(InstanceArgs))
 		case "runtime.env":
@@ -1194,6 +1199,14 @@ func (Instance) Create(ctx context.Context, fields []resource.Field) ([]resource
 	// Validate that either image or template is provided
 	if req.Image == nil && req.Template == nil {
 		return nil, fmt.Errorf("either --image or --template must be specified")
+	}
+
+	// Apply pull policy to the image spec if provided.
+	if pullPolicy != nil {
+		if req.Image == nil {
+			return nil, fmt.Errorf("--pull-policy requires --image")
+		}
+		req.Image.PullPolicy = pullPolicy
 	}
 
 	g, err := multimetro.NewClient(ctx)

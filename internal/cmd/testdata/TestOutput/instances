@@ -186,6 +186,13 @@ fra    my-instance  running  nginx  ["arg1", "arg2"]  256MiB  2      example.uni
     }
   },
   {
+    "name": "pull-policy",
+    "verbosity": "invisible",
+    "create": {
+      "set": null
+    }
+  },
+  {
     "name": "runtime",
     "subfields": [
       {

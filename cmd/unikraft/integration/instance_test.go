@@ -846,6 +846,119 @@ cmd: ["cat", "/rom/hello.txt"]
 		assert.Regexp(t, `not found`, out)
 	})
 
+	t.Run("pull-policy", func(t *testing.T) {
+		r := runner(t, true)
+		imageTag := "test-" + uniq()
+		warmName := uniq()
+		ifNotPresentName := uniq()
+		alwaysName := uniq()
+
+		image := r.Config.Profile.Organization + "/pull-policy-e2e:" + imageTag
+
+		dir := t.TempDir()
+
+		// Build and push v1: short-lived instance that prints a known marker.
+		require.NoError(t, fstest.Apply(
+			fstest.CreateDir("v1", 0o755),
+			fstest.CreateFile("v1/Dockerfile", []byte(`
+FROM busybox:latest
+RUN echo pull-policy-v1 > /marker.txt
+`), 0o644),
+			fstest.CreateFile("v1/Kraftfile", []byte(`
+spec: v0.7
+name: pull-policy-e2e
+runtime: base-compat:latest
+rootfs:
+  format: erofs
+  source: ./Dockerfile
+cmd: ["cat", "/marker.txt"]
+`), 0o644),
+		).Apply(dir))
+		r.Run(t, []string{"unikraft", "build", "v1", "--output", image}, integ.WithWorkDir(dir))
+
+		// Warm the node cache: run v1, wait for it to stop, check output.
+		r.Run(t, []string{
+			"unikraft", "instance", "create",
+			"--output", "quiet",
+			"--set", "name=test-" + warmName,
+			"--set", "metro=" + r.Config.MetroName,
+			"--set", "image=" + image,
+			"--set", "autostart=true",
+			"--set", "resources.memory=128",
+			"--set", "resources.vcpus=1",
+		})
+		r.Run(t, []string{
+			"unikraft", "--timeout", "30s", "instance", "wait",
+			"--until", "state==stopped", "test-" + warmName,
+		})
+		out := r.Run(t, []string{"unikraft", "instance", "logs", "test-" + warmName})
+		assert.Contains(t, out, "pull-policy-v1")
+		r.Run(t, []string{"unikraft", "instance", "delete", "test-" + warmName})
+
+		// Build and push v2 under the same tag: different marker.
+		require.NoError(t, fstest.Apply(
+			fstest.CreateDir("v2", 0o755),
+			fstest.CreateFile("v2/Dockerfile", []byte(`
+FROM busybox:latest
+RUN echo pull-policy-v2 > /marker.txt
+`), 0o644),
+			fstest.CreateFile("v2/Kraftfile", []byte(`
+spec: v0.7
+name: pull-policy-e2e
+runtime: base-compat:latest
+rootfs:
+  format: erofs
+  source: ./Dockerfile
+cmd: ["cat", "/marker.txt"]
+`), 0o644),
+		).Apply(dir))
+		r.Run(t, []string{"unikraft", "build", "v2", "--output", image}, integ.WithWorkDir(dir))
+
+		// if_not_present: node already has v1 cached under this tag; must NOT pull v2.
+		r.Run(t, []string{
+			"unikraft", "instance", "create",
+			"--output", "quiet",
+			"--set", "name=test-" + ifNotPresentName,
+			"--set", "metro=" + r.Config.MetroName,
+			"--set", "image=" + image,
+			"--set", "autostart=true",
+			"--set", "resources.memory=128",
+			"--set", "resources.vcpus=1",
+			"--pull-policy", "if_not_present",
+		})
+		r.Run(t, []string{
+			"unikraft", "--timeout", "30s", "instance", "wait",
+			"--until", "state==stopped", "test-" + ifNotPresentName,
+		})
+		out = r.Run(t, []string{"unikraft", "instance", "logs", "test-" + ifNotPresentName})
+		assert.Contains(t, out, "pull-policy-v1")
+		assert.NotContains(t, out, "pull-policy-v2")
+		r.Run(t, []string{"unikraft", "instance", "delete", "test-" + ifNotPresentName})
+
+		// always: must pull fresh v2 regardless of cache.
+		r.Run(t, []string{
+			"unikraft", "instance", "create",
+			"--output", "quiet",
+			"--set", "name=test-" + alwaysName,
+			"--set", "metro=" + r.Config.MetroName,
+			"--set", "image=" + image,
+			"--set", "autostart=true",
+			"--set", "resources.memory=128",
+			"--set", "resources.vcpus=1",
+			"--pull-policy", "always",
+		})
+		r.Run(t, []string{
+			"unikraft", "--timeout", "30s", "instance", "wait",
+			"--until", "state==stopped", "test-" + alwaysName,
+		})
+		out = r.Run(t, []string{"unikraft", "instance", "logs", "test-" + alwaysName})
+		assert.Contains(t, out, "pull-policy-v2")
+		assert.NotContains(t, out, "pull-policy-v1")
+		r.Run(t, []string{"unikraft", "instance", "delete", "test-" + alwaysName})
+
+		r.Run(t, []string{"unikraft", "image", "delete", image})
+	})
+
 	t.Run("watch-timeout", func(t *testing.T) {
 		r := runner(t, true)
 		r.Run(t, []string{"unikraft", "--timeout=1s", "instance", "ls", "-w"}, integ.AllowFail())

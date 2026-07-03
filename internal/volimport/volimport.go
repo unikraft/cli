@@ -39,7 +39,7 @@ func Start(ctx context.Context, c multimetro.MetroClient, image, volUUID, authSt
 
 	log.G(ctx).Trace().Msg("creating volume data import instance")
 	resp, err := c.CreateInstance(ctx, platform.CreateInstanceRequest{
-		Image:         new(image),
+		Image:         &platform.ImageSpec{Url: image},
 		MemoryMb:      new(memoryMB),
 		Args:          args,
 		Autostart:     new(true),
