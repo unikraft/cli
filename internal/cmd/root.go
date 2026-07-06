@@ -127,7 +127,7 @@ func NewRootCmd(ctx context.Context, args []string, stdio config.Stdio) (context
 	parser.Stdout = stdio.Stdout
 	parser.Stderr = stdio.Stderr
 
-	kongcompletion.Register(
+	if code := registerCompletion(
 		parser,
 		kongcompletion.WithPredictor("resource-key-path", complete.PredictFiles("*")),
 		kongcompletion.WithPredictor("resource-key-profile", cmd.PredictResourceKey[Profile](ctx)),
@@ -140,7 +140,9 @@ func NewRootCmd(ctx context.Context, args []string, stdio config.Stdio) (context
 		kongcompletion.WithPredictor("resource-key-certificate", cmd.PredictResourceKey[Certificate](ctx)),
 		kongcompletion.WithPredictor("resource-key-image", cmd.PredictResourceKey[ImageEntry](ctx)),
 		kongcompletion.WithPredictor("resource-key-resource", cmd.PredictResourceKey[AnyResource](ctx)),
-	)
+	); code != nil {
+		os.Exit(*code)
+	}
 
 	kctx, err := parser.Parse(args)
 
