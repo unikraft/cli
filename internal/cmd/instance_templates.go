@@ -145,15 +145,20 @@ func (InstanceTemplate) List(ctx context.Context) ([]resource.Resource, error) {
 	return group.CollectAllSlices(ctx, g, func(ctx context.Context, c multimetro.MetroClient) ([]resource.Resource, error) {
 		log.G(ctx).Trace().Msg("listing instance templates")
 		resp, err := c.GetTemplateInstances(ctx, nil, platform.GetTemplateInstancesOpts{Details: new(true)})
-		if err != nil {
-			return nil, err
+		var instances []platform.Instance
+		if resp != nil && resp.Data != nil {
+			instances = resp.Data.Instances
+		}
+		opErr, ok := listGetOpError(err, instances)
+		if !ok {
+			return nil, opErr
 		}
 		var results []resource.Resource
 		var errs []error
-		if resp == nil || resp.Data == nil {
-			return nil, nil
+		if len(instances) == 0 {
+			return nil, opErr
 		}
-		for _, instance := range resp.Data.Instances {
+		for _, instance := range instances {
 			result, err := InstanceTemplate{}.load(nil, instance, &c.Metro, profile)
 			if err != nil {
 				errs = append(errs, err)
@@ -161,7 +166,7 @@ func (InstanceTemplate) List(ctx context.Context) ([]resource.Resource, error) {
 			}
 			results = append(results, result)
 		}
-		return results, errors.Join(errs...)
+		return results, errors.Join(opErr, errors.Join(errs...))
 	})
 }
 
@@ -177,16 +182,21 @@ func (InstanceTemplate) Get(ctx context.Context, keys []string) ([]resource.Reso
 	return group.CollectRefsSlices(ctx, g, multimetro.ParseKeys(keys).Refs(), func(ctx context.Context, c multimetro.MetroClient, refs group.Refs) ([]resource.Resource, group.Refs, error) {
 		log.G(ctx).Trace().Msg("getting instance templates")
 		resp, err := c.GetTemplateInstances(ctx, refs.NameOrUUIDs(), platform.GetTemplateInstancesOpts{Details: new(true)})
-		if err != nil && !platform.ErrorContainsOnly(err, platform.APIHTTPErrorNotFound) {
-			return nil, nil, err
+		var instances []platform.Instance
+		if resp != nil && resp.Data != nil {
+			instances = resp.Data.Instances
+		}
+		opErr, ok := listGetOpError(err, instances)
+		if !ok {
+			return nil, nil, opErr
 		}
 		var found []group.Ref
 		var results []resource.Resource
 		var errs []error
-		if resp == nil || resp.Data == nil {
-			return nil, nil, nil
+		if len(instances) == 0 {
+			return nil, nil, opErr
 		}
-		for i, instance := range resp.Data.Instances {
+		for i, instance := range instances {
 			if instance.Status == nil || *instance.Status != platform.ResponseStatusSuccess {
 				continue
 			}
@@ -202,7 +212,7 @@ func (InstanceTemplate) Get(ctx context.Context, keys []string) ([]resource.Reso
 			})
 			results = append(results, result)
 		}
-		return results, found, errors.Join(errs...)
+		return results, found, errors.Join(opErr, errors.Join(errs...))
 	})
 }
 
@@ -242,22 +252,30 @@ func (InstanceTemplate) Delete(ctx context.Context, keys []string) error {
 	return group.DoRefs(ctx, g, parsedKeys.Refs(), func(ctx context.Context, c multimetro.MetroClient, refs group.Refs) (group.Refs, error) {
 		log.G(ctx).Trace().Msg("deleting instance templates")
 		templates, err := c.DeleteTemplateInstances(ctx, refs.NameOrUUIDs())
+		var deleted []group.Ref
+		if templates != nil && templates.Data != nil {
+			for _, template := range templates.Data.Instances {
+				status := template.Status
+				if status != "" && status != platform.ResponseStatusSuccess {
+					continue
+				}
+				deleted = append(deleted, group.Ref{
+					Metro: c.Metro.Name,
+					Name:  template.Name,
+					UUID:  template.Uuid,
+				})
+			}
+		}
 		if err != nil && !platform.ErrorContainsOnly(err, platform.APIHTTPErrorNotFound) {
+			if len(deleted) > 0 {
+				pr := NewPartialResult()
+				pr.Successful = deleted
+				pr.Failed[group.Ref{Metro: c.Metro.Name}] = partialFailureReason(err)
+				return deleted, pr
+			}
 			return nil, err
 		}
-		var deleted []group.Ref
-		for _, template := range templates.Data.Instances {
-			status := template.Status
-			if status != "" && status != platform.ResponseStatusSuccess {
-				continue
-			}
-			deleted = append(deleted, group.Ref{
-				Metro: c.Metro.Name,
-				Name:  template.Name,
-				UUID:  template.Uuid,
-			})
-		}
-		return deleted, nil
+		return deleted, deleteOpError(err, len(deleted))
 	})
 }
 

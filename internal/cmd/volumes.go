@@ -305,11 +305,16 @@ func (Volume) List(ctx context.Context) ([]resource.Resource, error) {
 	return group.CollectAllSlices(ctx, g, func(ctx context.Context, c multimetro.MetroClient) ([]resource.Resource, error) {
 		log.G(ctx).Trace().Msg("listing volumes")
 		resp, err := c.GetVolumes(ctx, nil, platform.GetVolumesOpts{Details: new(true)})
-		if err != nil {
-			return nil, err
+		var volumes []platform.Volume
+		if resp != nil && resp.Data != nil {
+			volumes = resp.Data.Volumes
 		}
-		if resp == nil || resp.Data == nil {
-			return nil, nil
+		opErr, ok := listGetOpError(err, volumes)
+		if !ok {
+			return nil, opErr
+		}
+		if len(volumes) == 0 {
+			return nil, opErr
 		}
 		var results []resource.Resource
 		var errs []error
@@ -320,7 +325,7 @@ func (Volume) List(ctx context.Context) ([]resource.Resource, error) {
 			}
 			results = append(results, result)
 		}
-		return results, errors.Join(errs...)
+		return results, errors.Join(opErr, errors.Join(errs...))
 	})
 }
 
@@ -333,16 +338,21 @@ func (Volume) Get(ctx context.Context, keys []string) ([]resource.Resource, erro
 	return group.CollectRefsSlices(ctx, g, multimetro.ParseKeys(keys).Refs(), func(ctx context.Context, c multimetro.MetroClient, refs group.Refs) ([]resource.Resource, group.Refs, error) {
 		log.G(ctx).Trace().Msg("getting volumes")
 		resp, err := c.GetVolumes(ctx, refs.NameOrUUIDs(), platform.GetVolumesOpts{Details: new(true)})
-		if err != nil && !platform.ErrorContainsOnly(err, platform.APIHTTPErrorNotFound) {
-			return nil, nil, err
+		var volumes []platform.Volume
+		if resp != nil && resp.Data != nil {
+			volumes = resp.Data.Volumes
+		}
+		opErr, ok := listGetOpError(err, volumes)
+		if !ok {
+			return nil, nil, opErr
 		}
 		var found []group.Ref
 		var results []resource.Resource
 		var errs []error
-		if resp == nil || resp.Data == nil {
-			return nil, nil, nil
+		if len(volumes) == 0 {
+			return nil, nil, opErr
 		}
-		for _, volume := range resp.Data.Volumes {
+		for _, volume := range volumes {
 			if volume.Status == nil || *volume.Status != platform.ResponseStatusSuccess {
 				continue
 			}
@@ -377,7 +387,7 @@ func (Volume) Get(ctx context.Context, keys []string) ([]resource.Resource, erro
 			}
 			results = append(results, result)
 		}
-		return results, found, errors.Join(errs...)
+		return results, found, errors.Join(opErr, errors.Join(errs...))
 	})
 }
 
@@ -416,24 +426,29 @@ func (Volume) Delete(ctx context.Context, keys []string) error {
 	return group.DoRefs(ctx, g, parsedKeys.Refs(), func(ctx context.Context, c multimetro.MetroClient, refs group.Refs) (group.Refs, error) {
 		log.G(ctx).Trace().Msg("deleting volumes")
 		resp, err := c.DeleteVolumes(ctx, refs.NameOrUUIDs())
+		var deleted []group.Ref
+		if resp != nil && resp.Data != nil {
+			for _, volume := range resp.Data.Volumes {
+				if volume.Status != platform.ResponseStatusSuccess {
+					continue
+				}
+				deleted = append(deleted, group.Ref{
+					Metro: c.Metro.Name,
+					Name:  volume.Name,
+					UUID:  volume.Uuid,
+				})
+			}
+		}
 		if err != nil && !platform.ErrorContainsOnly(err, platform.APIHTTPErrorNotFound) {
+			if len(deleted) > 0 {
+				pr := NewPartialResult()
+				pr.Successful = deleted
+				pr.Failed[group.Ref{Metro: c.Metro.Name}] = partialFailureReason(err)
+				return deleted, pr
+			}
 			return nil, err
 		}
-		var deleted []group.Ref
-		if resp == nil || resp.Data == nil {
-			return nil, nil
-		}
-		for _, volume := range resp.Data.Volumes {
-			if volume.Status != platform.ResponseStatusSuccess {
-				continue
-			}
-			deleted = append(deleted, group.Ref{
-				Metro: c.Metro.Name,
-				Name:  volume.Name,
-				UUID:  volume.Uuid,
-			})
-		}
-		return deleted, nil
+		return deleted, deleteOpError(err, len(deleted))
 	})
 }
 

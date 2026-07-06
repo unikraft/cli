@@ -266,22 +266,27 @@ func (ServiceGroup) List(ctx context.Context) ([]resource.Resource, error) {
 	return group.CollectAllSlices(ctx, g, func(ctx context.Context, c multimetro.MetroClient) ([]resource.Resource, error) {
 		log.G(ctx).Trace().Msg("listing service groups")
 		resp, err := c.GetServiceGroups(ctx, nil, platform.GetServiceGroupsOpts{Details: new(true)})
-		if err != nil {
-			return nil, err
+		var serviceGroups []platform.ServiceGroup
+		if resp != nil && resp.Data != nil {
+			serviceGroups = resp.Data.ServiceGroups
+		}
+		opErr, ok := listGetOpError(err, serviceGroups)
+		if !ok {
+			return nil, opErr
 		}
 		var results []resource.Resource
 		var errs []error
-		if resp == nil || resp.Data == nil {
-			return nil, nil
+		if len(serviceGroups) == 0 {
+			return nil, opErr
 		}
-		for _, serviceGroup := range resp.Data.ServiceGroups {
+		for _, serviceGroup := range serviceGroups {
 			result, err := ServiceGroup{}.load(nil, serviceGroup, &c.Metro)
 			if err != nil {
 				errs = append(errs, err)
 			}
 			results = append(results, result)
 		}
-		return results, errors.Join(errs...)
+		return results, errors.Join(opErr, errors.Join(errs...))
 	})
 }
 
@@ -293,16 +298,21 @@ func (ServiceGroup) Get(ctx context.Context, keys []string) ([]resource.Resource
 	return group.CollectRefsSlices(ctx, g, multimetro.ParseKeys(keys).Refs(), func(ctx context.Context, c multimetro.MetroClient, refs group.Refs) ([]resource.Resource, group.Refs, error) {
 		log.G(ctx).Trace().Msg("getting service groups")
 		resp, err := c.GetServiceGroups(ctx, refs.NameOrUUIDs(), platform.GetServiceGroupsOpts{Details: new(true)})
-		if err != nil && !platform.ErrorContainsOnly(err, platform.APIHTTPErrorNotFound) {
-			return nil, nil, err
+		var serviceGroups []platform.ServiceGroup
+		if resp != nil && resp.Data != nil {
+			serviceGroups = resp.Data.ServiceGroups
+		}
+		opErr, ok := listGetOpError(err, serviceGroups)
+		if !ok {
+			return nil, nil, opErr
 		}
 		var found []group.Ref
 		var results []resource.Resource
 		var errs []error
-		if resp == nil || resp.Data == nil {
-			return nil, nil, nil
+		if len(serviceGroups) == 0 {
+			return nil, nil, opErr
 		}
-		for _, serviceGroup := range resp.Data.ServiceGroups {
+		for _, serviceGroup := range serviceGroups {
 			if serviceGroup.Status == nil || *serviceGroup.Status != platform.ResponseStatusSuccess {
 				continue
 			}
@@ -337,7 +347,7 @@ func (ServiceGroup) Get(ctx context.Context, keys []string) ([]resource.Resource
 			}
 			results = append(results, result)
 		}
-		return results, found, errors.Join(errs...)
+		return results, found, errors.Join(opErr, errors.Join(errs...))
 	})
 }
 
@@ -376,10 +386,21 @@ func (ServiceGroup) Delete(ctx context.Context, keys []string) error {
 	return group.DoRefs(ctx, g, parsedKeys.Refs(), func(ctx context.Context, c multimetro.MetroClient, refs group.Refs) (group.Refs, error) {
 		log.G(ctx).Trace().Msg("deleting service groups")
 		_, err := c.DeleteServiceGroups(ctx, refs.NameOrUUIDs())
+		var deleted []group.Ref
+		if err == nil {
+			deleted = refs
+		}
 		if err != nil && !platform.ErrorContainsOnly(err, platform.APIHTTPErrorNotFound) {
+			// Partial success when some items delete despite error
+			if len(deleted) > 0 {
+				pr := NewPartialResult()
+				pr.Successful = deleted
+				pr.Failed[group.Ref{Metro: c.Metro.Name}] = partialFailureReason(err)
+				return deleted, pr
+			}
 			return nil, err
 		}
-		return refs, nil
+		return deleted, deleteOpError(err, len(deleted))
 	})
 }
 

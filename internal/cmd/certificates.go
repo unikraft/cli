@@ -114,22 +114,27 @@ func (Certificate) List(ctx context.Context) ([]resource.Resource, error) {
 	return group.CollectAllSlices(ctx, g, func(ctx context.Context, c multimetro.MetroClient) ([]resource.Resource, error) {
 		log.G(ctx).Trace().Msg("listing certificates")
 		resp, err := c.GetCertificates(ctx, nil, platform.GetCertificatesOpts{Details: new(true)})
-		if err != nil {
-			return nil, err
+		var certificates []platform.Certificate
+		if resp != nil && resp.Data != nil {
+			certificates = resp.Data.Certificates
+		}
+		opErr, ok := listGetOpError(err, certificates)
+		if !ok {
+			return nil, opErr
 		}
 		var results []resource.Resource
 		var errs []error
-		if resp == nil || resp.Data == nil {
-			return nil, nil
+		if len(certificates) == 0 {
+			return nil, opErr
 		}
-		for _, certificate := range resp.Data.Certificates {
+		for _, certificate := range certificates {
 			result, err := Certificate{}.load(nil, certificate, &c.Metro)
 			if err != nil {
 				errs = append(errs, err)
 			}
 			results = append(results, result)
 		}
-		return results, errors.Join(errs...)
+		return results, errors.Join(opErr, errors.Join(errs...))
 	})
 }
 
@@ -141,16 +146,21 @@ func (Certificate) Get(ctx context.Context, keys []string) ([]resource.Resource,
 	return group.CollectRefsSlices(ctx, g, multimetro.ParseKeys(keys).Refs(), func(ctx context.Context, c multimetro.MetroClient, refs group.Refs) ([]resource.Resource, group.Refs, error) {
 		log.G(ctx).Trace().Msg("getting certificates")
 		resp, err := c.GetCertificates(ctx, refs.NameOrUUIDs(), platform.GetCertificatesOpts{Details: new(true)})
-		if err != nil && !platform.ErrorContainsOnly(err, platform.APIHTTPErrorNotFound) {
-			return nil, nil, err
+		var certificates []platform.Certificate
+		if resp != nil && resp.Data != nil {
+			certificates = resp.Data.Certificates
+		}
+		opErr, ok := listGetOpError(err, certificates)
+		if !ok {
+			return nil, nil, opErr
 		}
 		var found []group.Ref
 		var results []resource.Resource
 		var errs []error
-		if resp == nil || resp.Data == nil {
-			return nil, nil, nil
+		if len(certificates) == 0 {
+			return nil, nil, opErr
 		}
-		for _, certificate := range resp.Data.Certificates {
+		for _, certificate := range certificates {
 			if certificate.Status == nil || *certificate.Status != platform.ResponseStatusSuccess {
 				continue
 			}
@@ -185,7 +195,7 @@ func (Certificate) Get(ctx context.Context, keys []string) ([]resource.Resource,
 			}
 			results = append(results, result)
 		}
-		return results, found, errors.Join(errs...)
+		return results, found, errors.Join(opErr, errors.Join(errs...))
 	})
 }
 
@@ -224,24 +234,29 @@ func (Certificate) Delete(ctx context.Context, keys []string) error {
 	return group.DoRefs(ctx, g, parsedKeys.Refs(), func(ctx context.Context, c multimetro.MetroClient, refs group.Refs) (group.Refs, error) {
 		log.G(ctx).Trace().Msg("deleting certificates")
 		resp, err := c.DeleteCertificates(ctx, refs.NameOrUUIDs())
+		var deleted []group.Ref
+		if resp != nil && resp.Data != nil {
+			for _, certificate := range resp.Data.Certificates {
+				if certificate.Status != platform.ResponseStatusSuccess {
+					continue
+				}
+				deleted = append(deleted, group.Ref{
+					Metro: c.Metro.Name,
+					Name:  certificate.Name,
+					UUID:  certificate.Uuid,
+				})
+			}
+		}
 		if err != nil && !platform.ErrorContainsOnly(err, platform.APIHTTPErrorNotFound) {
+			if len(deleted) > 0 {
+				pr := NewPartialResult()
+				pr.Successful = deleted
+				pr.Failed[group.Ref{Metro: c.Metro.Name}] = partialFailureReason(err)
+				return deleted, pr
+			}
 			return nil, err
 		}
-		var deleted []group.Ref
-		if resp == nil || resp.Data == nil {
-			return nil, nil
-		}
-		for _, certificate := range resp.Data.Certificates {
-			if certificate.Status != platform.ResponseStatusSuccess {
-				continue
-			}
-			deleted = append(deleted, group.Ref{
-				Metro: c.Metro.Name,
-				Name:  certificate.Name,
-				UUID:  certificate.Uuid,
-			})
-		}
-		return deleted, nil
+		return deleted, deleteOpError(err, len(deleted))
 	})
 }
 

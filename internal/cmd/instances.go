@@ -596,13 +596,18 @@ func (Instance) List(ctx context.Context) ([]resource.Resource, error) {
 	return group.CollectAllSlices(ctx, g, func(ctx context.Context, c multimetro.MetroClient) ([]resource.Resource, error) {
 		log.G(ctx).Trace().Msg("listing instances")
 		resp, err := c.GetInstances(ctx, nil, platform.GetInstancesOpts{Details: new(true)})
-		if err != nil {
-			return nil, err
+		var instances []platform.Instance
+		if resp != nil && resp.Data != nil {
+			instances = resp.Data.Instances
+		}
+		opErr, ok := listGetOpError(err, instances)
+		if !ok {
+			return nil, opErr
 		}
 		var results []resource.Resource
 		var errs []error
-		if resp == nil || resp.Data == nil {
-			return nil, nil
+		if len(instances) == 0 {
+			return nil, opErr
 		}
 		for _, instance := range resp.Data.Instances {
 			result, err := Instance{}.load(nil, instance, &c.Metro, profile)
@@ -611,7 +616,7 @@ func (Instance) List(ctx context.Context) ([]resource.Resource, error) {
 			}
 			results = append(results, result)
 		}
-		return results, errors.Join(errs...)
+		return results, errors.Join(opErr, errors.Join(errs...))
 	})
 }
 
@@ -627,16 +632,21 @@ func (Instance) Get(ctx context.Context, keys []string) ([]resource.Resource, er
 	return group.CollectRefsSlices(ctx, g, multimetro.ParseKeys(keys).Refs(), func(ctx context.Context, c multimetro.MetroClient, refs group.Refs) ([]resource.Resource, group.Refs, error) {
 		log.G(ctx).Trace().Msg("getting instances")
 		resp, err := c.GetInstances(ctx, refs.NameOrUUIDs(), platform.GetInstancesOpts{Details: new(true)})
-		if err != nil && !platform.ErrorContainsOnly(err, platform.APIHTTPErrorNotFound) {
-			return nil, nil, err
+		var instances []platform.Instance
+		if resp != nil && resp.Data != nil {
+			instances = resp.Data.Instances
+		}
+		opErr, ok := listGetOpError(err, instances)
+		if !ok {
+			return nil, nil, opErr
 		}
 		var found []group.Ref
 		var results []resource.Resource
 		var errs []error
-		if resp == nil || resp.Data == nil {
-			return nil, nil, nil
+		if len(instances) == 0 {
+			return nil, nil, opErr
 		}
-		for _, instance := range resp.Data.Instances {
+		for _, instance := range instances {
 			if instance.Status == nil || *instance.Status != platform.ResponseStatusSuccess {
 				continue
 			}
@@ -671,7 +681,7 @@ func (Instance) Get(ctx context.Context, keys []string) ([]resource.Resource, er
 			}
 			results = append(results, result)
 		}
-		return results, found, errors.Join(errs...)
+		return results, found, errors.Join(opErr, errors.Join(errs...))
 	})
 }
 
@@ -734,20 +744,42 @@ func (Instance) Delete(ctx context.Context, keys []string) error {
 			instances, err = c.DeleteInstances(ctx, reqs)
 		}
 		if err != nil && !platform.ErrorContainsOnly(err, platform.APIHTTPErrorNotFound) {
+			// Check for partial success: some items deleted despite error
+			var deleted []group.Ref
+			if instances != nil {
+				for _, instance := range instances.Data.Instances {
+					if instance.Status == platform.ResponseStatusSuccess {
+						deleted = append(deleted, group.Ref{
+							Metro: c.Metro.Name,
+							Name:  instance.Name,
+							UUID:  instance.Uuid,
+						})
+					}
+				}
+			}
+
+			if len(deleted) > 0 {
+				// Partial success: return PartialResult with both successes and the error
+				pr := NewPartialResult()
+				pr.Successful = deleted
+				pr.Failed[group.Ref{Metro: c.Metro.Name}] = partialFailureReason(err)
+				return deleted, pr
+			}
 			return nil, err
 		}
 		var deleted []group.Ref
-		for _, instance := range instances.Data.Instances {
-			if instance.Status != platform.ResponseStatusSuccess {
-				continue
+		if instances != nil {
+			for _, instance := range instances.Data.Instances {
+				if instance.Status == platform.ResponseStatusSuccess {
+					deleted = append(deleted, group.Ref{
+						Metro: c.Metro.Name,
+						Name:  instance.Name,
+						UUID:  instance.Uuid,
+					})
+				}
 			}
-			deleted = append(deleted, group.Ref{
-				Metro: c.Metro.Name,
-				Name:  instance.Name,
-				UUID:  instance.Uuid,
-			})
 		}
-		return deleted, nil
+		return deleted, deleteOpError(err, len(deleted))
 	})
 }
 
