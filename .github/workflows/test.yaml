@@ -70,8 +70,15 @@ jobs:
   integration:
     runs-on: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork && 'ubuntu-latest' || 'arc-unikraft-cli-ubuntu24.04-standard' }}
     needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [STAGING, STABLE, PROD]
     env:
       TASK_X_REMOTE_TASKFILES: 1
+      UNIKRAFT_CONFIG_STAGING: staging
+      UNIKRAFT_CONFIG_STABLE: stable
+      UNIKRAFT_CONFIG_PROD: prod
     steps:
       - uses: actions/checkout@v7
       - uses: go-task/setup-task@v2
@@ -103,6 +110,8 @@ jobs:
         shell: bash
         run: |
           task --yes integration
+        env:
+          CLI_TEST_SERVER: ${{ env[format('UNIKRAFT_CONFIG_{0}', matrix.target)] }}
 
       - name: Run integration tests (with auth)
         if: ${{ github.event_name == 'push' || !github.event.pull_request.head.repo.fork }}
@@ -112,4 +121,5 @@ jobs:
           echo "${UNIKRAFT_CONFIG_CONTENT}" > ~/.config/unikraft/config.yaml
           task --yes integration
         env:
-          UNIKRAFT_CONFIG_CONTENT: ${{ secrets.UNIKRAFT_CONFIG_STAGING }}
+          UNIKRAFT_CONFIG_CONTENT: ${{ secrets[format('UNIKRAFT_CONFIG_{0}', matrix.target)] }}
+          CLI_TEST_SERVER: ${{ env[format('UNIKRAFT_CONFIG_{0}', matrix.target)] }}
